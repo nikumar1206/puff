@@ -2,9 +2,6 @@ package response
 
 import "fmt"
 
-// type baseResponse interface {
-// }
-
 type JSONResponse struct {
 	StatusCode int
 	Content    map[string]interface{}
