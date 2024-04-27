@@ -22,8 +22,3 @@ func DefaultApp() *app.App {
 
 	return App(c)
 }
-
-func main() {
-	app := DefaultApp()
-	app.ListenAndServe()
-}
