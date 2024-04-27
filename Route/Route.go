@@ -1,7 +1,7 @@
 package route
 
 import (
-	field "puff/Field"
+	field "puff/field"
 )
 
 type Route struct {
