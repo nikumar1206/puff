@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	response "puff/Response"
-	router "puff/Router"
 )
 
 func resolveStatusCode(sc int) int {
@@ -15,33 +14,35 @@ func resolveStatusCode(sc int) int {
 	return sc
 }
 
-func Handler(w http.ResponseWriter, req *http.Request, routers []*router.Router) {
+func Handler(w http.ResponseWriter, req *http.Request, handlerFunc func() interface{}) {
+	//FIX ME: middleware comes here
+	res := handlerFunc() //FIX ME: we should give the user handle function a request body as well
 	var (
-		contenttype string
+		contentType string
 		content     string
-		statuscode  int
+		statusCode  int
 	)
 	switch r := res.(type) {
 	case response.JSONResponse:
-		statuscode = resolveStatusCode(r.StatusCode)
-		contenttype = "application/json"
+		statusCode = resolveStatusCode(r.StatusCode)
+		contentType = "application/json"
 		contentBytes, err := json.Marshal(r.Content)
 		if err != nil {
-			content, statuscode = r.ResponseError(err.Error())
+			content, statusCode = r.ResponseError(err.Error())
 			break
 		}
 		content = string(contentBytes)
 	case response.HTMLResponse:
-		statuscode = resolveStatusCode(r.StatusCode)
-		contenttype = "text/html"
+		statusCode = resolveStatusCode(r.StatusCode)
+		contentType = "text/html"
 		content = r.Content
 	case response.Response:
-		statuscode = resolveStatusCode(r.StatusCode)
-		contenttype = "text/plain"
+		statusCode = resolveStatusCode(r.StatusCode)
+		contentType = "text/plain"
 		content = r.Content
 	}
 
-	w.WriteHeader(statuscode)
-	w.Header().Add("Content-Type", contenttype)
+	w.WriteHeader(statusCode)
+	w.Header().Add("Content-Type", contentType)
 	fmt.Fprint(w, content)
 }

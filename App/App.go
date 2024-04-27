@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	handler "puff/Handler"
+	response "puff/Response"
 	route "puff/Route"
 	router "puff/Router"
 )
@@ -25,8 +26,13 @@ func (a *App) IncludeRouter(r *router.Router) {
 	a.Routers = append(a.Routers, r)
 }
 
+func indexPage() interface{} { //FIX ME: Written temporarily only for tests.
+	return response.HTMLResponse{
+		Content: "<h1> hello world </h1> <p> this is a temporary index page </p>",
+	}
+}
 func (a *App) sendToHandler(w http.ResponseWriter, req *http.Request) {
-	handler.Handler(w, req, a.Routers)
+	handler.Handler(w, req, indexPage)
 }
 
 func (a *App) ListenAndServe() {
