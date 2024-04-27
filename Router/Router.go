@@ -1,8 +1,8 @@
 package router
 
 import (
-	field "puff/Field"
-	route "puff/Route"
+	field "puff/field"
+	route "puff/route"
 )
 
 type Router struct {
@@ -13,9 +13,15 @@ type Router struct {
 }
 
 func (a *Router) Get(path string, description string, fields []field.Field) {
-	newRoute := route.Route{Protocol: "GET", Path: a.prefix + path, Description: description, Fields: fields}
+	newRoute := route.Route{
+		Protocol:    "GET",
+		Path:        a.prefix + path,
+		Description: description,
+		Fields:      fields,
+	}
 	a.routes = append(a.routes, newRoute)
 }
+
 func (a *Router) Add(rt *Router) {
 	a.routers = append(a.routers, rt)
 }

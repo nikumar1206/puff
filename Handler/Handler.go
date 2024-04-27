@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	response "puff/Response"
+	response "puff/response"
 )
 
 func resolveStatusCode(sc int) int {
@@ -15,8 +15,8 @@ func resolveStatusCode(sc int) int {
 }
 
 func Handler(w http.ResponseWriter, req *http.Request, handlerFunc func() interface{}) {
-	//FIX ME: middleware comes here
-	res := handlerFunc() //FIX ME: we should give the user handle function a request body as well
+	// FIX ME: middleware comes here
+	res := handlerFunc() // FIX ME: we should give the user handle function a request body as well
 	var (
 		contentType string
 		content     string
