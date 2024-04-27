@@ -6,16 +6,16 @@ import (
 )
 
 type Router struct {
-	prefix  string //(optional) prefix, all routes underneath will have paths that start with the prefix automatically
-	routers []*Router
-	routes  []route.Route
+	Prefix  string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
+	Routers []*Router
+	Routes  []route.Route
 	// middlewares []Middleware
 }
 
 func (a *Router) Get(path string, description string, fields []field.Field) {
 	newRoute := route.Route{
 		Protocol:    "GET",
-		Path:        a.prefix + path,
+		Path:        path,
 		Description: description,
 		Fields:      fields,
 	}
@@ -23,5 +23,5 @@ func (a *Router) Get(path string, description string, fields []field.Field) {
 }
 
 func (a *Router) Add(rt *Router) {
-	a.routers = append(a.routers, rt)
+	a.Routers = append(a.Routers, rt)
 }

@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	handler "puff/handler"
-	response "puff/response"
-	route "puff/route"
 	router "puff/router"
 	"time"
 )
@@ -19,25 +16,27 @@ type Config struct {
 
 type App struct {
 	*Config
-	Routes  []route.Route
-	Routers []*router.Router
+	// Routes  []route.Route
+	Router router.Router //This is the root router. All other routers will work underneath this.
 	// Middlewares
 }
 
 func (a *App) IncludeRouter(r *router.Router) {
-	a.Routers = append(a.Routers, r)
+	a.Router.Add(r)
 }
 
-func indexPage() interface{} { // FIX ME: Written temporarily only for tests.
-	return response.HTMLResponse{
-		Content: "<h1> hello world </h1> <p> this is a temporary index page </p>",
+func getAllRoutes(rtr *router.Router, prefix string) []string {
+	var routes []string
+	for _, route := range rtr.Routes {
+		routes = append(routes, fmt.Sprintf("%s %s%s", route.Protocol, prefix, route.Path)) //ex: GET /food/cheese/swiss
 	}
-}
+	for _, rt := range rtr.Routers {
+		prefix += rt.Prefix
+		routes = append(routes, getAllRoutes(rt, prefix)...)
+	}
+	return routes
 
-func (a *App) sendToHandler(w http.ResponseWriter, req *http.Request) {
-	handler.Handler(w, req, indexPage)
 }
-
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
@@ -51,7 +50,6 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		)
 	})
 }
-
 func (a *App) ListenAndServe() {
 	mux := http.NewServeMux()
 	router := loggingMiddleware(mux)
