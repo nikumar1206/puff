@@ -24,6 +24,7 @@ func statusCode(sc int) int {
 }
 
 func Handler(w http.ResponseWriter, req *http.Request, routers []*router.Router) {
+
 	var contenttype string
 	var content string
 	var statuscode int
