@@ -1,17 +1,23 @@
-package puff
+package main
 
-import app "puff/App"
+import app "puff/app"
 
-type AppConfig struct {
-	Network bool
-	Reload  bool
-	Port    int
+func App(config app.Config) *app.App {
+	return &app.App{Config: &config}
 }
 
-func App(config AppConfig) app.AppI {
-	return app.AppI{
-		Network: config.Network,
-		Reload:  config.Reload,
-		Port:    config.Port,
+func DefaultApp() *app.App {
+	// FIX_ME: reload bool should pick up from APP_ENV
+	c := app.Config{
+		Network: true,
+		Reload:  true,
+		Port:    8000,
 	}
+
+	return App(c)
+}
+
+func main() {
+	app := DefaultApp()
+	app.ListenAndServe()
 }

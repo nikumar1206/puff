@@ -8,29 +8,35 @@ import (
 	router "puff/Router"
 )
 
-type AppI struct {
-	Network bool //host to the entire network?
-	Reload  bool //live reload?
-	Port    int  //port number to use
+type Config struct {
+	Network bool // host to the entire network?
+	Reload  bool // live reload?
+	Port    int  // port number to use
+}
+
+type App struct {
+	*Config
 	Routes  []route.Route
 	Routers []*router.Router
 	// Middlewares
 }
 
-func (ac *AppI) IncludeRouter(r *router.Router) {
-	ac.Routers = append(ac.Routers, r)
+func (a *App) IncludeRouter(r *router.Router) {
+	a.Routers = append(a.Routers, r)
 }
 
-func (ac *AppI) sendToHandler(w http.ResponseWriter, req *http.Request) {
-	handler.Handler(w, req, ac.Routers)
+func (a *App) sendToHandler(w http.ResponseWriter, req *http.Request) {
+	handler.Handler(w, req, a.Routers)
 }
 
-func (ac *AppI) ListenAndServe() {
-	http.HandleFunc("", ac.sendToHandler)
-	network := ""
-	if ac.Network {
-		network += "0.0.0.0"
+func (a *App) ListenAndServe() {
+	http.HandleFunc("/", a.sendToHandler)
+	addr := ""
+	if a.Network {
+		addr += "0.0.0.0"
 	}
-	network += ":" + fmt.Sprintf("%d", ac.Port)
-	http.ListenAndServe(network, nil)
+	addr += fmt.Sprintf(":%d", a.Port)
+
+	fmt.Printf("Running app on port %d 🚀", a.Port)
+	http.ListenAndServe(addr, nil)
 }
