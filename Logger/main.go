@@ -11,16 +11,15 @@ import (
 )
 
 type Config struct {
-	UseJSON       bool
-	ColoredOutput bool
-	*slog.HandlerOptions
+	UseJSON bool
+	Level   slog.Level
 }
 
-type CustomSlogHandler struct {
+type PuffSlogHandler struct {
 	slog.Handler
 }
 
-func (h *CustomSlogHandler) Handle(c context.Context, r slog.Record) error {
+func (h *PuffSlogHandler) Handle(c context.Context, r slog.Record) error {
 	level := fmt.Sprintf("%s:", r.Level.String())
 
 	switch r.Level {
@@ -57,22 +56,31 @@ func (h *CustomSlogHandler) Handle(c context.Context, r slog.Record) error {
 }
 
 func InitLogger(c *Config) *slog.Logger {
-	custom_options := slog.HandlerOptions{Level: c.Level, AddSource: c.AddSource}
-	logger := slog.Default()
-	if c.UseJSON {
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &custom_options))
+	var logger *slog.Logger
+	switch c.UseJSON {
+	case true:
+		logger = slog.New(
+			slog.NewJSONHandler(
+				os.Stdout,
+				&slog.HandlerOptions{
+					AddSource: true,
+					Level:     c.Level,
+				},
+			),
+		)
+	case false:
+		logger = DefaultLogger()
 	}
+
 	slog.SetDefault(logger)
 	return logger
 }
 
 func DefaultLogger() *slog.Logger {
-	custom_options := slog.HandlerOptions{
-		Level:     slog.LevelInfo,
+	opts := slog.HandlerOptions{
 		AddSource: true,
 	}
-
-	h := CustomSlogHandler{Handler: slog.NewTextHandler(os.Stdout, &custom_options)}
+	h := PuffSlogHandler{Handler: slog.NewTextHandler(os.Stdout, &opts)}
 	json_logger := slog.New(&h)
 	slog.SetDefault(json_logger)
 	return json_logger

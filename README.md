@@ -18,8 +18,8 @@ app := App.New(h)
 
 ## Features
 
-- Live reloading
 - Structured Logging
 - Routers and nested Routers
 - Middlewares
 - Auto Open API/Swagger spec generation
+- RequestId generation/Tracing Middleware

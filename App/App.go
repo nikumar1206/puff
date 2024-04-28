@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	handler "puff/handler"
+	openapi "puff/openapi"
 	response "puff/response"
 	route "puff/route"
 	router "puff/router"
@@ -13,8 +14,8 @@ import (
 
 type Config struct {
 	Network bool // host to the entire network?
-	Reload  bool // live reload?
 	Port    int  // port number to use
+	OpenAPI *openapi.OpenAPI
 }
 
 type App struct {
@@ -65,5 +66,6 @@ func (a *App) ListenAndServe() {
 	addr += fmt.Sprintf(":%d", a.Port)
 
 	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
+
 	http.ListenAndServe(addr, router)
 }
