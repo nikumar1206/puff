@@ -7,8 +7,8 @@ type JSONResponse struct {
 	Content    map[string]interface{}
 }
 
-func (j *JSONResponse) ResponseError(err string) (string, int) {
-	return fmt.Sprintf("{\"error\": \"JSON Response Failed: %s\"}", err), 500
+func (j *JSONResponse) ResponseError(err error) string {
+	return fmt.Sprintf("{\"error\": \"JSON Response Failed: %s\"}", err.Error())
 }
 
 type HTMLResponse struct { // the difference between this and Response is that the content type is text/html
