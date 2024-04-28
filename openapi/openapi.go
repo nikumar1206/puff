@@ -3,7 +3,7 @@ package openapi
 import "fmt"
 
 type OpenAPI struct {
-	title string // title of the application
+	// title string // title of the application
 }
 
 var OPENAPI_UI string = `<!doctype html>
