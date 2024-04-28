@@ -12,9 +12,9 @@ import (
 )
 
 type Config struct {
-	Network bool // host to the entire network?
-	Reload  bool // live reload?
-	Port    int  // port number to use
+	Network bool   // host to the entire network?
+	Port    int    // port number to use
+	Name    string // the name of the project, defaults to "Puff API"
 }
 
 type App struct {
@@ -65,5 +65,6 @@ func (a *App) ListenAndServe() {
 	addr += fmt.Sprintf(":%d", a.Port)
 
 	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
+
 	http.ListenAndServe(addr, router)
 }
