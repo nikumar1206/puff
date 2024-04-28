@@ -6,7 +6,6 @@ import (
 	"net/http"
 	handler "puff/handler"
 	openapi "puff/openapi"
-	response "puff/response"
 	route "puff/route"
 	router "puff/router"
 	"time"
@@ -20,25 +19,32 @@ type Config struct {
 
 type App struct {
 	*Config
-	Routes  []route.Route
-	Routers []*router.Router
+	// Routes  []route.Route
+	Router router.Router //This is the root router. All other routers will work underneath this.
 	// Middlewares
 }
 
 func (a *App) IncludeRouter(r *router.Router) {
-	a.Routers = append(a.Routers, r)
+	a.Router.Add(r)
 }
 
-func indexPage() interface{} { // FIX ME: Written temporarily only for tests.
-	return response.HTMLResponse{
-		Content: "<h1> hello world </h1> <p> this is a temporary index page </p>",
+func getAllRoutes(rtr *router.Router, prefix string) []*route.Route {
+	var routes []*route.Route
+	for _, route := range rtr.Routes {
+		route.Path = fmt.Sprintf("%s %s%s", route.Protocol, prefix, route.Path) //ex: GET /food/cheese/swiss
+		if route.Protocol == "GET" && route.Fields != nil {
+			for _, field := range route.Fields {
+				route.Path += fmt.Sprintf("/{%s}", field.Name)
+			}
+		}
+		routes = append(routes, &route)
 	}
+	for _, rt := range rtr.Routers {
+		prefix += rt.Prefix
+		routes = append(routes, getAllRoutes(rt, prefix)...)
+	}
+	return routes
 }
-
-func (a *App) sendToHandler(w http.ResponseWriter, req *http.Request) {
-	handler.Handler(w, req, indexPage)
-}
-
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
@@ -57,8 +63,12 @@ func (a *App) ListenAndServe() {
 	mux := http.NewServeMux()
 	router := loggingMiddleware(mux)
 
-	mux.HandleFunc("/", a.sendToHandler)
-
+	routes := getAllRoutes(&a.Router, a.Router.Prefix)
+	for _, route := range routes {
+		mux.HandleFunc(route.Path, func(w http.ResponseWriter, req *http.Request) {
+			handler.Handler(w, req, route)
+		})
+	}
 	addr := ""
 	if a.Network {
 		addr += "0.0.0.0"
