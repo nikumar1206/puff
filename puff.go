@@ -6,17 +6,19 @@ import (
 )
 
 func App(config app.Config) *app.App {
+	if config.Port == 0 {
+		config.Port = 8000
+	}
+
+	logger.DefaultLogger()
 	return &app.App{Config: &config}
 }
 
 func DefaultApp() *app.App {
-	// FIX_ME: reload bool should pick up from APP_ENV
-
 	logger.DefaultLogger()
 
 	c := app.Config{
 		Network: true,
-		Reload:  true,
 		Port:    8000,
 	}
 
