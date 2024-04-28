@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	handler "puff/handler"
+	openapi "puff/openapi"
 	response "puff/response"
 	route "puff/route"
 	router "puff/router"
@@ -12,9 +13,9 @@ import (
 )
 
 type Config struct {
-	Network bool   // host to the entire network?
-	Port    int    // port number to use
-	Name    string // the name of the project, defaults to "Puff API"
+	Network bool // host to the entire network?
+	Port    int  // port number to use
+	OpenAPI *openapi.OpenAPI
 }
 
 type App struct {
