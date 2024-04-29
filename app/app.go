@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	handler "puff/handler"
-	openapi "puff/openapi"
-	route "puff/route"
-	router "puff/router"
-	"time"
+
+	"github.com/nikumar1206/puff/handler"
+	"github.com/nikumar1206/puff/middleware"
+	"github.com/nikumar1206/puff/openapi"
+	"github.com/nikumar1206/puff/route"
+	"github.com/nikumar1206/puff/router"
 )
 
 type Config struct {
@@ -19,57 +20,44 @@ type Config struct {
 
 type App struct {
 	*Config
-	// Routes  []route.Route
-	Router router.Router //This is the root router. All other routers will work underneath this.
-	// Middlewares
+	RootRouter *router.Router // This is the root router. All other routers will work underneath this.
+	// TODO: Middlewares
 }
 
-func (a *App) IncludeRouter(r *router.Router) {
-	a.Router.Add(r)
-}
-
-func getAllRoutes(rtr *router.Router, prefix string) []*route.Route {
+// gets all routes for a router
+func (a *App) GetRoutes(r *router.Router, prefix string) []*route.Route {
 	var routes []*route.Route
-	for _, route := range rtr.Routes {
-		route.Path = fmt.Sprintf("%s %s%s", route.Protocol, prefix, route.Path) //ex: GET /food/cheese/swiss
-		if route.Protocol == "GET" && route.Fields != nil {
-			for _, field := range route.Fields {
-				route.Path += fmt.Sprintf("/{%s}", field.Name)
-			}
-		}
+	prefix += r.Prefix
+
+	for _, route := range r.Routes {
+		route.Path = prefix + route.Path
+		route.Pattern = route.Protocol + " " + route.Path
 		routes = append(routes, &route)
 	}
-	for _, rt := range rtr.Routers {
-		prefix += rt.Prefix
-		routes = append(routes, getAllRoutes(rt, prefix)...)
+
+	for _, subRouter := range r.Routers {
+		routes = append(routes, a.GetRoutes(subRouter, prefix)...)
 	}
 	return routes
-}
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
-		next.ServeHTTP(w, r)
-		processingTime := time.Since(startTime).String()
-		slog.Info(
-			"HTTP Request",
-			slog.String("HTTP METHOD", r.Method),
-			slog.String("URL", r.URL.String()),
-			slog.String("Processing Time", processingTime),
-		)
-	})
 }
 
 func (a *App) ListenAndServe() {
 	mux := http.NewServeMux()
-	router := loggingMiddleware(mux)
+	router := middleware.LoggingMiddleware(mux)
 
-	routes := getAllRoutes(&a.Router, a.Router.Prefix)
+	routes := a.GetRoutes(a.RootRouter, "")
+
+	for _, r := range routes {
+		slog.Info(fmt.Sprintf("Serving route: %s", r.Pattern))
+	}
+
 	for _, route := range routes {
-		mux.HandleFunc(route.Path, func(w http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc(route.Pattern, func(w http.ResponseWriter, req *http.Request) {
 			handler.Handler(w, req, route)
 		})
 	}
-	addr := ""
+
+	var addr string
 	if a.Network {
 		addr += "0.0.0.0"
 	}

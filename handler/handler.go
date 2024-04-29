@@ -4,50 +4,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"puff/field"
-	"puff/request"
-	response "puff/response"
-	"puff/route"
-	"strconv"
+
+	"github.com/nikumar1206/puff/request"
+	"github.com/nikumar1206/puff/response"
+	"github.com/nikumar1206/puff/route"
 )
 
-func resolveStatusCode(sc int) int {
+func resolveStatusCode(sc int, method string) int {
 	if sc == 0 {
-		return 200
+		switch method {
+		case http.MethodGet:
+			return 200
+		case http.MethodPost:
+			return 201
+		case http.MethodPut:
+			return 204
+		case http.MethodDelete:
+			return 200
+		default:
+			return 200 // Default to 200 for unknown methods
+		}
 	}
 	return sc
 }
 
 func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 	requestDetails := request.Request{}
-	var fields map[string]interface{}
-	fields = make(map[string]interface{})
-	for _, routeField := range route.Fields {
-		var value string
-		if req.Method == "GET" {
-			value = req.PathValue(routeField.Name)
-		} else if req.Method == "POST" || req.Method == "PUT" || req.Method == "PATH" { //these are the only methods that allow for req.PostForm
-			value = req.PostForm.Get(routeField.Name)
-		}
-		if value == "" {
-			http.Error(w, routeField.MissingFieldError(), 422)
-		}
-		if !routeField.Validate(value) {
-			http.Error(w, routeField.TypeValidationError(), 422)
-			return
-		}
-		var typedVal interface{} = value
-		pstt := field.ParseStringToType(value)
-		switch pstt {
-		case "int":
-			typedVal, _ = strconv.Atoi(value)
-		case "bool":
-			typedVal, _ = strconv.ParseBool(value)
-		}
-		fields[routeField.Name] = typedVal
-	}
-	requestDetails.Fields = fields
-	res := route.Handler(requestDetails) // FIX ME: we should give the user handle function a request body as well
+
+	res := route.Handler(
+		requestDetails,
+	) // FIX ME: we should give the user handle function a request body as well
 	var (
 		contentType string
 		content     string
@@ -55,7 +41,7 @@ func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 	)
 	switch r := res.(type) {
 	case response.JSONResponse:
-		statusCode = resolveStatusCode(r.StatusCode)
+		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "application/json"
 		contentBytes, err := json.Marshal(r.Content)
 		if err != nil {
@@ -64,11 +50,11 @@ func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 		}
 		content = string(contentBytes)
 	case response.HTMLResponse:
-		statusCode = resolveStatusCode(r.StatusCode)
+		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/html"
 		content = r.Content
 	case response.Response:
-		statusCode = resolveStatusCode(r.StatusCode)
+		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/plain"
 		content = r.Content
 	}
