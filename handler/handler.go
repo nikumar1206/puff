@@ -28,6 +28,12 @@ func resolveStatusCode(sc int, method string) int {
 	return sc
 }
 
+func resolveContentType(ct string) string {
+	if ct == "" {
+		return "text/plain"
+	}
+	return ct
+}
 func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 	requestDetails := request.Request{}
 

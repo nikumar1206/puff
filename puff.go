@@ -10,6 +10,9 @@ func App(c *app.Config) *app.App {
 	r := &router.Router{
 		Prefix: "",
 	}
+	if c.Version == "" {
+		c.Version = "1.0.0"
+	}
 
 	return &app.App{
 		Config:     c,
@@ -21,8 +24,11 @@ func DefaultApp() *app.App {
 	logger.DefaultPuffLogger()
 
 	c := app.Config{
-		Network: true,
-		Port:    8000,
+		Version:     "1.0.0",
+		Name:        "Untitled",
+		Network:     true,
+		Port:        8000,
+		OpenAPIDocs: true,
 	}
 
 	return App(&c)
