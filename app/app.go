@@ -107,7 +107,7 @@ func (a *App) ListenAndServe() {
 	a.AddOpenAPIDocs(mux, routes)
 
 	//Listen and Serve
-	addr := ""
+	var addr string
 	if a.Network {
 		addr += "0.0.0.0"
 	}
