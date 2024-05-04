@@ -2,17 +2,15 @@ package main
 
 import (
 	"github.com/nikumar1206/puff/app"
-	"github.com/nikumar1206/puff/router"
-
 	"github.com/nikumar1206/puff/logger"
+	"github.com/nikumar1206/puff/router"
 )
 
-func App(c *app.Config, r *router.Router) *app.App {
-	if r == nil {
-		r = &router.Router{
-			Prefix: "",
-		}
+func App(c *app.Config) *app.App {
+	r := &router.Router{
+		Prefix: "",
 	}
+
 	return &app.App{
 		Config:     c,
 		RootRouter: r,
@@ -27,8 +25,5 @@ func DefaultApp() *app.App {
 		Port:    8000,
 	}
 
-	r := router.Router{
-		Prefix: "/api",
-	}
-	return App(&c, &r)
+	return App(&c)
 }

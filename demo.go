@@ -22,7 +22,7 @@ func main() {
 	app := DefaultApp()
 
 	app.RootRouter.GET(
-		"",
+		"/",
 
 		"index route that says hello world",
 		ex_rh,
