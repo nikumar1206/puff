@@ -22,24 +22,13 @@ func (r *Router) registerRoute(
 ) {
 	newRoute := route.Route{
 		RouterName: r.Name,
-		Path:     path,
-		Handler:  handleFunc,
-		Protocol: method,
-		Pattern:  method + " " + path,
+		Path:       path,
+		Handler:    handleFunc,
+		Protocol:   method,
+		Pattern:    method + " " + path,
 	}
 	r.Routes = append(r.Routes, newRoute)
 }
-func (a *Router) POST(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
-	newRoute := route.Route{
-		RouterName:  a.Name,
-		Protocol:    "POST",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
-	}
-	a.Routes = append(a.Routes, newRoute)
-
 func (r *Router) GET(
 	path string,
 	description string,
@@ -55,16 +44,6 @@ func (r *Router) POST(
 ) {
 	r.registerRoute(http.MethodPost, path, handleFunc)
 }
-func (a *Router) PUT(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
-	newRoute := route.Route{
-		RouterName:  a.Name,
-		Protocol:    "PUT",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
-	}
-	a.Routes = append(a.Routes, newRoute)
 
 func (r *Router) PUT(
 	path string,
@@ -73,16 +52,6 @@ func (r *Router) PUT(
 ) {
 	r.registerRoute(http.MethodPut, path, handleFunc)
 }
-func (a *Router) PATCH(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
-	newRoute := route.Route{
-		RouterName:  a.Name,
-		Protocol:    "POST",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
-	}
-	a.Routes = append(a.Routes, newRoute)
 
 func (r *Router) PATCH(
 	path string,
@@ -92,7 +61,7 @@ func (r *Router) PATCH(
 	r.registerRoute(http.MethodPatch, path, handleFunc)
 }
 
-func (r *Router) AddRouter(rt *Router) *Router {
+func (r *Router) IncludeRouter(rt *Router) *Router {
 	r.Routers = append(r.Routers, rt)
 	return rt
 }

@@ -1,4 +1,4 @@
-package puff
+package main
 
 import (
 	"github.com/nikumar1206/puff/app"
@@ -10,8 +10,8 @@ func App(c *app.Config) *app.App {
 	r := &router.Router{
 		Prefix: "",
 	}
-	if config.Version == "" {
-		config.Version = "1.0.0"
+	if c.Version == "" {
+		c.Version = "1.0.0"
 	}
 
 	return &app.App{

@@ -3,9 +3,10 @@ package openapi
 import (
 	"encoding/json"
 	"fmt"
-	"puff/route"
 	"slices"
 	"strings"
+
+	"github.com/nikumar1206/puff/route"
 )
 
 type License struct {

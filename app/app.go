@@ -8,6 +8,8 @@ import (
 	"github.com/nikumar1206/puff/handler"
 	"github.com/nikumar1206/puff/middleware"
 	"github.com/nikumar1206/puff/openapi"
+	"github.com/nikumar1206/puff/request"
+	"github.com/nikumar1206/puff/response"
 	"github.com/nikumar1206/puff/route"
 	"github.com/nikumar1206/puff/router"
 )
@@ -44,15 +46,14 @@ func (a *App) GetRoutes(r *router.Router, prefix string) []*route.Route {
 }
 
 func (a *App) IncludeRouter(r *router.Router) {
-	a.RootRouter.AddRouter(r)
+	a.RootRouter.IncludeRouter(r)
 }
 
 func (a *App) AddOpenAPIDocs(mux *http.ServeMux, routes []*route.Route) {
 	if a.OpenAPIDocs {
 		spec, err := openapi.GenerateOpenAPISpec(a.Name, a.Version, routes)
-		fmt.Println(spec)
 		if err != nil {
-			slog.Error("Generating the OpenAPISpec failed. Error: %s", err.Error())
+			slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
 			return
 		}
 		openAPIDocsRoute := route.Route{
@@ -60,7 +61,6 @@ func (a *App) AddOpenAPIDocs(mux *http.ServeMux, routes []*route.Route) {
 			Path:        "/api/docs/docs.json",
 			Pattern:     "GET /api/docs/docs.json",
 			Description: "Recieve Docs as JSON.",
-			Fields:      nil,
 			Handler: func(req request.Request) interface{} {
 				res := response.Response{
 					Content: spec,
@@ -74,7 +74,6 @@ func (a *App) AddOpenAPIDocs(mux *http.ServeMux, routes []*route.Route) {
 			Path:        "/api/docs",
 			Pattern:     "GET /api/docs",
 			Description: "Display the OpenAPI Docs in Spotlight.",
-			Fields:      nil,
 			Handler: func(req request.Request) interface{} {
 				return response.HTMLResponse{
 					Content: openapi.GenerateOpenAPIUI(spec, "OpenAPI Spec"),
@@ -99,10 +98,8 @@ func (a *App) ListenAndServe() {
 
 	routes := a.GetRoutes(a.RootRouter, "")
 
-	//Handle Routing
-	routes := getAllRoutes(&a.Router, a.Router.Prefix)
-
 	for _, route := range routes {
+		slog.Info(fmt.Sprintf("Serving route: %s", route.Pattern))
 		muxAddHandleFunc(mux, route)
 	}
 

@@ -28,7 +28,7 @@ func main() {
 		ex_rh,
 	)
 
-	v1Router := app.RootRouter.AddRouter(&router.Router{Prefix: "/v1"})
+	v1Router := app.RootRouter.IncludeRouter(&router.Router{Prefix: "/v1"})
 
 	v1Router.GET("/food", "hello there", ex2_rh)
 
