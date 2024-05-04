@@ -69,14 +69,14 @@ func InitLogger(c *Config) *slog.Logger {
 			),
 		)
 	case false:
-		logger = DefaultLogger()
+		logger = DefaultPuffLogger()
 	}
 
 	slog.SetDefault(logger)
 	return logger
 }
 
-func DefaultLogger() *slog.Logger {
+func DefaultPuffLogger() *slog.Logger {
 	opts := slog.HandlerOptions{
 		AddSource: true,
 	}

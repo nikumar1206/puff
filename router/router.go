@@ -1,9 +1,10 @@
 package router
 
 import (
-	field "puff/field"
-	request "puff/request"
-	route "puff/route"
+	"net/http"
+
+	"github.com/nikumar1206/puff/request"
+	"github.com/nikumar1206/puff/route"
 )
 
 type Router struct {
@@ -13,47 +14,53 @@ type Router struct {
 	// middlewares []Middleware
 }
 
-func (a *Router) GET(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
+func (r *Router) registerRoute(
+	method string,
+	path string,
+	handleFunc func(request.Request) interface{},
+) {
 	newRoute := route.Route{
-		Protocol:    "GET",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
+		Path:     path,
+		Handler:  handleFunc,
+		Protocol: method,
+		Pattern:  method + " " + path,
 	}
-	a.Routes = append(a.Routes, newRoute)
-}
-func (a *Router) POST(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
-	newRoute := route.Route{
-		Protocol:    "POST",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
-	}
-	a.Routes = append(a.Routes, newRoute)
-}
-func (a *Router) PUT(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
-	newRoute := route.Route{
-		Protocol:    "PUT",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
-	}
-	a.Routes = append(a.Routes, newRoute)
-}
-func (a *Router) PATCH(path string, description string, fields []field.Field, handleFunc func(request.Request) interface{}) {
-	newRoute := route.Route{
-		Protocol:    "POST",
-		Path:        path,
-		Description: description,
-		Fields:      fields,
-		Handler:     handleFunc,
-	}
-	a.Routes = append(a.Routes, newRoute)
+	r.Routes = append(r.Routes, newRoute)
 }
 
-func (a *Router) Add(rt *Router) {
-	a.Routers = append(a.Routers, rt)
+func (r *Router) GET(
+	path string,
+	description string,
+	handleFunc func(request.Request) interface{},
+) {
+	r.registerRoute(http.MethodGet, path, handleFunc)
+}
+
+func (r *Router) POST(
+	path string,
+	description string,
+	handleFunc func(request.Request) interface{},
+) {
+	r.registerRoute(http.MethodPost, path, handleFunc)
+}
+
+func (r *Router) PUT(
+	path string,
+	description string,
+	handleFunc func(request.Request) interface{},
+) {
+	r.registerRoute(http.MethodPut, path, handleFunc)
+}
+
+func (r *Router) PATCH(
+	path string,
+	description string,
+	handleFunc func(request.Request) interface{},
+) {
+	r.registerRoute(http.MethodPatch, path, handleFunc)
+}
+
+func (r *Router) AddRouter(rt *Router) *Router {
+	r.Routers = append(r.Routers, rt)
+	return rt
 }

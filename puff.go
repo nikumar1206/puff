@@ -1,26 +1,29 @@
 package main
 
 import (
-	app "puff/app"
-	"puff/logger"
+	"github.com/nikumar1206/puff/app"
+	"github.com/nikumar1206/puff/logger"
+	"github.com/nikumar1206/puff/router"
 )
 
-func App(config app.Config) *app.App {
-	if config.Port == 0 {
-		config.Port = 8000
+func App(c *app.Config) *app.App {
+	r := &router.Router{
+		Prefix: "",
 	}
 
-	logger.DefaultLogger()
-	return &app.App{Config: &config}
+	return &app.App{
+		Config:     c,
+		RootRouter: r,
+	}
 }
 
 func DefaultApp() *app.App {
-	logger.DefaultLogger()
+	logger.DefaultPuffLogger()
 
 	c := app.Config{
 		Network: true,
 		Port:    8000,
 	}
 
-	return App(c)
+	return App(&c)
 }
