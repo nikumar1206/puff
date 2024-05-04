@@ -21,7 +21,7 @@ type Config struct {
 type App struct {
 	*Config
 	RootRouter *router.Router // This is the root router. All other routers will work underneath this.
-	// TODO: Middlewares
+	// add middlewares
 }
 
 // gets all routes for a router

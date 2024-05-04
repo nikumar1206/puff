@@ -7,7 +7,7 @@ import (
 	"github.com/nikumar1206/puff/logger"
 )
 
-func NewApp(c *app.Config, r *router.Router) *app.App {
+func App(c *app.Config, r *router.Router) *app.App {
 	if r == nil {
 		r = &router.Router{
 			Prefix: "",
@@ -30,5 +30,5 @@ func DefaultApp() *app.App {
 	r := router.Router{
 		Prefix: "/api",
 	}
-	return NewApp(&c, &r)
+	return App(&c, &r)
 }

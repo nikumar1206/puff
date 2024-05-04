@@ -17,6 +17,8 @@ func example_route_handler(req request.Request) interface{} {
 
 func TestApp(t *testing.T) {
 	example_app := DefaultApp()
+
+	example_app := DefaultApp()
 	example_router := router.Router{}
 
 	example_router.GET(
@@ -24,6 +26,6 @@ func TestApp(t *testing.T) {
 		"index route that says hello world",
 		example_route_handler,
 	)
-	example_app.IncludeRouter(&example_router)
+	example_app.RootRouter.AddRouter(&example_router)
 	example_app.ListenAndServe()
 }
