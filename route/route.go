@@ -6,8 +6,10 @@ import (
 )
 
 type Route struct {
-	Protocol string
-	Path     string
+	RouterName string
+	Protocol   string
+	Path       string
+	Pattern    string
 	// handle      func(*http.Request) //their handle function
 	Description string
 	Fields      []field.Field // should have a name, type, description
