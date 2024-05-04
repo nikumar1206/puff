@@ -41,17 +41,18 @@ func (a *App) GetRoutes(r *router.Router, prefix string) []*route.Route {
 	return routes
 }
 
+func (a *App) IncludeRouter(r *router.Router) {
+	a.RootRouter.AddRouter(r)
+}
+
 func (a *App) ListenAndServe() {
 	mux := http.NewServeMux()
 	router := middleware.LoggingMiddleware(mux)
 
 	routes := a.GetRoutes(a.RootRouter, "")
 
-	for _, r := range routes {
-		slog.Info(fmt.Sprintf("Serving route: %s", r.Pattern))
-	}
-
 	for _, route := range routes {
+		slog.Info(fmt.Sprintf("Serving route: %s", route.Pattern))
 		mux.HandleFunc(route.Pattern, func(w http.ResponseWriter, req *http.Request) {
 			handler.Handler(w, req, route)
 		})
