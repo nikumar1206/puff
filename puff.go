@@ -1,24 +1,27 @@
 package puff
 
 import (
-	app "puff/app"
-	"puff/logger"
+	"github.com/nikumar1206/puff/app"
+	"github.com/nikumar1206/puff/logger"
+	"github.com/nikumar1206/puff/router"
 )
 
-func App(config app.Config) *app.App {
-	if config.Port == 0 {
-		config.Port = 8000
+func App(c *app.Config) *app.App {
+	r := &router.Router{
+		Prefix: "",
 	}
 	if config.Version == "" {
 		config.Version = "1.0.0"
 	}
 
-	logger.DefaultLogger()
-	return &app.App{Config: &config}
+	return &app.App{
+		Config:     c,
+		RootRouter: r,
+	}
 }
 
 func DefaultApp() *app.App {
-	logger.DefaultLogger()
+	logger.DefaultPuffLogger()
 
 	c := app.Config{
 		Version:     "1.0.0",
@@ -28,5 +31,5 @@ func DefaultApp() *app.App {
 		OpenAPIDocs: true,
 	}
 
-	return App(c)
+	return App(&c)
 }

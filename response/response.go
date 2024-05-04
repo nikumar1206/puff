@@ -15,6 +15,7 @@ type HTMLResponse struct { // the difference between this and Response is that t
 	StatusCode int
 	Content    string
 }
+
 type Response struct { // while this has a content-type of text/plain
 	StatusCode  int
 	Content     string
