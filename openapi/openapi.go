@@ -75,6 +75,7 @@ type OpenAPI struct {
 	Info        Info                              `json:"info"`
 	Servers     []Server                          `json:"servers"`
 	Paths       map[string]map[string]interface{} `json:"paths"` // the string key is the path
+	Tags        []Tag                             `json:"tags"`
 }
 
 var OPENAPI_UI string = `
@@ -142,10 +143,7 @@ func GenerateOpenAPISpec(
 	for _, r := range appRoutes {
 		if !slices.Contains(tagNames, r.RouterName) {
 			tagNames = append(tagNames, r.RouterName)
-			tags = append(
-				tags,
-				Tag{Name: r.RouterName, Description: "replace this: line 138 openapi.go"},
-			)
+			tags = append(tags, Tag{Name: r.RouterName, Description: ""})
 		}
 		pathMethod := Method{
 			Summary:     "",
@@ -153,7 +151,7 @@ func GenerateOpenAPISpec(
 			Tags:        []string{r.RouterName},
 			Parameters:  []Parameter{},
 			Responses:   map[string]Response{},
-			Description: "whoops forgot to add desc",
+			Description: r.Description,
 		}
 		if paths[r.Path] == nil {
 			paths[r.Path] = make(map[string]interface{})
@@ -169,6 +167,7 @@ func GenerateOpenAPISpec(
 		SpecVersion: "3.1.0",
 		Info:        info,
 		Servers:     []Server{},
+		Tags:        tags,
 		// FIX ME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
 		// FIX ME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
 		Paths: paths,
