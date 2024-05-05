@@ -19,13 +19,15 @@ func (r *Router) registerRoute(
 	method string,
 	path string,
 	handleFunc func(request.Request) interface{},
+	description string,
 ) {
 	newRoute := route.Route{
-		RouterName: r.Name,
-		Path:       path,
-		Handler:    handleFunc,
-		Protocol:   method,
-		Pattern:    method + " " + path,
+		RouterName:  r.Name,
+		Description: description,
+		Path:        path,
+		Handler:     handleFunc,
+		Protocol:    method,
+		Pattern:     method + " " + path,
 	}
 	r.Routes = append(r.Routes, newRoute)
 }
@@ -34,7 +36,7 @@ func (r *Router) GET(
 	description string,
 	handleFunc func(request.Request) interface{},
 ) {
-	r.registerRoute(http.MethodGet, path, handleFunc)
+	r.registerRoute(http.MethodGet, path, handleFunc, description)
 }
 
 func (r *Router) POST(
@@ -42,7 +44,7 @@ func (r *Router) POST(
 	description string,
 	handleFunc func(request.Request) interface{},
 ) {
-	r.registerRoute(http.MethodPost, path, handleFunc)
+	r.registerRoute(http.MethodPost, path, handleFunc, description)
 }
 
 func (r *Router) PUT(
@@ -50,7 +52,7 @@ func (r *Router) PUT(
 	description string,
 	handleFunc func(request.Request) interface{},
 ) {
-	r.registerRoute(http.MethodPut, path, handleFunc)
+	r.registerRoute(http.MethodPut, path, handleFunc, description)
 }
 
 func (r *Router) PATCH(
@@ -58,7 +60,7 @@ func (r *Router) PATCH(
 	description string,
 	handleFunc func(request.Request) interface{},
 ) {
-	r.registerRoute(http.MethodPatch, path, handleFunc)
+	r.registerRoute(http.MethodPatch, path, handleFunc, description)
 }
 
 func (r *Router) IncludeRouter(rt *Router) *Router {

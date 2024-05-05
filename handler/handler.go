@@ -63,6 +63,9 @@ func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/plain"
 		content = r.Content
+	default:
+		http.Error(w, "The response type provided to handle this request is invalid.", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(statusCode)
