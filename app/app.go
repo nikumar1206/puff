@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/nikumar1206/puff/handler"
-	"github.com/nikumar1206/puff/middleware"
 	"github.com/nikumar1206/puff/openapi"
 	"github.com/nikumar1206/puff/request"
 	"github.com/nikumar1206/puff/response"
@@ -15,17 +14,17 @@ import (
 )
 
 type Config struct {
-	Network     bool   // host to the entire network?
-	Port        int    // port number to use
-	Name        string //title for OpenAPI spec
-	Version     string //ex. 1.0.0, default: 1.0.0
-	OpenAPIDocs bool
+	Network bool   // host to the entire network?
+	Port    int    // port number to use
+	Name    string // title for OpenAPI spec
+	Version string // ex. 1.0.0, default: 1.0.0
+	DocsURL string
 }
 
 type App struct {
 	*Config
-	RootRouter *router.Router // This is the root router. All other routers will work underneath this.
-	// add middlewares
+	RootRouter  *router.Router // This is the root router. All other routers will work underneath this.
+	Middlewares *[]func(http.Handler) http.Handler
 }
 
 // gets all routes for a router
@@ -50,39 +49,40 @@ func (a *App) IncludeRouter(r *router.Router) {
 }
 
 func (a *App) AddOpenAPIDocs(mux *http.ServeMux, routes []*route.Route) {
-	if a.OpenAPIDocs {
-		spec, err := openapi.GenerateOpenAPISpec(a.Name, a.Version, routes)
-		if err != nil {
-			slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
-			return
-		}
-		openAPIDocsRoute := route.Route{
-			Protocol:    "GET",
-			Path:        "/api/docs/docs.json",
-			Pattern:     "GET /api/docs/docs.json",
-			Description: "Recieve Docs as JSON.",
-			Handler: func(req request.Request) interface{} {
-				res := response.Response{
-					Content: spec,
-				}
-				res.ContentType = "application/json"
-				return res
-			},
-		}
-		openAPIUIDocsRoute := route.Route{
-			Protocol:    "GET",
-			Path:        "/api/docs",
-			Pattern:     "GET /api/docs",
-			Description: "Display the OpenAPI Docs in Spotlight.",
-			Handler: func(req request.Request) interface{} {
-				return response.HTMLResponse{
-					Content: openapi.GenerateOpenAPIUI(spec, "OpenAPI Spec"),
-				}
-			},
-		}
-		muxAddHandleFunc(mux, &openAPIDocsRoute)
-		muxAddHandleFunc(mux, &openAPIUIDocsRoute)
+	if a.DocsURL == "" {
+		return
 	}
+	spec, err := openapi.GenerateOpenAPISpec(a.Name, a.Version, routes)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
+		return
+	}
+	openAPIDocsRoute := route.Route{
+		Protocol:    "GET",
+		Path:        a.DocsURL + ".json",
+		Pattern:     "GET " + a.DocsURL + ".json",
+		Description: "Recieve Docs as JSON.",
+		Handler: func(req request.Request) interface{} {
+			res := response.Response{
+				Content: spec,
+			}
+			res.ContentType = "application/json"
+			return res
+		},
+	}
+	openAPIUIDocsRoute := route.Route{
+		Protocol:    "GET",
+		Path:        a.DocsURL,
+		Pattern:     "GET " + a.DocsURL,
+		Description: "Display the OpenAPI Docs in Spotlight.",
+		Handler: func(req request.Request) interface{} {
+			return response.HTMLResponse{
+				Content: openapi.GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
+			}
+		},
+	}
+	muxAddHandleFunc(mux, &openAPIDocsRoute)
+	muxAddHandleFunc(mux, &openAPIUIDocsRoute)
 }
 
 // Adds a route.Route to mux
@@ -94,7 +94,10 @@ func muxAddHandleFunc(mux *http.ServeMux, route *route.Route) {
 
 func (a *App) ListenAndServe() {
 	mux := http.NewServeMux()
-	router := middleware.LoggingMiddleware(mux)
+
+	for _, m := range *a.Middlewares {
+		m(mux)
+	}
 
 	routes := a.GetRoutes(a.RootRouter, "")
 
@@ -103,10 +106,10 @@ func (a *App) ListenAndServe() {
 		muxAddHandleFunc(mux, route)
 	}
 
-	//Add OpenAPISpec
+	// Add OpenAPISpec
 	a.AddOpenAPIDocs(mux, routes)
 
-	//Listen and Serve
+	// Listen and Serve
 	var addr string
 	if a.Network {
 		addr += "0.0.0.0"
@@ -115,5 +118,5 @@ func (a *App) ListenAndServe() {
 
 	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
 
-	http.ListenAndServe(addr, router)
+	http.ListenAndServe(addr, mux)
 }

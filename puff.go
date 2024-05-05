@@ -24,11 +24,11 @@ func DefaultApp() *app.App {
 	logger.DefaultPuffLogger()
 
 	c := app.Config{
-		Version:     "1.0.0",
-		Name:        "Untitled",
-		Network:     true,
-		Port:        8000,
-		OpenAPIDocs: true,
+		Version: "1.0.0",
+		Name:    "Untitled",
+		Network: true,
+		Port:    8000,
+		DocsURL: "/docs",
 	}
 
 	return App(&c)

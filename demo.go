@@ -13,8 +13,8 @@ func ex_rh(req request.Request) interface{} {
 }
 
 func ex2_rh(req request.Request) interface{} {
-	return response.HTMLResponse{
-		Content: "<h1>hello there from cheese</h1>",
+	return response.JSONResponse{
+		Content: map[string]interface{}{"hello there": "cheese;", "bloop": "scoop"},
 	}
 }
 
@@ -23,7 +23,6 @@ func main() {
 
 	app.RootRouter.GET(
 		"/",
-
 		"index route that says hello world",
 		ex_rh,
 	)

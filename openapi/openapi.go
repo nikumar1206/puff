@@ -10,11 +10,11 @@ import (
 )
 
 type License struct {
-	Name string `json:"name"` //MIT, CC-BY-0, etc.
+	Name string `json:"name"` // MIT, CC-BY-0, etc.
 	Url  string `json:"url"`
 }
 type Info struct {
-	Version string  `json:"version"` //ex. 1.0.0
+	Version string  `json:"version"` // ex. 1.0.0
 	Title   string  `json:"title"`
 	License License `json:"license"`
 	// add licensing here
@@ -33,7 +33,7 @@ type Tag struct {
 //	}
 type Parameter struct {
 	Name        string `json:"url"`
-	In          string `json:"in"` //path, query, header, cookie
+	In          string `json:"in"` // path, query, header, cookie
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
 	// Schema      Schema `json:"schema"`
@@ -43,8 +43,9 @@ type Response struct {
 	Description string
 	// Headers []Header
 	// Content []Content
-	//Fix Me: https://swagger.io/specification/#responses-object
+	// Fix Me: https://swagger.io/specification/#responses-object
 }
+
 type Get struct {
 	*Method `json:"get"`
 }
@@ -66,14 +67,14 @@ type Method struct {
 	Description string              `json:"description"`
 	Responses   map[string]Response `json:"responses"`
 	Deprecated  bool                `json:"deprecated"`
-	//FIX ME: Request-Body
+	// FIX ME: Request-Body
 }
 
 type OpenAPI struct {
-	SpecVersion string                            `json:"openapi"` //this is the version, should be 3.1.0
+	SpecVersion string                            `json:"openapi"` // this is the version, should be 3.1.0
 	Info        Info                              `json:"info"`
 	Servers     []Server                          `json:"servers"`
-	Paths       map[string]map[string]interface{} `json:"paths"` //the string key is the path
+	Paths       map[string]map[string]interface{} `json:"paths"` // the string key is the path
 }
 
 var OPENAPI_UI string = `
@@ -100,7 +101,7 @@ var OPENAPI_UI string = `
     <script src="//unpkg.com/swagger-editor@5.0.0-alpha.86/dist/umd/swagger-editor.js"></script>
     <script>
       SwaggerUIBundle({
-        url: '/api/docs/docs.json',
+        url: "%s",
         dom_id: '#swagger-ui',
         presets: [
           SwaggerUIBundle.presets.apis,
@@ -125,18 +126,26 @@ var OPENAPI_UI string = `
 </html>
 `
 
-func GenerateOpenAPIUI(document string, title string) string {
-	return fmt.Sprintf(OPENAPI_UI, title)
+func GenerateOpenAPIUI(document, title, docsURL string) string {
+	fmt.Println("WHAT IS DOCS", docsURL)
+	return fmt.Sprintf(OPENAPI_UI, title, docsURL)
 }
 
-func GenerateOpenAPISpec(appName string, appVersion string, appRoutes []*route.Route) (string, error) {
+func GenerateOpenAPISpec(
+	appName string,
+	appVersion string,
+	appRoutes []*route.Route,
+) (string, error) {
 	var tags []Tag
 	var tagNames []string
 	var paths map[string]map[string]interface{} = make(map[string]map[string]interface{})
 	for _, r := range appRoutes {
 		if !slices.Contains(tagNames, r.RouterName) {
 			tagNames = append(tagNames, r.RouterName)
-			tags = append(tags, Tag{Name: r.RouterName, Description: "replace this: line 138 openapi.go"})
+			tags = append(
+				tags,
+				Tag{Name: r.RouterName, Description: "replace this: line 138 openapi.go"},
+			)
 		}
 		pathMethod := Method{
 			Summary:     "",
@@ -160,8 +169,8 @@ func GenerateOpenAPISpec(appName string, appVersion string, appRoutes []*route.R
 		SpecVersion: "3.1.0",
 		Info:        info,
 		Servers:     []Server{},
-		//FIX ME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
-		//FIX ME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
+		// FIX ME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
+		// FIX ME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
 		Paths: paths,
 	}
 	openapiJSON, err := json.Marshal(openapi)
