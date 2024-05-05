@@ -1,15 +1,11 @@
-package main
+package puff
 
 import (
 	"testing"
-
-	"github.com/nikumar1206/puff/request"
-	"github.com/nikumar1206/puff/response"
-	"github.com/nikumar1206/puff/router"
 )
 
-func example_route_handler(req request.Request) interface{} {
-	return response.HTMLResponse{
+func example_route_handler(req Request) interface{} {
+	return HTMLResponse{
 		Content: "<h1>hello there</h1>",
 	}
 }
@@ -17,7 +13,7 @@ func example_route_handler(req request.Request) interface{} {
 func TestApp(t *testing.T) {
 	example_app := DefaultApp()
 
-	example_router := router.Router{}
+	example_router := Router{}
 
 	example_router.GET(
 		"",
