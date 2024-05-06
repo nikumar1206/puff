@@ -113,6 +113,5 @@ func (a *PuffApp) ListenAndServe() {
 	addr += fmt.Sprintf(":%d", a.Port)
 
 	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
-
 	http.ListenAndServe(addr, router)
 }

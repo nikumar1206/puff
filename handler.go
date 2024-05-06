@@ -30,6 +30,7 @@ func resolveContentType(ct string) string {
 	}
 	return ct
 }
+
 func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 	requestDetails := Request{}
 
@@ -65,7 +66,6 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		http.Error(w, "The response type provided to handle this request is invalid.", http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(statusCode)
 	w.Header().Add("Content-Type", contentType)
 	fmt.Fprint(w, content)

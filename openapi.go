@@ -89,7 +89,6 @@ var OPENAPI_UI string = `
     <title>%s</title>
   </head>
   <body style="margin:0; padding:0;">
-  <div style="position: absolute; top: 0; left:0; width: 100vw; height: 20px; background:black;"></div>
     <section id="swagger-ui"></section>
     <script src="//unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
     <script src="//unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
