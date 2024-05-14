@@ -1,4 +1,4 @@
-package field
+package puff
 
 type Field struct {
 	Name        string

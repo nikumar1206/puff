@@ -1,13 +1,9 @@
-package handler
+package puff
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/nikumar1206/puff/request"
-	"github.com/nikumar1206/puff/response"
-	"github.com/nikumar1206/puff/route"
 )
 
 func resolveStatusCode(sc int, method string) int {
@@ -34,8 +30,9 @@ func resolveContentType(ct string) string {
 	}
 	return ct
 }
-func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
-	requestDetails := request.Request{}
+
+func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
+	requestDetails := Request{}
 
 	res := route.Handler(
 		requestDetails,
@@ -46,20 +43,22 @@ func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 		statusCode  int
 	)
 	switch r := res.(type) {
-	case response.JSONResponse:
-		statusCode = resolveStatusCode(r.StatusCode, req.Method)
+	case JSONResponse:
 		contentType = "application/json"
-		contentBytes, err := json.Marshal(r.Content)
+		statusCode = resolveStatusCode(r.StatusCode, req.Method)
+		w.Header().Add("Content-Type", contentType)
+		w.WriteHeader(statusCode)
+		err := json.NewEncoder(w).Encode(r.Content)
 		if err != nil {
 			content = r.ResponseError(err)
 			http.Error(w, content, 500)
 		}
-		content = string(contentBytes)
-	case response.HTMLResponse:
+		return
+	case HTMLResponse:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/html"
 		content = r.Content
-	case response.Response:
+	case Response:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/plain"
 		content = r.Content
@@ -67,7 +66,6 @@ func Handler(w http.ResponseWriter, req *http.Request, route *route.Route) {
 		http.Error(w, "The response type provided to handle this request is invalid.", http.StatusInternalServerError)
 		return
 	}
-
 	w.WriteHeader(statusCode)
 	w.Header().Add("Content-Type", contentType)
 	fmt.Fprint(w, content)

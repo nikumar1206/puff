@@ -23,3 +23,17 @@ app := App.New(h)
 - Middlewares
 - Auto Open API/Swagger spec generation
 - RequestId generation/Tracing Middleware
+
+## RoadMap
+
+- Logging
+  - Allow users to use their own time format.
+- Middlewares
+  - Some sort of Session Middleware/Authentication Middleware? Potentially both?
+  - Panic Handler? (Wrap panics into 500)
+  - Allow attaching middlewares to routers (far future)
+- Fixes
+  - Remove router name and add "tags" instead
+    - Also believe this is broken.
+    - Router name for Drinks Router doesnt appear.
+  - Fix the way 'description' is set.

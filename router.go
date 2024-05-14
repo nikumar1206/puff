@@ -1,27 +1,25 @@
-package router
+package puff
 
 import (
+	"fmt"
 	"net/http"
-
-	"github.com/nikumar1206/puff/request"
-	"github.com/nikumar1206/puff/route"
 )
 
 type Router struct {
 	Name    string
 	Prefix  string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
 	Routers []*Router
-	Routes  []route.Route
+	Routes  []Route
 	// middlewares []Middleware
 }
 
 func (r *Router) registerRoute(
 	method string,
 	path string,
-	handleFunc func(request.Request) interface{},
+	handleFunc func(Request) interface{},
 	description string,
 ) {
-	newRoute := route.Route{
+	newRoute := Route{
 		RouterName:  r.Name,
 		Description: description,
 		Path:        path,
@@ -31,39 +29,51 @@ func (r *Router) registerRoute(
 	}
 	r.Routes = append(r.Routes, newRoute)
 }
-func (r *Router) GET(
+
+func (r *Router) Get(
 	path string,
 	description string,
-	handleFunc func(request.Request) interface{},
+	handleFunc func(Request) interface{},
 ) {
 	r.registerRoute(http.MethodGet, path, handleFunc, description)
 }
 
-func (r *Router) POST(
+func (r *Router) Post(
 	path string,
 	description string,
-	handleFunc func(request.Request) interface{},
+	handleFunc func(Request) interface{},
 ) {
 	r.registerRoute(http.MethodPost, path, handleFunc, description)
 }
 
-func (r *Router) PUT(
+func (r *Router) Put(
 	path string,
 	description string,
-	handleFunc func(request.Request) interface{},
+	handleFunc func(Request) interface{},
 ) {
 	r.registerRoute(http.MethodPut, path, handleFunc, description)
 }
 
-func (r *Router) PATCH(
+func (r *Router) Patch(
 	path string,
 	description string,
-	handleFunc func(request.Request) interface{},
+	handleFunc func(Request) interface{},
 ) {
 	r.registerRoute(http.MethodPatch, path, handleFunc, description)
 }
 
-func (r *Router) IncludeRouter(rt *Router) *Router {
+func (r *Router) Delete(
+	path string,
+	description string,
+	handleFunc func(Request) interface{},
+) {
+	r.registerRoute(http.MethodDelete, path, handleFunc, description)
+}
+
+func (r *Router) IncludeRouter(rt *Router) {
 	r.Routers = append(r.Routers, rt)
-	return rt
+}
+
+func (r *Router) String() string {
+	return fmt.Sprintf("Name: %s Prefix: %s", r.Name, r.Prefix)
 }
