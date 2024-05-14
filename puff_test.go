@@ -15,7 +15,7 @@ func TestApp(t *testing.T) {
 
 	example_router := Router{}
 
-	example_router.GET(
+	example_router.Get(
 		"",
 		"index route that says hello world",
 		example_route_handler,

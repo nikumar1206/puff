@@ -85,6 +85,7 @@ var OPENAPI_UI string = `
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="SwaggerUIMultifold" />
+      <link rel="icon" type="image/x-icon" href="https://fav.farm/💨">
     <link rel="stylesheet" href="//unpkg.com/swagger-editor@5.0.0-alpha.86/dist/swagger-editor.css" />
     <title>%s</title>
   </head>

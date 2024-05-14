@@ -26,7 +26,7 @@ run: ## Run demo app locally
 	$(GOBUILD) -o $(BINARY_NAME) -v examples/demo.go ./$(BINARY_NAME)
 
 reload: ## Run demo app locally with reload
-	air --build.cmd "$(GOBUILD) -o $(BINARY_NAME) examples/demo.go" --build.bin "./$(BINARY_NAME)"
+	air --build.cmd "$(GOBUILD) -o $(BINARY_NAME) examples/restaurant_app/main.go" --build.bin "./$(BINARY_NAME)"
 
 build-linux: ## Build the application for Linux
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v

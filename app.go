@@ -23,7 +23,7 @@ type PuffApp struct {
 }
 
 // gets all routes for a router
-func (a *PuffApp) GetRoutes(r *Router, prefix string) []*Route {
+func (a *PuffApp) getRoutes(r *Router, prefix string) []*Route {
 	var routes []*Route
 	prefix += r.Prefix
 
@@ -34,11 +34,13 @@ func (a *PuffApp) GetRoutes(r *Router, prefix string) []*Route {
 	}
 
 	for _, subRouter := range r.Routers {
-		routes = append(routes, a.GetRoutes(subRouter, prefix)...)
+		routes = append(routes, a.getRoutes(subRouter, prefix)...)
 	}
 	return routes
 }
 
+// Add a Router to the main app.
+// Under the hood attaches the router to the App's RootRouter
 func (a *PuffApp) IncludeRouter(r *Router) {
 	a.RootRouter.IncludeRouter(r)
 }
@@ -91,7 +93,7 @@ func (a *PuffApp) ListenAndServe() {
 	mux := http.NewServeMux()
 	var router http.Handler = mux
 
-	routes := a.GetRoutes(a.RootRouter, "")
+	routes := a.getRoutes(a.RootRouter, "")
 
 	for _, route := range routes {
 		slog.Info(fmt.Sprintf("Serving route: %s", route.Pattern))
@@ -114,4 +116,29 @@ func (a *PuffApp) ListenAndServe() {
 
 	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
 	http.ListenAndServe(addr, router)
+}
+
+func (a *PuffApp) Get(path string, description string, handleFunc func(Request) interface{}) {
+	a.RootRouter.Get(path, description, handleFunc)
+}
+
+func (a *PuffApp) Post(path string, description string, handleFunc func(Request) interface{}) {
+	a.RootRouter.Post(path, description, handleFunc)
+}
+
+func (a *PuffApp) Patch(path string, description string, handleFunc func(Request) interface{}) {
+	a.RootRouter.Patch(path, description, handleFunc)
+}
+
+func (a *PuffApp) Put(path string, description string, handleFunc func(Request) interface{}) {
+	a.RootRouter.Put(path, description, handleFunc)
+}
+
+func (a *PuffApp) Delete(path string, description string, handleFunc func(Request) interface{}) {
+	a.RootRouter.Delete(path, description, handleFunc)
+}
+
+// Gets all Routes for the App
+func (a *PuffApp) GetRoutes() []*Route {
+	return a.getRoutes(a.RootRouter, "")
 }
