@@ -11,7 +11,6 @@ import (
 
 func main() {
 	app := puff.DefaultApp()
-	app.Config.DocsURL = "/api/docs"
 
 	app.IncludeMiddlewares(
 		middleware.CORSMiddleware,
