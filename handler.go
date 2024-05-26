@@ -106,9 +106,9 @@ func resolveStatusCode(sc int, method string) int {
 	return sc
 }
 
-func resolveContentType(ct string) string {
+func resolveContentType(ct string, mct string) string {
 	if ct == "" {
-		return "text/plain"
+		return mct
 	}
 	return ct
 }
@@ -150,9 +150,13 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		contentType = "text/html"
 		content = r.Content
 	case FileResponse:
-		fileNameSplit := strings.Split(r.FileName, ".")
-		suffix := fileNameSplit[len(fileNameSplit)-1]
-		contentType = contentTypeFromFileSuffix(suffix)
+		if r.FileContentType == "" {
+			fileNameSplit := strings.Split(r.FileName, ".")
+			suffix := fileNameSplit[len(fileNameSplit)-1]
+			contentType = contentTypeFromFileSuffix(suffix)
+		} else {
+			contentType = r.FileContentType
+		}
 		file, err := os.ReadFile(r.FileName)
 		if err != nil {
 			statusCode = 500
@@ -162,7 +166,7 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		content = string(file)
 	case Response:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
-		contentType = "text/plain"
+		contentType = resolveContentType(r.ContentType, "text/plain")
 		content = r.Content
 	default:
 		http.Error(w, "The response type provided to handle this request is invalid.", http.StatusInternalServerError)
