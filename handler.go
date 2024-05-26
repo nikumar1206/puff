@@ -132,7 +132,6 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 			w.WriteHeader(500)
 			w.Header().Add("Content-Type", "text/plain")
 			fmt.Fprint(w, "There was a panic during the execution recovered by the handler. Error ID: "+errorID)
-			fmt.Println(a)
 			slog.Error("Panic During Execution", slog.String("ERROR ID", errorID), slog.String("Error", a.(string)))
 		}
 	}()
