@@ -15,7 +15,7 @@ func DrinksRouter() *puff.Router {
 
 	r.Get("/stream-coca-cola", "stream coca cola", func(r puff.Request) interface{} {
 		return puff.StreamingResponse{
-			StreamHandler: &func(coca_cola *chan string) {
+			StreamHandler: func(coca_cola *chan string) {
 				for i := range 3 {
 					*coca_cola <- fmt.Sprint(i)
 					time.Sleep(time.Duration(2 * time.Second))

@@ -51,7 +51,8 @@ func PizzaRouter() *puff.Router {
 			Content:    map[string]interface{}{"message": "Unburning a pizza is impossible."},
 		}
 	})
-	ThumbnailFileResp := puff.FileResponse{FileName: "/Users/ajiteshkumar/Documents/chezpiza.jpg"}
+	ThumbnailFileResp := puff.FileResponse{FileName: "assets/chezpizawef.jpg"}
 	r.Get("/thumbnail", "returns thumbnail of piza", ThumbnailFileResp.Handler())
+
 	return r
 }
