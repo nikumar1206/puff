@@ -11,6 +11,7 @@ import (
 
 func main() {
 	app := puff.DefaultApp()
+	app.Config.DocsURL = "/api/docs"
 
 	app.Middlewares = []middleware.Middleware{
 		middleware.TracingMiddleware,

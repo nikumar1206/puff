@@ -3,9 +3,12 @@ package puff
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/nikumar1206/puff/middleware"
 )
 
 var fileContentTypes = map[string]string{
@@ -122,6 +125,17 @@ func contentTypeFromFileSuffix(suffix string) string {
 }
 
 func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
+	defer func() {
+		a := recover()
+		if a != nil {
+			errorID := middleware.RandomLogID()
+			w.WriteHeader(500)
+			w.Header().Add("Content-Type", "text/plain")
+			fmt.Fprint(w, "There was a panic during the execution recovered by the handler. Error ID: "+errorID)
+			fmt.Println(a)
+			slog.Error("Panic During Execution", slog.String("ERROR ID", errorID), slog.String("Error", a.(string)))
+		}
+	}()
 	requestDetails := Request{}
 
 	res := route.Handler(
