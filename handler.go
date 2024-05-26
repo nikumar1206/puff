@@ -27,13 +27,6 @@ func resolveStatusCode(sc int, method string) int {
 	return sc
 }
 
-func resolveContentType(ct string, mct string) string {
-	if ct == "" {
-		return mct
-	}
-	return ct
-}
-
 func contentTypeFromFileSuffix(suffix string) string {
 	ct := mime.TypeByExtension("." + suffix)
 	if ct == "" {
