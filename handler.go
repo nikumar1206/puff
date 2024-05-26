@@ -158,7 +158,7 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 			statusCode = 500
 			content = "There was an error retrieving the file: " + err.Error()
 		}
-		statusCode = 200
+		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		content = string(file)
 	case Response:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)

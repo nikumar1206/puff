@@ -17,6 +17,7 @@ type HTMLResponse struct { // the difference between this and Response is that t
 }
 
 type FileResponse struct {
+	StatusCode      int
 	FileName        string
 	FileContentType string
 }
