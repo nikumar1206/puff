@@ -23,7 +23,12 @@ type FileResponse struct {
 }
 
 func (f *FileResponse) Handler() func(Request) interface{} {
-	return func(p Request) interface{} { return f }
+	return func(p Request) interface{} { return *f }
+}
+
+type StreamingResponse struct {
+	StatusCode    int
+	StreamHandler *func(*chan string)
 }
 
 type Response struct { // while this has a content-type of text/plain

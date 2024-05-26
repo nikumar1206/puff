@@ -71,13 +71,9 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		contentType = "text/html"
 		content = r.Content
 	case FileResponse:
-		if r.FileContentType == "" {
-			fileNameSplit := strings.Split(r.FileName, ".")
-			suffix := fileNameSplit[len(fileNameSplit)-1]
-			contentType = contentTypeFromFileSuffix(suffix)
-		} else {
-			contentType = r.FileContentType
-		}
+		fileNameSplit := strings.Split(r.FileName, ".")
+		suffix := fileNameSplit[len(fileNameSplit)-1]
+		contentType = contentTypeFromFileSuffix(suffix)
 		file, err := os.ReadFile(r.FileName)
 		if err != nil {
 			statusCode = 500
@@ -85,9 +81,23 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		}
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		content = string(file)
+	case StreamingResponse:
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		stream := make(chan string)
+		go func() {
+			defer close(stream)
+			sh := r.StreamHandler
+			(*sh)(&stream)
+		}()
+		for value := range stream {
+			fmt.Fprintf(w, "data: %s\n\n", value)
+			w.(http.Flusher).Flush()
+		}
+		return
 	case Response:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
-		contentType = resolveContentType(r.ContentType, "text/plain")
 		content = r.Content
 	default:
 		http.Error(w, "The response type provided to handle this request is invalid.", http.StatusInternalServerError)

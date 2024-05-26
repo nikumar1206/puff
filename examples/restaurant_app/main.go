@@ -39,7 +39,6 @@ func main() {
 			}
 		}
 	})
-
 	app.IncludeRouter(routes.PizzaRouter())
 	app.IncludeRouter(routes.DrinksRouter())
 	app.ListenAndServe()
