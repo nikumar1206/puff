@@ -28,6 +28,6 @@ func DefaultApp() *PuffApp {
 		Port:    8000,
 		DocsURL: "/docs",
 	}
-
+	append("hi", wef)
 	return App(&c)
 }

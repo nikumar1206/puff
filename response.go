@@ -16,6 +16,15 @@ type HTMLResponse struct { // the difference between this and Response is that t
 	Content    string
 }
 
+type FileResponse struct {
+	FileName        string
+	FileContentType string
+}
+
+func (f *FileResponse) Handler() func(Request) interface{} {
+	return func(p Request) interface{} { return f }
+}
+
 type Response struct { // while this has a content-type of text/plain
 	StatusCode  int
 	Content     string
