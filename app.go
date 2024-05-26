@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-
-	"github.com/nikumar1206/puff/middleware"
 )
+
+type Middleware = func(http.Handler) http.Handler
 
 type Config struct {
 	Network bool   // host to the entire network?
@@ -19,7 +19,7 @@ type Config struct {
 type PuffApp struct {
 	*Config
 	RootRouter  *Router // This is the root router. All other routers will work underneath this.
-	Middlewares []middleware.Middleware
+	Middlewares []*Middleware
 }
 
 // gets all routes for a router
@@ -43,6 +43,16 @@ func (a *PuffApp) getRoutes(r *Router, prefix string) []*Route {
 // Under the hood attaches the router to the App's RootRouter
 func (a *PuffApp) IncludeRouter(r *Router) {
 	a.RootRouter.IncludeRouter(r)
+}
+
+func (a *PuffApp) IncludeMiddleware(m Middleware) {
+	a.Middlewares = append(a.Middlewares, &m)
+}
+
+func (a *PuffApp) IncludeMiddlewares(ms ...Middleware) {
+	for _, m := range ms {
+		a.IncludeMiddleware(m)
+	}
 }
 
 func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
@@ -101,7 +111,7 @@ func (a *PuffApp) ListenAndServe() {
 	}
 
 	for _, m := range a.Middlewares {
-		router = m(router)
+		router = (*m)(router)
 	}
 
 	// Add OpenAPISpec
