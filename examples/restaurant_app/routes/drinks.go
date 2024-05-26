@@ -7,10 +7,6 @@ import (
 	"github.com/nikumar1206/puff"
 )
 
-func myStreamingChannel(pepsi chan string) {
-	//my channel stuff here
-}
-
 func DrinksRouter() *puff.Router {
 	r := puff.Router{
 		Name:   "All the drinks available at the store",
