@@ -2,6 +2,7 @@ package puff
 
 import (
 	"github.com/nikumar1206/puff/logger"
+	"github.com/nikumar1206/puff/middleware"
 )
 
 func App(c *Config) *PuffApp {
@@ -28,5 +29,7 @@ func DefaultApp() *PuffApp {
 		Port:    8000,
 		DocsURL: "/docs",
 	}
-	return App(&c)
+	a := App(&c)
+	a.IncludeMiddlewares(middleware.PanicMiddleware, middleware.LoggingMiddleware, middleware.TracingMiddleware)
+	return a
 }

@@ -13,11 +13,9 @@ func main() {
 	app := puff.DefaultApp()
 	app.Config.DocsURL = "/api/docs"
 
-	app.Middlewares = []middleware.Middleware{
-		middleware.TracingMiddleware,
-		middleware.LoggingMiddleware,
+	app.IncludeMiddlewares(
 		middleware.CORSMiddleware,
-	}
+	)
 
 	app.Get("/", "Welcomes users to the application", func(req puff.Request) interface{} {
 		html_file, err := os.ReadFile("examples/restaurant_app/assets/hello_world.html")
