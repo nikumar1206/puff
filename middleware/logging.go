@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"fmt"
 	"log/slog"
-	"math/rand/v2"
 	"net/http"
 	"time"
 )
@@ -21,21 +19,4 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			slog.String("Processing Time", processingTime),
 		)
 	})
-}
-
-func RandomLogID() string {
-	id := ""
-	for i := range 8 {
-		if i == 4 {
-			id += "-"
-		}
-		if i < 4 {
-			r := rand.IntN(25) + 1
-			id += fmt.Sprintf("%c", ('A' - 1 + r))
-		} else {
-			r := rand.IntN(9)
-			id += fmt.Sprint(r)
-		}
-	}
-	return id
 }

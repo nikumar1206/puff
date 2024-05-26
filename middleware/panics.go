@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/nikumar1206/puff/utils"
 )
 
 func PanicMiddleware(next http.Handler) http.Handler {
@@ -11,7 +13,7 @@ func PanicMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			a := recover()
 			if a != nil {
-				errorID := RandomLogID()
+				errorID := utils.RandomNanoID()
 				w.WriteHeader(500)
 				w.Header().Add("Content-Type", "text/plain")
 				fmt.Fprint(w, "There was a panic during the execution recovered by the panic handling middleware. Error ID: "+errorID)
