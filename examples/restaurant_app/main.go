@@ -18,7 +18,7 @@ func main() {
 		middleware.CORSMiddleware,
 	}
 
-	app.Get("/", "Welcomes users to the application", func(req puff.Request) interface{} {
+	app.Get("/", "Welcomes users to the application", func(req puff.Request) puff.Response {
 		html_file, err := os.ReadFile("examples/restaurant_app/assets/hello_world.html")
 
 		switch {

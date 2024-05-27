@@ -59,8 +59,8 @@ func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
 		Path:        a.DocsURL + ".json",
 		Pattern:     "GET " + a.DocsURL + ".json",
 		Description: "Recieve Docs as JSON.",
-		Handler: func(req Request) interface{} {
-			res := Response{
+		Handler: func(req Request) Response {
+			res := GenericResponse{
 				Content: spec,
 			}
 			res.ContentType = "application/json"
@@ -72,7 +72,7 @@ func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
 		Path:        a.DocsURL,
 		Pattern:     "GET " + a.DocsURL,
 		Description: "Display the OpenAPI Docs in Spotlight.",
-		Handler: func(req Request) interface{} {
+		Handler: func(req Request) Response {
 			return HTMLResponse{
 				Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
 			}
@@ -118,23 +118,23 @@ func (a *PuffApp) ListenAndServe() {
 	http.ListenAndServe(addr, router)
 }
 
-func (a *PuffApp) Get(path string, description string, handleFunc func(Request) interface{}) {
+func (a *PuffApp) Get(path string, description string, handleFunc func(Request) Response) {
 	a.RootRouter.Get(path, description, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, description string, handleFunc func(Request) interface{}) {
+func (a *PuffApp) Post(path string, description string, handleFunc func(Request) Response) {
 	a.RootRouter.Post(path, description, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, description string, handleFunc func(Request) interface{}) {
+func (a *PuffApp) Patch(path string, description string, handleFunc func(Request) Response) {
 	a.RootRouter.Patch(path, description, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, description string, handleFunc func(Request) interface{}) {
+func (a *PuffApp) Put(path string, description string, handleFunc func(Request) Response) {
 	a.RootRouter.Put(path, description, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, description string, handleFunc func(Request) interface{}) {
+func (a *PuffApp) Delete(path string, description string, handleFunc func(Request) Response) {
 	a.RootRouter.Delete(path, description, handleFunc)
 }
 

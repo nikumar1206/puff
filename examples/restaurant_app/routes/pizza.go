@@ -6,7 +6,7 @@ import (
 	"github.com/nikumar1206/puff"
 )
 
-func getPizza(request puff.Request) interface{} {
+func getPizza(request puff.Request) puff.Response {
 	return puff.JSONResponse{
 		Content: map[string]interface{}{
 			"name": "Margherita Pizza",
@@ -36,8 +36,8 @@ func PizzaRouter() *puff.Router {
 
 	r.Get("", "Returns the greatest piza recipe you will ever find.", getPizza)
 
-	r.Post("", "Places an order for a pizza.", func(req puff.Request) interface{} {
-		timeOut := time.Duration(5)
+	r.Post("", "Places an order for a pizza.", func(req puff.Request) puff.Response {
+		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		return puff.JSONResponse{
 			StatusCode: 201,
@@ -45,7 +45,7 @@ func PizzaRouter() *puff.Router {
 		}
 	})
 
-	r.Patch("", "Unburns a burnt pizza.", func(puff.Request) interface{} {
+	r.Patch("", "Unburns a burnt pizza.", func(puff.Request) puff.Response {
 		return puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]interface{}{"message": "Unburning a pizza is impossible."},

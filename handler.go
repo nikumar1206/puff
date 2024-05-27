@@ -49,16 +49,21 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		w.Header().Add("Content-Type", contentType)
 		w.WriteHeader(statusCode)
 		err := json.NewEncoder(w).Encode(r.Content)
+		content, err := json.Marshal(map[string]string{"message": err.Error()})
+
 		if err != nil {
-			content = r.ResponseError(err)
-			http.Error(w, content, 500)
+			panic(err)
+		}
+
+		if err != nil {
+			http.Error(w, string(content), 500)
 		}
 		return
 	case HTMLResponse:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/html"
 		content = r.Content
-	case Response:
+	case GenericResponse:
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		contentType = "text/plain"
 		content = r.Content
