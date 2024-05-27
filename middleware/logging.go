@@ -11,7 +11,6 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		startTime := time.Now()
 		next.ServeHTTP(w, r)
 		processingTime := time.Since(startTime).String()
-
 		slog.Info(
 			"HTTP Request",
 			slog.String("HTTP METHOD", r.Method),

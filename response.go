@@ -18,9 +18,45 @@ func (j JSONResponse) GetContent() any {
 	return j.Content
 }
 
-type HTMLResponse struct { // the difference between this and Response is that the content type is text/html
+// returns html content with 'Content-Type' header set to text/html
+type HTMLResponse struct {
 	StatusCode int
 	Content    string
+}
+
+// returns a
+// FIXME: feels wrong to send a file as string instead of []byte
+type FileResponse struct {
+	StatusCode      int
+	FileName        string
+	FileContentType string
+}
+
+func (f FileResponse) GetStatusCode() int {
+	return f.StatusCode
+}
+
+func (f FileResponse) GetContent() any {
+	return f.FileContentType
+}
+
+func (f *FileResponse) Handler() func(Request) Response {
+	return func(p Request) Response { return *f }
+}
+
+// to be used when sending server side events
+type StreamingResponse struct {
+	StatusCode    int
+	StreamHandler func(*chan string)
+	content       string
+}
+
+func (s StreamingResponse) GetStatusCode() int {
+	return s.StatusCode
+}
+
+func (s StreamingResponse) GetContent() any {
+	return s.content
 }
 
 func (h HTMLResponse) GetStatusCode() int {
@@ -31,7 +67,8 @@ func (h HTMLResponse) GetContent() any {
 	return h.Content
 }
 
-type GenericResponse struct { // while this has a content-type of text/plain
+// default response structure with 'Content-Type' header set to text/plain
+type GenericResponse struct {
 	StatusCode  int
 	Content     string
 	ContentType string

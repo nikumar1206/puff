@@ -25,9 +25,8 @@ func (r *Router) registerRoute(
 		Path:        path,
 		Handler:     handleFunc,
 		Protocol:    method,
-		Pattern:     method + " " + path,
+		Pattern:     fmt.Sprintf("%s %s", method, path),
 	}
-	r.Routes = append(r.Routes, newRoute)
 	r.Routes = append(r.Routes, newRoute)
 }
 
