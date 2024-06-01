@@ -36,7 +36,7 @@ kp:
 	fi
 
 reload: kp## Run demo app locally with reload
-	(cd examples; air --build.cmd "$(GOBUILD) -o $(BINARY_NAME) restaurant_app/main.go" --build.bin "./$(BINARY_NAME)")
+	(cd examples/restaurant_app; air --build.cmd "$(GOBUILD) -o $(BINARY_NAME) main.go" --build.bin "./$(BINARY_NAME)")
 
 build-linux: ## Build the application for Linux
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v

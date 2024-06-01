@@ -10,6 +10,7 @@ import (
 )
 
 func resolveStatusCode(sc int, method string, content any) int {
+	fmt.Print("what is the sc ", sc)
 	if content == "" {
 		return http.StatusNoContent
 	}
@@ -19,11 +20,7 @@ func resolveStatusCode(sc int, method string, content any) int {
 			return http.StatusOK
 		case http.MethodPost:
 			return http.StatusCreated
-		case http.MethodPut:
-			return http.StatusOK
-		case http.MethodPatch:
-			return http.StatusOK
-		case http.MethodDelete:
+		case http.MethodPut, http.MethodPatch, http.MethodDelete:
 			return http.StatusOK
 		default:
 			return http.StatusOK
@@ -35,75 +32,96 @@ func resolveStatusCode(sc int, method string, content any) int {
 func contentTypeFromFileSuffix(suffix string) string {
 	ct := mime.TypeByExtension("." + suffix)
 	if ct == "" {
-		return "text/plain" //we dont know the content type from file suffix
+		return "text/plain" // default content type
 	}
 	return ct
 }
 
-func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
-	requestDetails := Request{}
+func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+	w.WriteHeader(statusCode)
+}
 
-	res := route.Handler(
-		requestDetails,
-	) // FIX ME: we should give the user handle function a request body as well
-
-	var (
-		contentType string
-		content     string
-		statusCode  int
-	)
-	switch r := res.(type) {
-	case JSONResponse:
-		contentType = "application/json"
-		w.Header().Set("Content-Type", contentType)
-		statusCode = resolveStatusCode(r.StatusCode, req.Method, r.GetContent())
-		err := json.NewEncoder(w).Encode(r.Content)
-		content, err := json.Marshal(map[string]string{"message": err.Error()})
-		if err != nil {
-			panic(err)
-		}
-		if err != nil {
-			http.Error(w, string(content), 500)
-		}
-		w.WriteHeader(statusCode)
-		return
-	case HTMLResponse:
-		statusCode = resolveStatusCode(r.StatusCode, req.Method)
-		contentType = "text/html"
-		content = r.Content
-	case FileResponse:
-		fileNameSplit := strings.Split(r.FileName, ".")
-		suffix := fileNameSplit[len(fileNameSplit)-1]
-		contentType = contentTypeFromFileSuffix(suffix)
-		file, err := os.ReadFile(r.FileName)
-		if err != nil {
-			statusCode = 500
-			content = "There was an error retrieving the file: " + err.Error()
-		}
-		statusCode = resolveStatusCode(r.StatusCode, req.Method)
-		content = string(file)
-	case StreamingResponse:
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		stream := make(chan string)
-		go func() {
-			defer close(stream)
-			r.StreamHandler(&stream)
-		}()
-		for value := range stream {
-			fmt.Fprintf(w, "data: %s\n\n", value)
-			w.(http.Flusher).Flush()
-		}
-		return
-	case GenericResponse:
-		statusCode = resolveStatusCode(r.StatusCode, req.Method)
-		content = r.Content
-	default:
-		http.Error(w, "The response type provided to handle this request is invalid.", http.StatusInternalServerError)
+func handleJSONResponse(w http.ResponseWriter, req *http.Request, res JSONResponse) {
+	w.Header().Set("Content-Type", "application/json")
+	statusCode := resolveStatusCode(res.StatusCode, req.Method, res.GetContent())
+	if err := json.NewEncoder(w).Encode(res.Content); err != nil {
+		writeErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.WriteHeader(statusCode)
-	w.Header().Add("Content-Type", contentType)
-	fmt.Fprint(w, content)
+}
+
+func handleHTMLResponse(w http.ResponseWriter, req *http.Request, res HTMLResponse) {
+	statusCode := resolveStatusCode(res.StatusCode, req.Method, res.Content)
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(statusCode)
+	fmt.Fprint(w, res.Content)
+}
+
+func handleFileResponse(w http.ResponseWriter, req *http.Request, res FileResponse) {
+	fileNameSplit := strings.Split(res.FileName, ".")
+	suffix := fileNameSplit[len(fileNameSplit)-1]
+	contentType := contentTypeFromFileSuffix(suffix)
+	w.Header().Set("Content-Type", contentType)
+
+	file, err := os.ReadFile(res.FileName)
+	if err != nil {
+		writeErrorResponse(w, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
+		return
+	}
+	statusCode := resolveStatusCode(res.StatusCode, req.Method, string(file))
+	w.Write(file)
+	w.WriteHeader(statusCode)
+}
+
+func handleStreamingResponse(w http.ResponseWriter, res StreamingResponse) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	stream := make(chan string)
+	go func() {
+		defer close(stream)
+		res.StreamHandler(&stream)
+	}()
+
+	for value := range stream {
+		fmt.Fprintf(w, "data: %s\n\n", value)
+		w.(http.Flusher).Flush()
+	}
+}
+
+func handleGenericResponse(w http.ResponseWriter, req *http.Request, res GenericResponse) {
+	statusCode := resolveStatusCode(res.StatusCode, req.Method, res.Content)
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(statusCode)
+	fmt.Fprint(w, res.Content)
+}
+
+func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
+	if route.Handler == nil {
+		writeErrorResponse(w, http.StatusInternalServerError, "Handler is not defined")
+		return
+	}
+
+	requestDetails := Request{} // Populate with actual request data if necessary
+
+	res := route.Handler(requestDetails)
+
+	switch r := res.(type) {
+	case JSONResponse:
+		handleJSONResponse(w, req, r)
+	case HTMLResponse:
+		handleHTMLResponse(w, req, r)
+	case FileResponse:
+		handleFileResponse(w, req, r)
+	case StreamingResponse:
+		handleStreamingResponse(w, r)
+	case GenericResponse:
+		handleGenericResponse(w, req, r)
+	default:
+		writeErrorResponse(w, http.StatusInternalServerError, "Invalid response type")
+	}
 }
