@@ -3,6 +3,7 @@ package puff
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"mime"
 	"net/http"
 	"os"
@@ -34,7 +35,6 @@ func contentTypeFromFileSuffix(suffix string) string {
 	}
 	return ct
 }
-
 func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 	requestDetails := Request{}
 
@@ -67,10 +67,15 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		fileNameSplit := strings.Split(r.FileName, ".")
 		suffix := fileNameSplit[len(fileNameSplit)-1]
 		contentType = contentTypeFromFileSuffix(suffix)
+		fmt.Println(contentType)
 		file, err := os.ReadFile(r.FileName)
 		if err != nil {
-			statusCode = 500
 			content = "There was an error retrieving the file: " + err.Error()
+			w.WriteHeader(500)
+			w.Header().Add("Content-Type", "text/plain")
+			fmt.Fprint(w, content)
+			slog.Error("File Response Error", slog.String("Request ID", w.Header().Get("X-Request-Id")), slog.String("Error", content))
+			return
 		}
 		statusCode = resolveStatusCode(r.StatusCode, req.Method)
 		content = string(file)
@@ -81,8 +86,7 @@ func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
 		stream := make(chan string)
 		go func() {
 			defer close(stream)
-			sh := r.StreamHandler
-			(*sh)(&stream)
+			(r.StreamHandler)(&stream)
 		}()
 		for value := range stream {
 			fmt.Fprintf(w, "data: %s\n\n", value)

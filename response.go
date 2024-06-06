@@ -28,7 +28,7 @@ func (f *FileResponse) Handler() func(Request) interface{} {
 
 type StreamingResponse struct {
 	StatusCode    int
-	StreamHandler *func(*chan string)
+	StreamHandler func(*chan string)
 }
 
 type Response struct { // while this has a content-type of text/plain
