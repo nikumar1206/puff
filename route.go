@@ -8,7 +8,7 @@ type Route struct {
 	Pattern     string
 	Path        string
 	Description string
-	InputSchema interface{}
+	Parameters  interface{}
 	Handler     func(Request) interface{}
 
 	// should probably have responses (200 OK followed by json, 400 Invalid Paramaters, etc...)

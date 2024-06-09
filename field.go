@@ -1,71 +1,55 @@
 package puff
 
-type Param interface {
-	GetKind() string        //Query, Path, Header
-	GetDescription() string //for the OpenAPI
-	GetValue() interface{}
-	SetValue()
-}
-
-type PathParam[T any] struct {
+type Param[T any] struct {
 	Description string
+	Kind        string //Header, Path, Query, Body
 	Value       T
 }
 
-func (p PathParam[T]) GetKind() string {
-	return "Path"
-}
-func (p PathParam[T]) GetDescription() string {
-	return p.Description
-}
-func (p PathParam[T]) GetValue() interface{} {
-	return p.Value
-}
-func (p *PathParam[T]) SetValue(v T) {
-	p.Value = v
+func HeaderParam[T any](description string) Param[T] {
+	return Param[T]{
+		Description: description,
+		Kind:        "Header",
+	}
 }
 
-type QueryParam[T any] struct {
-	Description string
-	Value       T
+func PathParam[T any](description string) Param[T] {
+	return Param[T]{
+		Description: description,
+		Kind:        "Path",
+	}
 }
 
-func (p QueryParam[T]) GetKind() string {
-	return "Query"
-}
-func (p QueryParam[T]) GetDescription() string {
-	return p.Description
-}
-func (p QueryParam[T]) GetValue() interface{} {
-	return p.Value
-}
-func (p *QueryParam[T]) SetValue(v T) {
-	p.Value = v
+func QueryParam[T any](description string) Param[T] {
+	return Param[T]{
+		Description: description,
+		Kind:        "Query",
+	}
 }
 
-type HeaderParam[T any] struct {
-	Description string
-	Value       T
+func BodyParam[T any](description string) Param[T] {
+	return Param[T]{
+		Description: description,
+		Kind:        "Header",
+	}
 }
 
-func (p HeaderParam[T]) GetKind() string {
-	return "Header"
-}
-func (p HeaderParam[T]) GetDescription() string {
-	return p.Description
-}
-func (p HeaderParam[T]) GetValue() interface{} {
-	return p.Value
-}
-func (p *HeaderParam[T]) SetValue(v T) {
-	p.Value = v
-}
+//DREAM CODE WITH THIS:
 
-//EXAMPLE FIELDS SCHEMA PASSED IN:
-
-// type HelloWorld struct {
-// 	Globe HeaderParam[string]
+// func HandleRoute(params Context[HelloWorld]) {
+// 	params.drinks.Value[0] //has correct type of string
 // }
-
-//globe will be the name, header param will be the kind, type of the value it should get
-//is string, however Description remains empty for now
+//
+// type HelloWorld struct {
+// 	food   Param[string]
+// 	drinks Param[[]string]
+// 	price  Param[int]
+// }
+//
+// func main() {
+// 	params_on_my_route := HelloWorld{
+// 		food:   QueryParam[string]("The food you have ordered."),
+// 		drinks: BodyParam[[]string]("The drinks you have ordered."),
+// 		price:  QueryParam[int]("The price that you would like to charge out of your card."),
+// 	}
+// }
