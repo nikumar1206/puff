@@ -1,64 +1,71 @@
 package puff
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
-type Context interface {
-	// used to serialize the provided response appropriately.
-	SendResponse() func(Response) error
-	// returns the Request interface
-	Request() func() *http.Request
-	// returns the response writer for the route
-	RequestWriter() func() *http.ResponseWriter
-	// sets the status code of the current route
-	SetStatusCode() func(int)
-	// returns the status code of the current route
-	GetStatusCode() func() int
-	GetHeader() func(string) string
-	SetHeader(string, string)
-	GetHost() string
+type Context struct {
+	// original http.request object
+	Request        *http.Request
+	ResponseWriter http.ResponseWriter
 }
 
-type context struct {
-	request *http.Request
-	rw      *http.ResponseWriter
-	sc      int
-}
-
-func (ctx context) GetHost() string {
-	return ctx.request.Host
+func NewContext(w http.ResponseWriter, r http.Request) *Context {
+	return &Context{
+		Request:        &r,
+		ResponseWriter: w,
+	}
 }
 
 // returns "" if provided key cannot be found
-func (ctx context) GetHeader(k string) string {
-	return ctx.request.Header.Get(k)
+func (ctx *Context) GetHeader(k string) string {
+	return ctx.Request.Header.Get(k)
 }
 
 // sets a response header
-func (ctx context) SetHeader(k, v string) {
-	(*ctx.rw).Header().Add(k, v)
+func (ctx *Context) SetHeader(k, v string) {
+	ctx.ResponseWriter.Header().Set(k, v)
 }
 
-// sets a response header
-func (ctx context) GetStatusCode() int {
-	return ctx.sc
+// sets the respons status code
+func (ctx *Context) SetStatusCode(sc int) {
+	ctx.ResponseWriter.WriteHeader(sc)
 }
 
-func (ctx context) SetStatusCode(sc int) {
-	(*ctx.rw).WriteHeader(sc)
-	ctx.sc = sc
-}
+// below are methods that are more utility focused.
 
-// provides x-request-id from headers if set
-func (ctx context) GetRequestID() string {
+// provides x-request-id from headers if set, else returns ""
+func (ctx *Context) GetRequestID() string {
 	return ctx.GetHeader("X-Request-ID")
 }
 
-// func (c *context) writeContentType(value string) {
-// 	header := c.Response().Header()
-// 	if header.Get(HeaderContentType) == "" {
-// 		header.Set(HeaderContentType, value)
-// 	}
-// }
-// func (c *Context) GetRequest() {
+func (ctx *Context) SendResponse(res Response) {
+	switch r := res.(type) {
+	case JSONResponse:
+		handleJSONResponse(ctx.ResponseWriter, ctx.Request, r)
+	case HTMLResponse:
+		handleHTMLResponse(ctx.ResponseWriter, ctx.Request, r)
+	case FileResponse:
+		handleFileResponse(ctx.ResponseWriter, ctx.Request, r)
+	case StreamingResponse:
+		handleStreamingResponse(ctx.ResponseWriter, r)
+	case GenericResponse:
+		handleGenericResponse(ctx.ResponseWriter, ctx.Request, r)
+	default:
+		writeErrorResponse(ctx.ResponseWriter, http.StatusInternalServerError, "Invalid response type")
+	}
+}
 
-// }
+// will try to return bearer token if exists, else returns ""
+func (ctx *Context) GetBearerToken() string {
+	bt := ctx.GetHeader("Authorization")
+
+	token_arr := strings.Split(bt, "Bearer ")
+
+	if len(token_arr) > 1 {
+		return token_arr[1]
+	}
+
+	return ""
+}

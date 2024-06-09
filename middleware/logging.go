@@ -2,20 +2,21 @@ package middleware
 
 import (
 	"log/slog"
-	"net/http"
 	"time"
+
+	"github.com/nikumar1206/puff"
 )
 
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func LoggingMiddleware(next puff.HandlerFunc) puff.HandlerFunc {
+	return func(ctx *puff.Context) {
 		startTime := time.Now()
-		next.ServeHTTP(w, r)
+		next(ctx)
 		processingTime := time.Since(startTime).String()
 		slog.Info(
 			"HTTP Request",
-			slog.String("HTTP METHOD", r.Method),
-			slog.String("URL", r.URL.String()),
+			slog.String("HTTP METHOD", ctx.Request.Method),
+			slog.String("URL", ctx.Request.URL.String()),
 			slog.String("Processing Time", processingTime),
 		)
-	})
+	}
 }

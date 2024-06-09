@@ -6,8 +6,6 @@ import (
 	"net/http"
 )
 
-type Middleware = func(http.Handler) http.Handler
-
 type Config struct {
 	Network bool   // host to the entire network?
 	Port    int    // port number to use
@@ -69,12 +67,12 @@ func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
 		Path:        a.DocsURL + ".json",
 		Pattern:     "GET " + a.DocsURL + ".json",
 		Description: "Recieve Docs as JSON.",
-		Handler: func(req Request) Response {
+		Handler: func(c *Context) {
 			res := GenericResponse{
-				Content: spec,
+				Content:     spec,
+				ContentType: "application/json",
 			}
-			res.ContentType = "application/json"
-			return res
+			c.SendResponse(res)
 		},
 	}
 	openAPIUIDocsRoute := Route{
@@ -82,10 +80,11 @@ func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
 		Path:        a.DocsURL,
 		Pattern:     "GET " + a.DocsURL,
 		Description: "Display the OpenAPI Docs in Spotlight.",
-		Handler: func(req Request) Response {
-			return HTMLResponse{
+		Handler: func(c *Context) {
+			res := HTMLResponse{
 				Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
 			}
+			c.SendResponse(res)
 		},
 	}
 	muxAddHandleFunc(mux, &openAPIDocsRoute)
@@ -116,7 +115,6 @@ func (a *PuffApp) ListenAndServe() {
 	for _, m := range a.Middlewares {
 		router = (*m)(router)
 	}
-
 	// Add OpenAPISpec
 	a.AddOpenAPIDocs(mux, routes)
 
@@ -131,23 +129,23 @@ func (a *PuffApp) ListenAndServe() {
 	http.ListenAndServe(addr, router)
 }
 
-func (a *PuffApp) Get(path string, description string, handleFunc func(Request) Response) {
+func (a *PuffApp) Get(path string, description string, handleFunc func(*Context)) {
 	a.RootRouter.Get(path, description, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, description string, handleFunc func(Request) Response) {
+func (a *PuffApp) Post(path string, description string, handleFunc func(*Context)) {
 	a.RootRouter.Post(path, description, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, description string, handleFunc func(Request) Response) {
+func (a *PuffApp) Patch(path string, description string, handleFunc func(*Context)) {
 	a.RootRouter.Patch(path, description, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, description string, handleFunc func(Request) Response) {
+func (a *PuffApp) Put(path string, description string, handleFunc func(*Context)) {
 	a.RootRouter.Put(path, description, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, description string, handleFunc func(Request) Response) {
+func (a *PuffApp) Delete(path string, description string, handleFunc func(*Context)) {
 	a.RootRouter.Delete(path, description, handleFunc)
 }
 

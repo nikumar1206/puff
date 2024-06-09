@@ -30,7 +30,8 @@ app := App.New(h)
   - Allow users to use their own time format.
 - Middlewares
   - Some sort of Session Middleware/Authentication Middleware? Potentially both?
-  - Panic Handler? (Wrap panics into 500)
+  - Panic Handler? (Wrap panics into 500) ✅
+  - Allow configuration of middleware settings. When adding middlewares, they can pass a config. Current middleware style will be default.
   - Allow attaching middlewares to routers (far future)
 - Fixes
   - Remove router name and add "tags" instead
