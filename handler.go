@@ -10,7 +10,6 @@ import (
 )
 
 func resolveStatusCode(sc int, method string, content any) int {
-	fmt.Print("what is the sc ", sc)
 	if content == "" {
 		return http.StatusNoContent
 	}
@@ -98,30 +97,4 @@ func handleGenericResponse(w http.ResponseWriter, req *http.Request, res Generic
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(statusCode)
 	fmt.Fprint(w, res.Content)
-}
-
-func Handler(w http.ResponseWriter, req *http.Request, route *Route) {
-	if route.Handler == nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "Handler is not defined")
-		return
-	}
-
-	requestDetails := Request{} // Populate with actual request data if necessary
-
-	res := route.Handler(requestDetails)
-
-	switch r := res.(type) {
-	case JSONResponse:
-		handleJSONResponse(w, req, r)
-	case HTMLResponse:
-		handleHTMLResponse(w, req, r)
-	case FileResponse:
-		handleFileResponse(w, req, r)
-	case StreamingResponse:
-		handleStreamingResponse(w, r)
-	case GenericResponse:
-		handleGenericResponse(w, req, r)
-	default:
-		writeErrorResponse(w, http.StatusInternalServerError, "Invalid response type")
-	}
 }

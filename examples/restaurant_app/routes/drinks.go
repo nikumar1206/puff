@@ -13,8 +13,8 @@ func DrinksRouter() *puff.Router {
 		Prefix: "/drinks",
 	}
 
-	r.Get("/stream-coca-cola", "stream coca cola", func(r puff.Request) puff.Response {
-		return puff.StreamingResponse{
+	r.Get("/stream-coca-cola", "stream coca cola", func(c *puff.Context) {
+		res := puff.StreamingResponse{
 			StreamHandler: func(coca_cola *chan string) {
 				for i := range 3 {
 					*coca_cola <- fmt.Sprint(i)
@@ -22,6 +22,7 @@ func DrinksRouter() *puff.Router {
 				}
 			},
 		}
+		c.SendResponse(res)
 	})
 
 	r.IncludeRouter(WaterRouter())

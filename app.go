@@ -91,16 +91,24 @@ func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
 	muxAddHandleFunc(mux, &openAPIUIDocsRoute)
 }
 
-// Adds a Route to mux
 func muxAddHandleFunc(mux *http.ServeMux, route *Route) {
-	handler := func(w http.ResponseWriter, req *http.Request) {
-		Handler(w, req, route)
-	}
-
-	mux.HandleFunc(route.Pattern, handler)
+	handler := funcToHandler(route.Handler)
+	mux.Handle(route.Pattern, handler)
 }
 
-// 200 HTTPRequest
+func handlerToFunc(h http.Handler) HandlerFunc {
+	return func(c *Context) {
+		h.ServeHTTP(c.ResponseWriter, c.Request)
+	}
+}
+
+func funcToHandler(f HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := NewContext(w, *r)
+		f(c)
+	})
+}
+
 func (a *PuffApp) ListenAndServe() {
 	mux := http.NewServeMux()
 	var router http.Handler = mux
@@ -112,9 +120,14 @@ func (a *PuffApp) ListenAndServe() {
 		muxAddHandleFunc(mux, route)
 	}
 
+	handlerFunc := handlerToFunc(router)
+
 	for _, m := range a.Middlewares {
-		router = (*m)(router)
+		handlerFunc = (*m)(handlerFunc)
 	}
+
+	router = funcToHandler(handlerFunc)
+
 	// Add OpenAPISpec
 	a.AddOpenAPIDocs(mux, routes)
 

@@ -57,9 +57,9 @@ func (f FileResponse) GetContent() any {
 }
 
 // Handler returns a handler function for serving the file response.
-func (f *FileResponse) Handler() func(Request) Response {
-	return func(p Request) Response {
-		return *f
+func (f *FileResponse) Handler() func(*Context) {
+	return func(c *Context) {
+		c.SendResponse(f)
 	}
 }
 

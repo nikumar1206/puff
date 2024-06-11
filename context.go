@@ -28,6 +28,10 @@ func (ctx *Context) SetHeader(k, v string) {
 	ctx.ResponseWriter.Header().Set(k, v)
 }
 
+func (ctx *Context) SetContentType(v string) {
+	ctx.SetHeader("Content-Type", v)
+}
+
 // sets the respons status code
 func (ctx *Context) SetStatusCode(sc int) {
 	ctx.ResponseWriter.WriteHeader(sc)
