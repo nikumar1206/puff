@@ -102,13 +102,13 @@ func (a *PuffApp) ListenAndServe() {
 		muxAddHandleFunc(mux, route)
 	}
 
-	handlerFunc := HandlerToFunc(router)
+	handlerFunc := handlerToFunc(router)
 
 	for _, m := range a.Middlewares {
 		handlerFunc = (*m)(handlerFunc)
 	}
 
-	router = FuncToHandler(handlerFunc)
+	router = funcToHandler(handlerFunc)
 
 	// Add OpenAPISpec
 	a.AddOpenAPIDocs(mux, routes)
