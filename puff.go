@@ -2,8 +2,10 @@ package puff
 
 import (
 	"github.com/nikumar1206/puff/logger"
-	"github.com/nikumar1206/puff/middleware"
 )
+
+type HandlerFunc func(c *Context)
+type Middleware func(next HandlerFunc) HandlerFunc
 
 func App(c *Config) *PuffApp {
 	r := &Router{
@@ -30,6 +32,5 @@ func DefaultApp() *PuffApp {
 		DocsURL: "/docs",
 	}
 	a := App(&c)
-	a.IncludeMiddlewares(middleware.PanicMiddleware, middleware.LoggingMiddleware, middleware.TracingMiddleware)
 	return a
 }

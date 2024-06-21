@@ -1,19 +1,16 @@
 package puff
 
 type Field struct {
-	Name        string
-	Schema      interface{}
 	Description string
+	Body        map[string]any
+	// by default not required. unless specified
+	QueryParams map[string]any
+	// by default required. unless specified
+	PathParams string
+	Responses  map[int]Response
 }
 
-type QueryParam struct {
-	*Field
-}
-
-type PathParam struct {
-	*Field
-}
-
-type Header struct {
-	*Field
+type Query struct {
+	foo string
+	bar string
 }

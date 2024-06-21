@@ -3,23 +3,23 @@ package middleware
 import (
 	"fmt"
 	"log/slog"
-	"net/http"
 
+	"github.com/nikumar1206/puff"
 	"github.com/nikumar1206/puff/utils"
 )
 
-func PanicMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func PanicMiddleware(next puff.HandlerFunc) puff.HandlerFunc {
+	return func(c *puff.Context) {
 		defer func() {
 			a := recover()
 			if a != nil {
 				errorID := utils.RandomNanoID()
-				w.WriteHeader(500)
-				w.Header().Add("Content-Type", "text/plain")
-				fmt.Fprint(w, "There was a panic during the execution recovered by the panic handling middleware. Error ID: "+errorID)
 				slog.Error("Panic During Execution", slog.String("ERROR ID", errorID), slog.String("Error", a.(string)))
+				errorMsg := fmt.Sprintf("There was a panic during the execution recovered by the panic handling middleware. Error ID: " + errorID)
+				res := puff.GenericResponse{StatusCode: 500, Content: errorMsg}
+				c.SendResponse(res)
 			}
 		}()
-		next.ServeHTTP(w, r)
-	})
+		next(c)
+	}
 }

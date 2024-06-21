@@ -16,7 +16,7 @@ type Router struct {
 func (r *Router) registerRoute(
 	method string,
 	path string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context),
 	description string,
 ) {
 	newRoute := Route{
@@ -25,7 +25,7 @@ func (r *Router) registerRoute(
 		Path:        path,
 		Handler:     handleFunc,
 		Protocol:    method,
-		Pattern:     method + " " + path,
+		Pattern:     fmt.Sprintf("%s %s", method, path),
 	}
 	r.Routes = append(r.Routes, newRoute)
 }
@@ -33,7 +33,7 @@ func (r *Router) registerRoute(
 func (r *Router) Get(
 	path string,
 	description string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodGet, path, handleFunc, description)
 }
@@ -41,7 +41,7 @@ func (r *Router) Get(
 func (r *Router) Post(
 	path string,
 	description string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodPost, path, handleFunc, description)
 }
@@ -49,7 +49,7 @@ func (r *Router) Post(
 func (r *Router) Put(
 	path string,
 	description string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodPut, path, handleFunc, description)
 }
@@ -57,7 +57,7 @@ func (r *Router) Put(
 func (r *Router) Patch(
 	path string,
 	description string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodPatch, path, handleFunc, description)
 }
@@ -65,7 +65,7 @@ func (r *Router) Patch(
 func (r *Router) Delete(
 	path string,
 	description string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodDelete, path, handleFunc, description)
 }

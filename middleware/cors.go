@@ -1,14 +1,14 @@
 package middleware
 
 import (
-	"net/http"
+	"github.com/nikumar1206/puff"
 )
 
-func CORSMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Origin")
-		next.ServeHTTP(w, r)
-	})
+func CORSMiddleware(next puff.HandlerFunc) puff.HandlerFunc {
+	return func(ctx *puff.Context) {
+		ctx.SetHeader("Access-Control-Allow-Origin", "*")
+		ctx.SetHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		ctx.SetHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Origin")
+		next(ctx)
+	}
 }
