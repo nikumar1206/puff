@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -12,11 +13,14 @@ import (
 func main() {
 	app := puff.DefaultApp()
 
+	fmt.Print(app.DocsURL)
+
 	app.IncludeMiddlewares(
-		middleware.CORSMiddleware, middleware.PanicMiddleware,
+		middleware.CORS(), middleware.Panic(),
 	)
 
 	app.Get("/{$}", "Welcomes users to the application", func(ctx *puff.Context) {
+		fmt.Print("did we get to here")
 		html_file, err := os.ReadFile("assets/hello_world.html")
 
 		switch {
