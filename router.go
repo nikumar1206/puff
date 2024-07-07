@@ -2,7 +2,6 @@ package puff
 
 import (
 	"fmt"
-	"net/http"
 )
 
 type Router struct {
@@ -16,7 +15,7 @@ type Router struct {
 func (r *Router) registerRoute(
 	method string,
 	path string,
-	handleFunc func(Request) interface{},
+	handleFunc func(*Context, *interface{}),
 	description string,
 ) {
 	newRoute := Route{
@@ -25,49 +24,25 @@ func (r *Router) registerRoute(
 		Path:        path,
 		Handler:     handleFunc,
 		Protocol:    method,
-		Pattern:     method + " " + path,
+		Pattern:     fmt.Sprintf("%s %s", method, path),
 	}
 	r.Routes = append(r.Routes, newRoute)
 }
 
-func (r *Router) Get(
-	path string,
-	description string,
-	handleFunc func(Request) interface{},
-) {
-	r.registerRoute(http.MethodGet, path, handleFunc, description)
+func (r *Router) Get(path, description string, handleFunc func(*Context, *interface{})) {
+	r.registerRoute("GET", path, handleFunc, description)
 }
-
-func (r *Router) Post(
-	path string,
-	description string,
-	handleFunc func(Request) interface{},
-) {
-	r.registerRoute(http.MethodPost, path, handleFunc, description)
+func (r *Router) Post(path, description string, handleFunc func(*Context, *interface{})) {
+	r.registerRoute("POST", path, handleFunc, description)
 }
-
-func (r *Router) Put(
-	path string,
-	description string,
-	handleFunc func(Request) interface{},
-) {
-	r.registerRoute(http.MethodPut, path, handleFunc, description)
+func (r *Router) Put(path, description string, handleFunc func(*Context, *interface{})) {
+	r.registerRoute("PUT", path, handleFunc, description)
 }
-
-func (r *Router) Patch(
-	path string,
-	description string,
-	handleFunc func(Request) interface{},
-) {
-	r.registerRoute(http.MethodPatch, path, handleFunc, description)
+func (r *Router) Patch(path, description string, handleFunc func(*Context, *interface{})) {
+	r.registerRoute("PATCH", path, handleFunc, description)
 }
-
-func (r *Router) Delete(
-	path string,
-	description string,
-	handleFunc func(Request) interface{},
-) {
-	r.registerRoute(http.MethodDelete, path, handleFunc, description)
+func (r *Router) Delete(path, description string, handleFunc func(*Context, *interface{})) {
+	r.registerRoute("DELETE", path, handleFunc, description)
 }
 
 func (r *Router) IncludeRouter(rt *Router) {

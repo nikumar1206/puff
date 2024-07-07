@@ -1,55 +1,93 @@
 package puff
 
-type Param[T any] struct {
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"reflect"
+)
+
+// Param interface
+type Param struct {
 	Description string
-	Kind        string //Header, Path, Query, Body
-	Value       T
+	Kind        string
+	Type        string
 }
+type NoParams struct{}
 
-func HeaderParam[T any](description string) Param[T] {
-	return Param[T]{
-		Description: description,
-		Kind:        "Header",
+func NewParametersInterface(request *http.Request, schema reflect.Type, params map[string]Param) (*interface{}, error) {
+	if len(params) == 0 {
+		return nil, nil
 	}
-}
 
-func PathParam[T any](description string) Param[T] {
-	return Param[T]{
-		Description: description,
-		Kind:        "Path",
+	newStruct := reflect.New(schema).Elem()
+
+	for field_name, param := range params {
+		schema_field := newStruct.FieldByName(field_name)
+
+		if !schema_field.IsValid() { //should never hit this condition, but specified
+			return nil, fmt.Errorf("Unexpected parameter: %s", field_name)
+		}
+
+		reqBody, err := io.ReadAll(request.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Unexpected error: %s", err.Error())
+		}
+		var body map[string]any
+		if string(reqBody) != "" {
+			err := json.Unmarshal(reqBody, &body)
+			if err != nil {
+				return nil, fmt.Errorf("Body formatted incorrectly. Error: %s.", err.Error())
+			}
+		}
+
+		var value any
+		switch param.Type {
+		case "QueryParam":
+			value = request.URL.Query().Get(field_name)
+		case "HeaderParam":
+			value = request.Header.Get(field_name)
+		case "BodyParam":
+			if len(body) == 0 {
+				value = ""
+				break
+			}
+			val, ok := body[field_name]
+			if !ok {
+				value = ""
+				break
+			}
+			value = val
+		case "PathParam":
+			value = request.PathValue(field_name)
+		}
+		switch typedValue := value.(type) {
+		case string:
+			if param.Type != "string" {
+				return nil, fmt.Errorf("Parameter %s must be a %s.", field_name, param.Type)
+			}
+			schema_field.SetString(typedValue)
+			if value == "" {
+				return nil, fmt.Errorf("Expected parameter but not provided: %s", field_name)
+			}
+		case int:
+			if param.Type != "int" {
+				return nil, fmt.Errorf("Parameter %s must be a %s.", field_name, param.Type)
+			}
+			schema_field.SetInt(int64(typedValue))
+		case bool:
+			if param.Type != "bool" {
+				return nil, fmt.Errorf("Parameter %s must be a %s.", field_name, param.Type)
+			}
+			schema_field.SetBool(typedValue)
+		default:
+			return nil, fmt.Errorf("Parameter %s must be a %s.", field_name, param.Type)
+		}
 	}
-}
-
-func QueryParam[T any](description string) Param[T] {
-	return Param[T]{
-		Description: description,
-		Kind:        "Query",
+	ns, ok := newStruct.Interface().(interface{})
+	if !ok {
+		return nil, fmt.Errorf("Unexpected error occurred.")
 	}
+	return &ns, nil
 }
-
-func BodyParam[T any](description string) Param[T] {
-	return Param[T]{
-		Description: description,
-		Kind:        "Header",
-	}
-}
-
-//DREAM CODE WITH THIS:
-
-// func HandleRoute(params Context[HelloWorld]) {
-// 	params.drinks.Value[0] //has correct type of string
-// }
-//
-// type HelloWorld struct {
-// 	food   Param[string]
-// 	drinks Param[[]string]
-// 	price  Param[int]
-// }
-//
-// func main() {
-// 	params_on_my_route := HelloWorld{
-// 		food:   QueryParam[string]("The food you have ordered."),
-// 		drinks: BodyParam[[]string]("The drinks you have ordered."),
-// 		price:  QueryParam[int]("The price that you would like to charge out of your card."),
-// 	}
-// }
