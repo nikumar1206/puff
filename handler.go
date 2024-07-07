@@ -44,12 +44,10 @@ func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 
 func handleJSONResponse(w http.ResponseWriter, req *http.Request, res JSONResponse) {
 	w.Header().Set("Content-Type", "application/json")
-	statusCode := resolveStatusCode(res.StatusCode, req.Method, res.GetContent())
 	if err := json.NewEncoder(w).Encode(res.Content); err != nil {
 		writeErrorResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(statusCode)
 }
 
 func handleHTMLResponse(w http.ResponseWriter, req *http.Request, res HTMLResponse) {

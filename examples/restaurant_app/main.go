@@ -13,7 +13,7 @@ func main() {
 	app := puff.DefaultApp()
 
 	app.IncludeMiddlewares(
-		middleware.CORSMiddleware, middleware.PanicMiddleware,
+		middleware.CORS(), middleware.Panic(), middleware.Tracing(), middleware.Logging(),
 	)
 
 	app.Get("/{$}", "Welcomes users to the application", func(ctx *puff.Context) {

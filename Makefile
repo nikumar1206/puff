@@ -23,7 +23,7 @@ clean: ## Clean up the project directory and tidy modules
     $(GOCMD) mod tidy
 
 run: ## Run demo app locally
-	$(GOBUILD) -o $(BINARY_NAME) -v examples/demo.go ./$(BINARY_NAME)
+	$(GOBUILD) -o $(BINARY_NAME) -v examples/restaurant_app/main.go ./$(BINARY_NAME)
 
 kp:
 	@echo "Checking for processes on port 8000..."
@@ -36,7 +36,7 @@ kp:
 	fi
 
 reload: kp## Run demo app locally with reload
-	(cd examples/restaurant_app; air --build.cmd "$(GOBUILD) -o $(BINARY_NAME) main.go" --build.bin "./$(BINARY_NAME)")
+	@(cd examples/restaurant_app; air --build.cmd "$(GOBUILD) -o $(BINARY_NAME) main.go" --build.bin "./$(BINARY_NAME)")
 
 build-linux: ## Build the application for Linux
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_UNIX) -v

@@ -8,6 +8,7 @@ type Field struct {
 	// by default required. unless specified
 	PathParams string
 	Responses  map[int]Response
+	Validators []func() bool
 }
 
 type Query struct {

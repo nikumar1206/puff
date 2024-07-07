@@ -1,6 +1,8 @@
 package puff
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func muxAddHandleFunc(mux *http.ServeMux, route *Route) {
 	handler := funcToHandler(route.Handler)
