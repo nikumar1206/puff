@@ -11,8 +11,20 @@ import (
 // Param interface
 type Param struct {
 	Description string
-	Kind        string
-	Type        string
+	Body        map[string]any
+	// by default not required. unless specified
+	QueryParams map[string]any
+	// by default required. unless specified
+	PathParams string
+	Responses  map[int]Response
+	Validators []func() bool
+}
+
+type Query struct {
+	foo  string
+	bar  string
+	Kind string
+	Type string
 }
 type NoParams struct{}
 
