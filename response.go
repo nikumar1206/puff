@@ -1,8 +1,11 @@
 package puff
 
 import (
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 )
@@ -11,7 +14,7 @@ import (
 type Response interface {
 	GetStatusCode() int
 	GetContentType() string
-	WriteContent(http.ResponseWriter) error
+	WriteContent(http.ResponseWriter, *http.Request) error
 }
 
 // JSONResponse represents a response with JSON content.
@@ -30,7 +33,7 @@ func (j JSONResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the JSON response.
-func (j JSONResponse) WriteContent(w http.ResponseWriter) error {
+func (j JSONResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
 	err := json.NewEncoder(w).Encode(j.Content)
 	if err != nil {
 		return fmt.Errorf("Writing JSONResponse Content failed with: %s", err.Error())
@@ -54,7 +57,7 @@ func (h HTMLResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the HTML response.
-func (h HTMLResponse) WriteContent(w http.ResponseWriter) error {
+func (h HTMLResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
 	fmt.Fprint(w, h.Content)
 	return nil
 }
@@ -77,7 +80,7 @@ func (f FileResponse) GetContentType() string {
 }
 
 // GetContent returns the file content.
-func (f FileResponse) WriteContent(w http.ResponseWriter) error {
+func (f FileResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
 	file, err := os.ReadFile(f.FileName)
 	if err != nil {
 		writeErrorResponse(w, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
@@ -111,7 +114,7 @@ func (s StreamingResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the streaming response.
-func (s StreamingResponse) WriteContent(w http.ResponseWriter) error {
+func (s StreamingResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
@@ -134,6 +137,47 @@ func (s StreamingResponse) Handler() func(*Context) {
 	}
 }
 
+type WebSocketResponse struct {
+}
+
+func secWebSocketAcceptKey(key string) string {
+	guid := "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+	hash := sha1.New()
+	hash.Write([]byte(key + guid))
+	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
+}
+
+type WebSocket struct {
+	Context   *Context
+	Conn      net.Conn
+	Channel   chan string
+	OnMessage func(WebSocket, string) //optional: events
+	OnClose   func(WebSocket)         //optional: events
+}
+
+func read_conn(ws WebSocket) {
+	for {
+		buf := make([]byte, 1024)
+		n, err := ws.Conn.Read(buf)
+		if err != nil {
+			break
+		}
+		ws.OnMessage(ws, string(buf[:n]))
+	}
+	ws.Close()
+}
+
+func (ws WebSocket) Send(message string) error {
+	_, err := ws.Conn.Write([]byte(message))
+	return err
+}
+
+func (ws WebSocket) Close() {
+	ws.OnClose(ws)
+	close(ws.Channel)
+	ws.Conn.Close() //do not care about erros
+}
+
 // GenericResponse represents a response with plain text content.
 type GenericResponse struct {
 	StatusCode  int
@@ -151,7 +195,7 @@ func (g GenericResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the generic response.
-func (g GenericResponse) WriteContent(w http.ResponseWriter) error {
+func (g GenericResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
 	fmt.Fprint(w, g.Content)
 	return nil
 }

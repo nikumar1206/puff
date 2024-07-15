@@ -9,6 +9,7 @@ type Context struct {
 	// original http.request object
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
+	WebSocket      WebSocket //WebSocket (if valid websocket connection)
 }
 
 func NewContext(w http.ResponseWriter, r http.Request) *Context {
@@ -45,7 +46,7 @@ func (ctx *Context) GetRequestID() string {
 }
 
 func (ctx *Context) SendResponse(res Response) {
-	res.WriteContent(ctx.ResponseWriter)
+	res.WriteContent(ctx.ResponseWriter, ctx.Request)
 }
 
 // will try to return bearer token if exists, else returns ""

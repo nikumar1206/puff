@@ -22,12 +22,14 @@ func RandomNanoID() string {
 	}
 	return id
 }
+
 func resolveContentType(provided, default_content_type string) string {
 	if provided == "" {
 		return default_content_type
 	}
 	return provided
 }
+
 func resolveStatusCode(sc int, method string) int {
 	if sc == 0 {
 		if method == http.MethodPost {
