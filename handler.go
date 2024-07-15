@@ -74,6 +74,7 @@ func handleFileResponse(w http.ResponseWriter, req *http.Request, res FileRespon
 }
 
 func handleStreamingResponse(w http.ResponseWriter, res StreamingResponse) {
+	// TODO: there should be a streaming struct to share data.
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")

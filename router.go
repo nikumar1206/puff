@@ -3,77 +3,169 @@ package puff
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
+// Router defines a group of routes that share the same prefix and middlewares.
 type Router struct {
 	Name    string
 	Prefix  string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
 	Routers []*Router
-	Routes  []Route
+	Routes  []*Route
 	// middlewares []Middleware
+	parent *Router
+}
+
+// NewRouter creates a new router provided router name and path prefix.
+func NewRouter(name string, prefix string) *Router {
+	return &Router{
+		Name:   name,
+		Prefix: prefix,
+	}
 }
 
 func (r *Router) registerRoute(
 	method string,
 	path string,
 	handleFunc func(*Context),
-	description string,
+	fields Field,
 ) {
 	newRoute := Route{
-		RouterName:  r.Name,
-		Description: description,
-		Path:        path,
-		Handler:     handleFunc,
-		Protocol:    method,
-		Pattern:     fmt.Sprintf("%s %s", method, path),
+		Path:     path,
+		Handler:  handleFunc,
+		Protocol: method,
+		Fields:   fields,
 	}
-	r.Routes = append(r.Routes, newRoute)
+
+	r.Routes = append(r.Routes, &newRoute)
 }
 
 func (r *Router) Get(
 	path string,
-	description string,
+	fields Field,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodGet, path, handleFunc, description)
+	r.registerRoute(http.MethodGet, path, handleFunc, fields)
 }
 
 func (r *Router) Post(
 	path string,
-	description string,
+	fields Field,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodPost, path, handleFunc, description)
+	r.registerRoute(http.MethodPost, path, handleFunc, fields)
 }
 
 func (r *Router) Put(
 	path string,
-	description string,
+	fields Field,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodPut, path, handleFunc, description)
+	r.registerRoute(http.MethodPut, path, handleFunc, fields)
 }
 
 func (r *Router) Patch(
 	path string,
-	description string,
+	fields Field,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodPatch, path, handleFunc, description)
+	r.registerRoute(http.MethodPatch, path, handleFunc, fields)
 }
 
 func (r *Router) Delete(
 	path string,
-	description string,
+	fields Field,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodDelete, path, handleFunc, description)
+	r.registerRoute(http.MethodDelete, path, handleFunc, fields)
 }
 
 func (r *Router) IncludeRouter(rt *Router) {
+	if rt.parent != nil {
+		err := fmt.Errorf(
+			"provided router is already attached to %s. A router may only be attached to one parent",
+			rt.parent,
+		)
+		panic(err)
+	}
+
+	rt.parent = r
 	r.Routers = append(r.Routers, rt)
 }
 
 func (r *Router) String() string {
 	return fmt.Sprintf("Name: %s Prefix: %s", r.Name, r.Prefix)
+}
+
+func (r *Router) getCompletePath(route *Route) {
+	var parts []string
+	currentRouter := r
+	for currentRouter != nil {
+		parts = append([]string{currentRouter.Prefix}, parts...)
+		currentRouter = currentRouter.parent
+	}
+
+	parts = append(parts, route.Path)
+	route.fullPath = strings.Join(parts, "")
+}
+
+func (r *Router) createRegexMatch(route *Route) {
+	escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
+	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "[^\\/]+")
+	route.regexp = regexp.MustCompile("^" + regexPattern + "$")
+}
+
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	for _, router := range r.Routers {
+		if strings.HasPrefix(req.URL.Path, router.Prefix) {
+			router.ServeHTTP(w, req)
+			return
+		}
+	}
+
+	c := NewContext(w, req)
+	for _, route := range r.Routes {
+		if route.regexp == nil {
+			// TODO: need to fix this. this will be nil for the doc routes.
+			r.getCompletePath(route)
+			r.createRegexMatch(route)
+		}
+		isMatch := route.regexp.MatchString(req.URL.Path)
+		if isMatch && req.Method == route.Protocol {
+			// err := route.Fields.ValidateIncomingAttribute(Field.Responses, "cheese")
+			// if err != nil {
+			// 	Unprocessable(w, req)
+			// }
+			route.Handler(c)
+			return
+		}
+	}
+
+	http.NotFound(w, req)
+}
+
+func Unprocessable(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "StatusUnprocessableEntity", http.StatusUnprocessableEntity)
+}
+
+// AllRoutes returns all routes attached to a router as well as routes attached to the subrouters
+// For just the routes attached to a router, use `Routes` attribute on Router
+func (r *Router) AllRoutes() []*Route {
+	var routes []*Route
+
+	routes = append(routes, r.Routes...)
+
+	for _, subRouter := range r.Routers {
+		routes = append(routes, subRouter.AllRoutes()...)
+	}
+	return routes
+}
+
+func (r *Router) patchRoutes() {
+	for _, route := range r.Routes {
+		r.getCompletePath(route)
+		r.createRegexMatch(route)
+	}
+	// TODO: ensure no route collision, will be a nice to have
 }

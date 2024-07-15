@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 )
 
 type Config struct {
-	Network bool   // host to the entire network?
-	Port    int    // port number to use
-	Name    string // title for OpenAPI spec
-	Version string // ex. 1.0.0, default: 1.0.0
+	// ListenAddr is the address to listen on.
+	ListenAddr string
+	// Name is the application name
+	Name string
+	// Version is the application version.
+	Version string
+	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
 	DocsURL string
+	// TODO: depending on the mode, set the log level and other settings
+	Mode string
 }
 
 type PuffApp struct {
@@ -20,25 +26,9 @@ type PuffApp struct {
 	Middlewares []*Middleware
 }
 
-// gets all routes for a router
-func (a *PuffApp) getRoutes(r *Router, prefix string) []*Route {
-	var routes []*Route
-	prefix += r.Prefix
-
-	for _, route := range r.Routes {
-		route.Path = prefix + route.Path
-		route.Pattern = route.Protocol + " " + route.Path
-		routes = append(routes, &route)
-	}
-
-	for _, subRouter := range r.Routers {
-		routes = append(routes, a.getRoutes(subRouter, prefix)...)
-	}
-	return routes
-}
-
 // Add a Router to the main app.
 // Under the hood attaches the router to the App's RootRouter
+
 func (a *PuffApp) IncludeRouter(r *Router) {
 	a.RootRouter.IncludeRouter(r)
 }
@@ -53,98 +43,80 @@ func (a *PuffApp) IncludeMiddlewares(ms ...Middleware) {
 	}
 }
 
-func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
+func (a *PuffApp) AddOpenAPIRoutes(rootRouter Router) {
 	if a.DocsURL == "" {
 		return
 	}
-	spec, err := GenerateOpenAPISpec(a.Name, a.Version, routes)
+	spec, err := GenerateOpenAPISpec(a.Name, a.Version, rootRouter)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
 		return
 	}
-	openAPIDocsRoute := Route{
-		Protocol:    "GET",
-		Path:        a.DocsURL + ".json",
-		Pattern:     "GET " + a.DocsURL + ".json",
-		Description: "Recieve Docs as JSON.",
-		Handler: func(c *Context) {
-			res := GenericResponse{
-				Content:     spec,
-				ContentType: "application/json",
-			}
-			c.SendResponse(res)
-		},
+	docsRouter := Router{
+		Prefix: a.DocsURL,
+		Name:   "OpenAPI Documentation Router",
 	}
-	openAPIUIDocsRoute := Route{
-		Protocol:    "GET",
-		Path:        a.DocsURL,
-		Pattern:     "GET " + a.DocsURL,
-		Description: "Display the OpenAPI Docs in Spotlight.",
-		Handler: func(c *Context) {
-			res := HTMLResponse{
-				Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
-			}
-			c.SendResponse(res)
-		},
-	}
-	muxAddHandleFunc(mux, &openAPIDocsRoute)
-	muxAddHandleFunc(mux, &openAPIUIDocsRoute)
+
+	docsRouter.Get(".json", Field{}, func(c *Context) {
+		res := GenericResponse{
+			Content:     spec,
+			ContentType: "application/json",
+		}
+		c.SendResponse(res)
+	})
+
+	docsRouter.Get("", Field{}, func(c *Context) {
+		res := HTMLResponse{
+			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
+		}
+		c.SendResponse(res)
+	})
+
+	a.IncludeRouter(&docsRouter)
 }
 
 func (a *PuffApp) ListenAndServe() {
-	mux := http.NewServeMux()
-	var router http.Handler = mux
 
-	routes := a.getRoutes(a.RootRouter, "")
+	a.AddOpenAPIRoutes(*a.RootRouter)
 
-	for _, route := range routes {
-		slog.Info(fmt.Sprintf("Serving route: %s", route.Pattern))
-		muxAddHandleFunc(mux, route)
+	for _, r := range a.RootRouter.Routers {
+		r.patchRoutes()
+
+		for _, route := range r.Routes {
+			slog.Info(fmt.Sprintf("Serving route: %s", route.fullPath))
+		}
 	}
 
-	handlerFunc := handlerToFunc(router)
+	slog.Info(fmt.Sprintf("Running Puff 💨 on %s", a.ListenAddr))
 
-	for _, m := range a.Middlewares {
-		handlerFunc = (*m)(handlerFunc)
+	err := http.ListenAndServe(a.ListenAddr, a.RootRouter)
+
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
-
-	router = funcToHandler(handlerFunc)
-
-	// Add OpenAPISpec
-	a.AddOpenAPIDocs(mux, routes)
-
-	// Listen and Serve
-	var addr string
-	if a.Network {
-		addr += "0.0.0.0"
-	}
-	addr += fmt.Sprintf(":%d", a.Port)
-
-	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
-	http.ListenAndServe(addr, router)
 }
 
-func (a *PuffApp) Get(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Get(path, description, handleFunc)
+func (a *PuffApp) Get(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Get(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Post(path, description, handleFunc)
+func (a *PuffApp) Post(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Post(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Patch(path, description, handleFunc)
+func (a *PuffApp) Patch(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Patch(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Put(path, description, handleFunc)
+func (a *PuffApp) Put(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Put(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Delete(path, description, handleFunc)
+func (a *PuffApp) Delete(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Delete(path, fields, handleFunc)
 }
 
-// Gets all Routes for the App
-func (a *PuffApp) GetRoutes() []*Route {
-	return a.getRoutes(a.RootRouter, "")
+func (a *PuffApp) AllRoutes() []*Route {
+	return a.RootRouter.AllRoutes()
 }

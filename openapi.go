@@ -133,28 +133,33 @@ func GenerateOpenAPIUI(document, title, docsURL string) string {
 func GenerateOpenAPISpec(
 	appName string,
 	appVersion string,
-	appRoutes []*Route,
+	rootRouter Router,
 ) (string, error) {
 	var tags []Tag
 	var tagNames []string
 	var paths map[string]map[string]interface{} = make(map[string]map[string]interface{})
-	for _, r := range appRoutes {
-		if !slices.Contains(tagNames, r.RouterName) {
-			tagNames = append(tagNames, r.RouterName)
-			tags = append(tags, Tag{Name: r.RouterName, Description: ""})
+
+	for _, router := range rootRouter.Routers {
+
+		for _, route := range router.Routes {
+			if !slices.Contains(tagNames, router.Name) {
+				tagNames = append(tagNames, router.Name)
+				tags = append(tags, Tag{Name: router.Name, Description: ""})
+			}
+			pathMethod := Method{
+				Summary:     "",
+				OperationID: "",
+				Tags:        []string{router.Name},
+				Parameters:  []Parameter{},
+				Responses:   map[string]OpenAPIResponse{},
+				Description: "", // TODO: needs to be dynamic on route
+			}
+			if paths[route.fullPath] == nil {
+				paths[route.fullPath] = make(map[string]interface{})
+			}
+			paths[route.fullPath][strings.ToLower(route.Protocol)] = pathMethod
+
 		}
-		pathMethod := Method{
-			Summary:     "",
-			OperationID: "",
-			Tags:        []string{r.RouterName},
-			Parameters:  []Parameter{},
-			Responses:   map[string]OpenAPIResponse{},
-			Description: r.Description,
-		}
-		if paths[r.Path] == nil {
-			paths[r.Path] = make(map[string]interface{})
-		}
-		paths[r.Path][strings.ToLower(r.Protocol)] = pathMethod
 	}
 
 	info := Info{
