@@ -1,6 +1,7 @@
 package puff
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -12,9 +13,10 @@ type Context struct {
 	WebSocket      WebSocket //WebSocket (if valid websocket connection)
 }
 
-func NewContext(w http.ResponseWriter, r http.Request) *Context {
+func NewContext(w http.ResponseWriter, r *http.Request) *Context {
+	slog.Debug("Initiating new context for request")
 	return &Context{
-		Request:        &r,
+		Request:        r,
 		ResponseWriter: w,
 	}
 }

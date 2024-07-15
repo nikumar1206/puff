@@ -15,7 +15,7 @@ type Param struct {
 	// by default not required. unless specified
 	QueryParams map[string]any
 	// by default required. unless specified
-	PathParams string
+	PathParams map[string]reflect.Kind
 	Responses  map[int]Response
 	Validators []func() bool
 }
