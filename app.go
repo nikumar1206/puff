@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	// ListenAddr is the address to listen on.
+	// TODO: Remove ListenAddr, specify as argument to listen and serve.
 	ListenAddr string
 	// Name is the application name
 	Name string
@@ -43,11 +44,11 @@ func (a *PuffApp) IncludeMiddlewares(ms ...Middleware) {
 	}
 }
 
-func (a *PuffApp) AddOpenAPIRoutes(rootRouter Router) {
+func (a *PuffApp) AddOpenAPIRoutes() {
 	if a.DocsURL == "" {
 		return
 	}
-	spec, err := GenerateOpenAPISpec(a.Name, a.Version, rootRouter)
+	spec, err := GenerateOpenAPISpec(a.Name, a.Version, *a.RootRouter)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
 		return
@@ -77,7 +78,8 @@ func (a *PuffApp) AddOpenAPIRoutes(rootRouter Router) {
 
 func (a *PuffApp) ListenAndServe() {
 
-	a.AddOpenAPIRoutes(*a.RootRouter)
+	a.AddOpenAPIRoutes()
+	a.RootRouter.patchRoutes()
 
 	for _, r := range a.RootRouter.Routers {
 		r.patchRoutes()
@@ -115,6 +117,9 @@ func (a *PuffApp) Put(path string, fields Field, handleFunc func(*Context)) {
 
 func (a *PuffApp) Delete(path string, fields Field, handleFunc func(*Context)) {
 	a.RootRouter.Delete(path, fields, handleFunc)
+}
+func (a *PuffApp) WebSocket(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.WebSocket(path, fields, handleFunc)
 }
 
 func (a *PuffApp) AllRoutes() []*Route {

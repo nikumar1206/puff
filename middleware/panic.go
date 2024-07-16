@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/nikumar1206/puff"
-	"github.com/nikumar1206/puff/utils"
 )
 
 type PanicConfig struct {
@@ -15,7 +14,7 @@ type PanicConfig struct {
 
 var DefaultPanicConfig PanicConfig = PanicConfig{
 	FormatErrorResponse: func(e any, c puff.Context) puff.Response {
-		errorID := utils.RandomNanoID()
+		errorID := puff.RandomNanoID()
 		slog.Error("Panic During Execution", slog.String("ERROR ID", errorID), slog.Any("Error", e))
 		errorMsg := fmt.Sprintf("There was a panic during the execution recovered by the panic handling middleware. Error ID: " + errorID)
 		return puff.JSONResponse{StatusCode: http.StatusInternalServerError, Content: map[string]any{"error": errorMsg, "Request-ID": c.GetRequestID()}}

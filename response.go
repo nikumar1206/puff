@@ -1,11 +1,8 @@
 package puff
 
 import (
-	"crypto/sha1"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 )
@@ -138,44 +135,6 @@ func (s StreamingResponse) Handler() func(*Context) {
 }
 
 type WebSocketResponse struct {
-}
-
-func secWebSocketAcceptKey(key string) string {
-	guid := "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-	hash := sha1.New()
-	hash.Write([]byte(key + guid))
-	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
-}
-
-type WebSocket struct {
-	Context   *Context
-	Conn      net.Conn
-	Channel   chan string
-	OnMessage func(WebSocket, string) //optional: events
-	OnClose   func(WebSocket)         //optional: events
-}
-
-func read_conn(ws WebSocket) {
-	for {
-		buf := make([]byte, 1024)
-		n, err := ws.Conn.Read(buf)
-		if err != nil {
-			break
-		}
-		ws.OnMessage(ws, string(buf[:n]))
-	}
-	ws.Close()
-}
-
-func (ws WebSocket) Send(message string) error {
-	_, err := ws.Conn.Write([]byte(message))
-	return err
-}
-
-func (ws WebSocket) Close() {
-	ws.OnClose(ws)
-	close(ws.Channel)
-	ws.Conn.Close() //do not care about erros
 }
 
 // GenericResponse represents a response with plain text content.

@@ -1,6 +1,7 @@
 package puff
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -10,15 +11,22 @@ type Context struct {
 	// original http.request object
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
-	WebSocket      WebSocket //WebSocket (if valid websocket connection)
+	WebSocket      *WebSocket //WebSocket (if valid websocket connection)
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 	slog.Debug("Initiating new context for request")
-	return &Context{
+	newContext := Context{
 		Request:        r,
 		ResponseWriter: w,
 	}
+	return &newContext
+}
+
+func (ctx *Context) isWebSocket() bool {
+	return ctx.GetHeader("Upgrade") == "websocket" &&
+		ctx.GetHeader("Connection") == "Upgrade" &&
+		ctx.GetHeader("Sec-WebSocket-Version") == "13"
 }
 
 // returns "" if provided key cannot be found
@@ -62,4 +70,20 @@ func (ctx *Context) GetBearerToken() string {
 	}
 
 	return ""
+}
+
+func (ctx *Context) response(status_code int, message string, a ...any) {
+	ctx.SendResponse(JSONResponse{
+		StatusCode: status_code,
+		Content: map[string]any{
+			"error": fmt.Sprintf(message, a...),
+		},
+	})
+}
+func (ctx *Context) BadRequest(message string, a ...any) {
+	ctx.response(40, message, a...)
+}
+
+func (ctx *Context) InternalServerError(message string, a ...any) {
+	ctx.response(500, message, a...)
 }

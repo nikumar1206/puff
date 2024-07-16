@@ -4,7 +4,7 @@ import (
 	"github.com/nikumar1206/puff/logger"
 )
 
-type HandlerFunc func(*Context, interface{})
+type HandlerFunc func(*Context)
 type Middleware func(next HandlerFunc) HandlerFunc
 
 func App(c *Config) *PuffApp {
