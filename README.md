@@ -41,5 +41,12 @@ app := App.New(h)
 
 ## Definitely need to fix/improve
 
-- Running from just `go run examples/restaurant_app/main.go` doesnt work. We need to fix
+
+- Separate Makefile build commands. Currently everything running via `make reload`
+- Fix route collision issue
+- Server Side Events do not support all event types
+- Improve documentation everywhere
+- Better adherance to OpenAPI spec
+- Change the name for IncludeRouter/IncludeMiddleware. It is obtuse.
+- JSON should only do JSON logging. Text logger, shouldn't indent JSON
 - find something better than regex matching

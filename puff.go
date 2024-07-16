@@ -1,3 +1,4 @@
+// Package puff provides primitives for implementing a Puff Server
 package puff
 
 import (
@@ -8,9 +9,9 @@ type HandlerFunc func(*Context)
 type Middleware func(next HandlerFunc) HandlerFunc
 
 func App(c *Config) *PuffApp {
-	r := NewRouter("PuffApp Root", "")
+	r := &Router{Name: "Puff Default", Tag: "Default", Description: "Puff Default Router"}
 	if c.Version == "" {
-		c.Version = "1.0.0"
+		c.Version = "0.0.0"
 	}
 
 	return &PuffApp{
@@ -19,15 +20,14 @@ func App(c *Config) *PuffApp {
 	}
 }
 
-func DefaultApp() *PuffApp {
-	logger.DefaultPuffLogger()
+func DefaultApp(name string) *PuffApp {
 	c := Config{
 		Version:    "1.0.0",
-		Name:       "Untitled",
+		Name:       name,
 		ListenAddr: ":8000",
 		DocsURL:    "/docs",
-		Mode:       "DEBUG",
 	}
 	a := App(&c)
+	a.Logger = logger.DefaultPuffLogger()
 	return a
 }

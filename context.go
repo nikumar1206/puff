@@ -15,7 +15,8 @@ type Context struct {
 	ResponseWriter http.ResponseWriter
 	// WebSocket represents WebSocket connection and its related context, connection, and events.
 	// WebSocket will be nil if the route does not use websockets.
-	WebSocket *WebSocket //WebSocket (if valid websocket connection)
+	WebSocket  *WebSocket
+	statusCode int
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
@@ -52,6 +53,12 @@ func (ctx *Context) SetContentType(v string) {
 // SetStatusCode sets the status code of the response.
 func (ctx *Context) SetStatusCode(sc int) {
 	ctx.ResponseWriter.WriteHeader(sc)
+	ctx.statusCode = sc
+}
+
+// GetStatusCode returns the status code. If response not written, returns default 0.
+func (ctx *Context) GetStatusCode() int {
+	return ctx.statusCode
 }
 
 // below are methods that are more utility focused.

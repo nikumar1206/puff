@@ -5,10 +5,12 @@ import (
 	// "fmt"
 	// "io"
 	// "net/http"
+	"fmt"
 	"reflect"
 )
 
-// Param interface
+// Field defines required fields to be inputted.
+// FIXME: This is not how we are going to do this.
 type Field struct {
 	Description string
 	Body        map[string]any
@@ -17,7 +19,7 @@ type Field struct {
 	// by default required. unless specified
 	PathParams map[string]reflect.Kind
 	Responses  map[int]Response
-	Validators []func() bool
+	// Validators []func() bool
 }
 
 type Query struct {
@@ -26,7 +28,16 @@ type Query struct {
 	Kind string
 	Type string
 }
-type NoParams struct{}
+
+func (f *Field) ValidateIncomingAttribute(foo reflect.StructField, v any) error {
+	fmt.Println("found the following provided", foo.Type, v)
+
+	var err error
+	if err != nil {
+		err = fmt.Errorf("So wrong")
+	}
+	return err
+}
 
 // func NewParametersInterface(request *http.Request, schema reflect.Type, params map[string]Param) (*interface{}, error) {
 // 	if len(params) == 0 {

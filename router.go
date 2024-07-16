@@ -2,6 +2,7 @@ package puff
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -9,12 +10,14 @@ import (
 
 // Router defines a group of routes that share the same prefix and middlewares.
 type Router struct {
-	Name    string
-	Prefix  string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
-	Routers []*Router
-	Routes  []*Route
-	// middlewares []Middleware
-	parent *Router
+	Name        string
+	Prefix      string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
+	Routers     []*Router
+	Routes      []*Route
+	Middlewares []*Middleware
+	parent      *Router
+	Tag         string
+	Description string
 }
 
 // NewRouter creates a new router provided router name and path prefix.
@@ -158,11 +161,19 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				}
 				handleWebSocket(c)
 				go c.WebSocket.read()
-				route.Handler(c)
+				handler := route.Handler
+				for _, m := range r.Middlewares {
+					handler = (*m)(handler)
+				}
+				handler(c)
 				for c.WebSocket.IsOpen() {
 				}
 			}
-			route.Handler(c)
+			handler := route.Handler
+			for _, m := range r.Middlewares {
+				handler = (*m)(handler)
+			}
+			handler(c)
 			return
 		}
 	}
@@ -191,6 +202,7 @@ func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
 		r.getCompletePath(route)
 		r.createRegexMatch(route)
+		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
 	}
 	//TODO: ensure no route collision, will be a nice to have
 }

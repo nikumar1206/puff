@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+
+	"github.com/nikumar1206/puff/logger"
 )
 
 type Config struct {
@@ -17,34 +19,50 @@ type Config struct {
 	Version string
 	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
 	DocsURL string
-	// TODO: depending on the mode, set the log level and other settings
-	Mode string
 }
 
 type PuffApp struct {
+	// Config is the Puff App Config.
 	*Config
-	RootRouter  *Router // This is the root router. All other routers will work underneath this.
-	Middlewares []*Middleware
+	// RootRouter is the application's default router. All routers extend from one.
+	RootRouter *Router
+	Logger     *slog.Logger
+}
+
+// SetDebug sets the application mode to 'DEBUG'.
+//
+// In this mode, the application will use 'pretty' logging.
+func (a *PuffApp) SetDebug() {
+	logger := a.Logger.Handler().(*logger.PuffSlogHandler)
+	logger.SetLevel(slog.LevelDebug)
+}
+
+// SetProd sets the application mode to 'PROD'.
+//
+// In this mode, the application will use structured logging.
+func (a *PuffApp) SetProd() {
+	handler := a.Logger.Handler().(*logger.PuffSlogHandler)
+	handler.SetLevel(slog.LevelInfo)
+}
+
+// SetVersion sets the version of the application.
+//
+// This can be useful for tracking and managing application versions.
+func (a *PuffApp) SetVersion(v string) {
+	a.Config.Version = v
 }
 
 // Add a Router to the main app.
 // Under the hood attaches the router to the App's RootRouter
-
 func (a *PuffApp) IncludeRouter(r *Router) {
 	a.RootRouter.IncludeRouter(r)
 }
 
-func (a *PuffApp) IncludeMiddleware(m Middleware) {
-	a.Middlewares = append(a.Middlewares, &m)
+func (a *PuffApp) Use(m Middleware) {
+	a.RootRouter.Middlewares = append(a.RootRouter.Middlewares, &m)
 }
 
-func (a *PuffApp) IncludeMiddlewares(ms ...Middleware) {
-	for _, m := range ms {
-		a.IncludeMiddleware(m)
-	}
-}
-
-func (a *PuffApp) AddOpenAPIRoutes() {
+func (a *PuffApp) addOpenAPIRoutes() {
 	if a.DocsURL == "" {
 		return
 	}
@@ -76,20 +94,17 @@ func (a *PuffApp) AddOpenAPIRoutes() {
 	a.IncludeRouter(&docsRouter)
 }
 
-func (a *PuffApp) ListenAndServe() {
-
-	a.AddOpenAPIRoutes()
+func (a *PuffApp) patchAllRoutes() {
 	a.RootRouter.patchRoutes()
-
 	for _, r := range a.RootRouter.Routers {
 		r.patchRoutes()
-
-		for _, route := range r.Routes {
-			slog.Info(fmt.Sprintf("Serving route: %s", route.fullPath))
-		}
 	}
+}
 
-	slog.Info(fmt.Sprintf("Running Puff 💨 on %s", a.ListenAddr))
+func (a *PuffApp) ListenAndServe() {
+	a.patchAllRoutes()
+	a.addOpenAPIRoutes()
+	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", a.ListenAddr))
 
 	err := http.ListenAndServe(a.ListenAddr, a.RootRouter)
 
