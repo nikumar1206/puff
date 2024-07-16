@@ -21,10 +21,11 @@ type Config struct {
 }
 
 type PuffApp struct {
+	// Config is the Puff App Config.
 	*Config
-	RootRouter  *Router // This is the root router. All other routers will work underneath this.
-	Middlewares []*Middleware
-	Logger      *slog.Logger
+	// RootRouter is the application's default router. All routers extend from one.
+	RootRouter *Router
+	Logger     *slog.Logger
 }
 
 // SetDebug sets the application mode to 'DEBUG'.
@@ -56,14 +57,8 @@ func (a *PuffApp) IncludeRouter(r *Router) {
 	a.RootRouter.IncludeRouter(r)
 }
 
-func (a *PuffApp) IncludeMiddleware(m Middleware) {
-	a.Middlewares = append(a.Middlewares, &m)
-}
-
-func (a *PuffApp) IncludeMiddlewares(ms ...Middleware) {
-	for _, m := range ms {
-		a.IncludeMiddleware(m)
-	}
+func (a *PuffApp) Use(m Middleware) {
+	a.RootRouter.Middlewares = append(a.RootRouter.Middlewares, &m)
 }
 
 func (a *PuffApp) addOpenAPIRoutes() {

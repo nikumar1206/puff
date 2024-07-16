@@ -10,11 +10,11 @@ import (
 
 // Router defines a group of routes that share the same prefix and middlewares.
 type Router struct {
-	Name    string
-	Prefix  string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
-	Routers []*Router
-	Routes  []*Route
-	// middlewares []Middleware
+	Name        string
+	Prefix      string //(optional) prefix, all Routes underneath will have paths that start with the prefix automatically
+	Routers     []*Router
+	Routes      []*Route
+	Middlewares []*Middleware
 	parent      *Router
 	Tag         string
 	Description string
@@ -126,7 +126,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-
 	c := NewContext(w, req)
 	for _, route := range r.Routes {
 		if route.regexp == nil {
@@ -140,7 +139,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// if err != nil {
 			// 	Unprocessable(w, req)
 			// }
-			route.Handler(c)
+			handler := route.Handler
+			for _, m := range r.Middlewares {
+				handler = (*m)(handler)
+			}
+			handler(c)
 			return
 		}
 	}

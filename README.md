@@ -47,3 +47,4 @@ app := App.New(h)
 - Improve documentation everywhere
 - Better adherance to OpenAPI spec
 - Change the name for IncludeRouter/IncludeMiddleware. It is obtuse.
+- JSON should only do JSON logging. Text logger, shouldn't indent JSON

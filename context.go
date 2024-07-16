@@ -10,10 +10,11 @@ type Context struct {
 	// original http.request object
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
+	statusCode     int
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	slog.Debug("Initiating new context for request")
+	slog.Debug("Initiating new context for request", slog.String("path", r.URL.Path))
 	return &Context{
 		Request:        r,
 		ResponseWriter: w,
@@ -37,6 +38,12 @@ func (ctx *Context) SetContentType(v string) {
 // sets the respons status code
 func (ctx *Context) SetStatusCode(sc int) {
 	ctx.ResponseWriter.WriteHeader(sc)
+	ctx.statusCode = sc
+}
+
+// GetStatusCode returns the status code. If response not written, returns default 0.
+func (ctx *Context) GetStatusCode() int {
+	return ctx.statusCode
 }
 
 // below are methods that are more utility focused.
@@ -49,17 +56,18 @@ func (ctx *Context) GetRequestID() string {
 func (ctx *Context) SendResponse(res Response) {
 	switch r := res.(type) {
 	case JSONResponse:
-		handleJSONResponse(ctx.ResponseWriter, ctx.Request, r)
+		handleJSONResponse(ctx, r)
+		ctx.statusCode = r.StatusCode
 	case HTMLResponse:
-		handleHTMLResponse(ctx.ResponseWriter, ctx.Request, r)
+		handleHTMLResponse(ctx, r)
 	case FileResponse:
-		handleFileResponse(ctx.ResponseWriter, ctx.Request, r)
+		handleFileResponse(ctx, r)
 	case StreamingResponse:
-		handleStreamingResponse(ctx.ResponseWriter, r)
+		handleStreamingResponse(ctx, r)
 	case GenericResponse:
-		handleGenericResponse(ctx.ResponseWriter, ctx.Request, r)
+		handleGenericResponse(ctx, r)
 	default:
-		writeErrorResponse(ctx.ResponseWriter, http.StatusInternalServerError, "Invalid response type")
+		writeErrorResponse(ctx, http.StatusInternalServerError, "Invalid response type")
 	}
 }
 

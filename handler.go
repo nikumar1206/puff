@@ -36,48 +36,49 @@ func contentTypeFromFileSuffix(suffix string) string {
 	return ct
 }
 
-func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
-	w.WriteHeader(statusCode)
+func writeErrorResponse(ctx *Context, statusCode int, message string) {
+	ctx.SetHeader("Content-Type", "application/json")
+	json.NewEncoder(ctx.ResponseWriter).Encode(map[string]string{"error": message})
+	ctx.SetStatusCode(statusCode)
 }
 
-func handleJSONResponse(w http.ResponseWriter, req *http.Request, res JSONResponse) {
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(res.Content); err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+func handleJSONResponse(ctx *Context, res JSONResponse) {
+	ctx.SetHeader("Content-Type", "application/json")
+	ctx.SetStatusCode(res.StatusCode)
+	if err := json.NewEncoder(ctx.ResponseWriter).Encode(res.Content); err != nil {
+		writeErrorResponse(ctx, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
 
-func handleHTMLResponse(w http.ResponseWriter, req *http.Request, res HTMLResponse) {
-	statusCode := resolveStatusCode(res.StatusCode, req.Method, res.Content)
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(statusCode)
-	fmt.Fprint(w, res.Content)
+func handleHTMLResponse(ctx *Context, res HTMLResponse) {
+	statusCode := resolveStatusCode(res.StatusCode, ctx.Request.Method, res.Content)
+	ctx.SetHeader("Content-Type", "text/html")
+	ctx.SetStatusCode(statusCode)
+	fmt.Fprint(ctx.ResponseWriter, res.Content)
 }
 
-func handleFileResponse(w http.ResponseWriter, req *http.Request, res FileResponse) {
+func handleFileResponse(ctx *Context, res FileResponse) {
 	fileNameSplit := strings.Split(res.FileName, ".")
 	suffix := fileNameSplit[len(fileNameSplit)-1]
 	contentType := contentTypeFromFileSuffix(suffix)
-	w.Header().Set("Content-Type", contentType)
+	ctx.SetHeader("Content-Type", contentType)
 
 	file, err := os.ReadFile(res.FileName)
 	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
+		writeErrorResponse(ctx, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
 		return
 	}
-	statusCode := resolveStatusCode(res.StatusCode, req.Method, string(file))
-	w.Write(file)
-	w.WriteHeader(statusCode)
+	statusCode := resolveStatusCode(res.StatusCode, ctx.Request.Method, string(file))
+	ctx.ResponseWriter.Write(file)
+	ctx.SetStatusCode(statusCode)
 }
 
-func handleStreamingResponse(w http.ResponseWriter, res StreamingResponse) {
+func handleStreamingResponse(ctx *Context, res StreamingResponse) {
 	// TODO: there should be a streaming struct to share data.
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+	ctx.SetHeader("Content-Type", "text/event-stream")
+	ctx.SetHeader("Cache-Control", "no-cache")
+	ctx.SetHeader("Connection", "keep-alive")
 
 	stream := make(chan string)
 	go func() {
@@ -86,14 +87,14 @@ func handleStreamingResponse(w http.ResponseWriter, res StreamingResponse) {
 	}()
 
 	for value := range stream {
-		fmt.Fprintf(w, "data: %s\n\n", value)
-		w.(http.Flusher).Flush()
+		fmt.Fprintf(ctx.ResponseWriter, "data: %s\n\n", value)
+		ctx.ResponseWriter.(http.Flusher).Flush()
 	}
 }
 
-func handleGenericResponse(w http.ResponseWriter, req *http.Request, res GenericResponse) {
-	statusCode := resolveStatusCode(res.StatusCode, req.Method, res.Content)
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(statusCode)
-	fmt.Fprint(w, res.Content)
+func handleGenericResponse(ctx *Context, res GenericResponse) {
+	statusCode := resolveStatusCode(res.StatusCode, ctx.Request.Method, res.Content)
+	ctx.SetHeader("Content-Type", "text/plain")
+	ctx.SetStatusCode(statusCode)
+	fmt.Fprint(ctx.ResponseWriter, res.Content)
 }

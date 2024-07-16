@@ -13,9 +13,10 @@ import (
 func main() {
 	app := puff.DefaultApp("Restaurant Microservice")
 
-	app.IncludeMiddlewares(
-		middleware.Tracing(), middleware.CORS(), middleware.Panic(), middleware.Logging(),
-	)
+	app.Use(middleware.Tracing())
+	app.Use(middleware.CORS())
+	app.Use(middleware.Panic())
+	app.Use(middleware.Logging())
 
 	g := puff.Field{
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
@@ -58,7 +59,7 @@ func main() {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
 	app.Get("/rawr", f, func(c *puff.Context) {
-		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
+		c.SendResponse(puff.JSONResponse{Content: map[string]any{"foo": "bar"}, StatusCode: 200})
 	})
 	// app.IncludeRouter(routes.PizzaRouter())
 	// dr := routes.DrinksRouter()

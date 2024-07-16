@@ -19,6 +19,7 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 			slog.String("HTTP METHOD", ctx.Request.Method),
 			slog.String("URL", ctx.Request.URL.String()),
 			slog.String("Processing Time", processingTime),
+			slog.Int("Status Code", ctx.GetStatusCode()),
 		)
 	},
 }
