@@ -38,3 +38,13 @@ app := App.New(h)
     - Also believe this is broken.
     - Router name for Drinks Router doesnt appear.
   - Fix the way 'description' is set.
+
+## Definitely need to fix/improve
+
+- Separate Makefile build commands. Currently everything running via `make reload`
+- Fix route collision issue
+- Server Side Events do not support all event types
+- Improve documentation everywhere
+- Better adherance to OpenAPI spec
+- Change the name for IncludeRouter/IncludeMiddleware. It is obtuse.
+- JSON should only do JSON logging. Text logger, shouldn't indent JSON

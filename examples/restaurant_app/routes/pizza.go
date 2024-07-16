@@ -55,7 +55,7 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 	ThumbnailFileResp := puff.FileResponse{FileName: "assets/chezpizawef.jpg"}
-	r.Get("/thumbnail", "returns thumbnail of piza", ThumbnailFileResp.Handler())
+	r.Get("/thumbnail", "returns thumbnail of pizza", ThumbnailFileResp.Handler())
 
 	return r
 }

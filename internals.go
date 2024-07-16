@@ -1,36 +1,37 @@
 package puff
 
-import (
-	"net/http"
-)
+// import (
+// 	"net/http"
+// )
 
-func muxAddHandleFunc(mux *http.ServeMux, route *Route) {
-	handler := funcToHandler(route.Handler)
-	mux.Handle(route.Pattern, handler)
-}
+// func muxAddHandleFunc(server http.Server, route *Route) {
+// 	handler := puffHandlerFuncToHTTPHandler(route.Handler)
+// 	mux.Handle(route.Pattern, handler)
+// 	server.Handler.ServeHTTP(http.ResponseWriter, *http.Request)
+// }
 
-func handlerToFunc(h http.Handler) HandlerFunc {
-	return func(c *Context) {
-		h.ServeHTTP(c.ResponseWriter, c.Request)
-	}
-}
+// // func httpHandlerToPuffHandlerFunc(h http.Handler) HandlerFunc {
+// // 	return func(c *Context) {
+// // 		h.ServeHTTP(c.ResponseWriter, c.Request)
+// // 	}
+// // }
 
-func funcToHandler(f HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c := NewContext(w, *r)
-		f(c)
-	})
-}
+// func puffHandlerFuncToHTTPHandler(f HandlerFunc) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		c := NewContext(w, *r)
+// 		f(c)
+// 	})
+// }
 
-type NetHTTPMiddlewareType func(http.Handler) http.Handler
+// type NetHTTPMiddlewareType func(http.Handler) http.Handler
 
-// converts a net http middleware to puff compatible middleware
-func WrapNetHTTPMiddleware(f NetHTTPMiddlewareType) Middleware {
-	return func(next HandlerFunc) HandlerFunc {
-		return func(c *Context) {
-			nextHandler := funcToHandler(next)
-			(f)(nextHandler).ServeHTTP(c.ResponseWriter, c.Request)
-		}
-	}
+// // converts a net http middleware to puff compatible middleware
+// func WrapNetHTTPMiddleware(f NetHTTPMiddlewareType) Middleware {
+// 	return func(next HandlerFunc) HandlerFunc {
+// 		return func(c *Context) {
+// 			nextHandler := puffHandlerFuncToHTTPHandler(next)
+// 			(f)(nextHandler).ServeHTTP(c.ResponseWriter, c.Request)
+// 		}
+// 	}
 
-}
+// }

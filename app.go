@@ -4,37 +4,51 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+
+	"github.com/nikumar1206/puff/logger"
 )
 
 type Config struct {
-	Network bool   // host to the entire network?
-	Port    int    // port number to use
-	Name    string // title for OpenAPI spec
-	Version string // ex. 1.0.0, default: 1.0.0
+	// ListenAddr is the address to listen on.
+	ListenAddr string
+	// Name is the application name
+	Name string
+	// Version is the application version.
+	Version string
+	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
 	DocsURL string
 }
 
 type PuffApp struct {
+	// Config is the Puff App Config.
 	*Config
-	RootRouter  *Router // This is the root router. All other routers will work underneath this.
-	Middlewares []*Middleware
+	// RootRouter is the application's default router. All routers extend from one.
+	RootRouter *Router
+	Logger     *slog.Logger
 }
 
-// gets all routes for a router
-func (a *PuffApp) getRoutes(r *Router, prefix string) []*Route {
-	var routes []*Route
-	prefix += r.Prefix
+// SetDebug sets the application mode to 'DEBUG'.
+//
+// In this mode, the application will use 'pretty' logging.
+func (a *PuffApp) SetDebug() {
+	logger := a.Logger.Handler().(*logger.PuffSlogHandler)
+	logger.SetLevel(slog.LevelDebug)
+}
 
-	for _, route := range r.Routes {
-		route.Path = prefix + route.Path
-		route.Pattern = route.Protocol + " " + route.Path
-		routes = append(routes, &route)
-	}
+// SetProd sets the application mode to 'PROD'.
+//
+// In this mode, the application will use structured logging.
+func (a *PuffApp) SetProd() {
+	handler := a.Logger.Handler().(*logger.PuffSlogHandler)
+	handler.SetLevel(slog.LevelInfo)
+}
 
-	for _, subRouter := range r.Routers {
-		routes = append(routes, a.getRoutes(subRouter, prefix)...)
-	}
-	return routes
+// SetVersion sets the version of the application.
+//
+// This can be useful for tracking and managing application versions.
+func (a *PuffApp) SetVersion(v string) {
+	a.Config.Version = v
 }
 
 // Add a Router to the main app.
@@ -43,108 +57,82 @@ func (a *PuffApp) IncludeRouter(r *Router) {
 	a.RootRouter.IncludeRouter(r)
 }
 
-func (a *PuffApp) IncludeMiddleware(m Middleware) {
-	a.Middlewares = append(a.Middlewares, &m)
+func (a *PuffApp) Use(m Middleware) {
+	a.RootRouter.Middlewares = append(a.RootRouter.Middlewares, &m)
 }
 
-func (a *PuffApp) IncludeMiddlewares(ms ...Middleware) {
-	for _, m := range ms {
-		a.IncludeMiddleware(m)
-	}
-}
-
-func (a *PuffApp) AddOpenAPIDocs(mux *http.ServeMux, routes []*Route) {
+func (a *PuffApp) addOpenAPIRoutes() {
 	if a.DocsURL == "" {
 		return
 	}
-	spec, err := GenerateOpenAPISpec(a.Name, a.Version, routes)
+	spec, err := GenerateOpenAPISpec(a.Name, a.Version, *a.RootRouter)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
 		return
 	}
-	openAPIDocsRoute := Route{
-		Protocol:    "GET",
-		Path:        a.DocsURL + ".json",
-		Pattern:     "GET " + a.DocsURL + ".json",
-		Description: "Recieve Docs as JSON.",
-		Handler: func(c *Context) {
-			res := GenericResponse{
-				Content:     spec,
-				ContentType: "application/json",
-			}
-			c.SendResponse(res)
-		},
+	docsRouter := Router{
+		Prefix: a.DocsURL,
+		Name:   "OpenAPI Documentation Router",
 	}
-	openAPIUIDocsRoute := Route{
-		Protocol:    "GET",
-		Path:        a.DocsURL,
-		Pattern:     "GET " + a.DocsURL,
-		Description: "Display the OpenAPI Docs in Spotlight.",
-		Handler: func(c *Context) {
-			res := HTMLResponse{
-				Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
-			}
-			c.SendResponse(res)
-		},
+
+	docsRouter.Get(".json", Field{}, func(c *Context) {
+		res := GenericResponse{
+			Content:     spec,
+			ContentType: "application/json",
+		}
+		c.SendResponse(res)
+	})
+
+	docsRouter.Get("", Field{}, func(c *Context) {
+		res := HTMLResponse{
+			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
+		}
+		c.SendResponse(res)
+	})
+
+	a.IncludeRouter(&docsRouter)
+}
+
+func (a *PuffApp) patchAllRoutes() {
+	a.RootRouter.patchRoutes()
+	for _, r := range a.RootRouter.Routers {
+		r.patchRoutes()
 	}
-	muxAddHandleFunc(mux, &openAPIDocsRoute)
-	muxAddHandleFunc(mux, &openAPIUIDocsRoute)
 }
 
 func (a *PuffApp) ListenAndServe() {
-	mux := http.NewServeMux()
-	var router http.Handler = mux
+	a.patchAllRoutes()
+	a.addOpenAPIRoutes()
+	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", a.ListenAddr))
 
-	routes := a.getRoutes(a.RootRouter, "")
+	err := http.ListenAndServe(a.ListenAddr, a.RootRouter)
 
-	for _, route := range routes {
-		slog.Info(fmt.Sprintf("Serving route: %s", route.Pattern))
-		muxAddHandleFunc(mux, route)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
-
-	handlerFunc := handlerToFunc(router)
-
-	for _, m := range a.Middlewares {
-		handlerFunc = (*m)(handlerFunc)
-	}
-
-	router = funcToHandler(handlerFunc)
-
-	// Add OpenAPISpec
-	a.AddOpenAPIDocs(mux, routes)
-
-	// Listen and Serve
-	var addr string
-	if a.Network {
-		addr += "0.0.0.0"
-	}
-	addr += fmt.Sprintf(":%d", a.Port)
-
-	slog.Info(fmt.Sprintf("Running Puff 💨 on port %d", a.Port))
-	http.ListenAndServe(addr, router)
 }
 
-func (a *PuffApp) Get(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Get(path, description, handleFunc)
+func (a *PuffApp) Get(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Get(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Post(path, description, handleFunc)
+func (a *PuffApp) Post(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Post(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Patch(path, description, handleFunc)
+func (a *PuffApp) Patch(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Patch(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Put(path, description, handleFunc)
+func (a *PuffApp) Put(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Put(path, fields, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, description string, handleFunc func(*Context)) {
-	a.RootRouter.Delete(path, description, handleFunc)
+func (a *PuffApp) Delete(path string, fields Field, handleFunc func(*Context)) {
+	a.RootRouter.Delete(path, fields, handleFunc)
 }
 
-// Gets all Routes for the App
-func (a *PuffApp) GetRoutes() []*Route {
-	return a.getRoutes(a.RootRouter, "")
+func (a *PuffApp) AllRoutes() []*Route {
+	return a.RootRouter.AllRoutes()
 }

@@ -1,3 +1,4 @@
+// Package logger provides a simple logging implementation to be used in conjunction with Puff.
 package logger
 
 import (
@@ -17,6 +18,18 @@ type Config struct {
 
 type PuffSlogHandler struct {
 	slog.Handler
+	level slog.Level
+}
+
+func NewPuffSlogHandler(baseHandler slog.Handler, level slog.Level) *PuffSlogHandler {
+	return &PuffSlogHandler{
+		Handler: baseHandler,
+		level:   level,
+	}
+}
+
+func (h *PuffSlogHandler) Enabled(c context.Context, level slog.Level) bool {
+	return level >= h.level
 }
 
 func (h *PuffSlogHandler) Handle(c context.Context, r slog.Record) error {
@@ -52,36 +65,41 @@ func (h *PuffSlogHandler) Handle(c context.Context, r slog.Record) error {
 		fmt.Println(timeStr, level, msg)
 	}
 
-	return fmt.Errorf("Error in logging")
+	return nil
 }
 
-func InitLogger(c *Config) *slog.Logger {
-	var logger *slog.Logger
-	switch c.UseJSON {
-	case true:
-		logger = slog.New(
+func (h *PuffSlogHandler) SetLevel(level slog.Level) {
+	h.level = level
+}
+
+func NewPuffLogger(c Config) *slog.Logger {
+	var handler slog.Handler
+	if c.UseJSON {
+		handler =
 			slog.NewJSONHandler(
 				os.Stdout,
 				&slog.HandlerOptions{
 					AddSource: true,
 					Level:     c.Level,
 				},
-			),
+			)
+	} else {
+		handler = slog.NewTextHandler(
+			os.Stdout,
+			&slog.HandlerOptions{
+				AddSource: true,
+				Level:     c.Level,
+			},
 		)
-	case false:
-		logger = DefaultPuffLogger()
 	}
-
+	logger := slog.New(NewPuffSlogHandler(handler, c.Level))
 	slog.SetDefault(logger)
 	return logger
 }
 
 func DefaultPuffLogger() *slog.Logger {
-	opts := slog.HandlerOptions{
-		AddSource: true,
-	}
-	h := PuffSlogHandler{Handler: slog.NewTextHandler(os.Stdout, &opts)}
-	json_logger := slog.New(&h)
-	slog.SetDefault(json_logger)
-	return json_logger
+	return NewPuffLogger(Config{
+		UseJSON: true,
+		Level:   slog.LevelInfo,
+	})
 }
