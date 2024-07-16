@@ -2,6 +2,7 @@ package puff
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -14,7 +15,9 @@ type Router struct {
 	Routers []*Router
 	Routes  []*Route
 	// middlewares []Middleware
-	parent *Router
+	parent      *Router
+	Tag         string
+	Description string
 }
 
 // NewRouter creates a new router provided router name and path prefix.
@@ -166,6 +169,7 @@ func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
 		r.getCompletePath(route)
 		r.createRegexMatch(route)
+		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
 	}
 	// TODO: ensure no route collision, will be a nice to have
 }

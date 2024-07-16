@@ -39,7 +39,10 @@ app := App.New(h)
     - Router name for Drinks Router doesnt appear.
   - Fix the way 'description' is set.
 
-
-
 ## Definitely need to fix/improve
-- Running from just `go run examples/restaurant_app/main.go` doesnt work. We need to fix
+
+- Separate Makefile build commands. Currently everything running via `make reload`
+- Fix route collision issue
+- Server Side Events do not support all event types
+- Improve documentation everywhere
+- Better adherance to OpenAPI spec

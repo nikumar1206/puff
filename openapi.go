@@ -3,131 +3,260 @@ package puff
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"slices"
-	"strings"
 )
 
-type License struct {
-	Name string `json:"name"` // MIT, CC-BY-0, etc.
-	Url  string `json:"url"`
-}
-type Info struct {
-	Version string  `json:"version"` // ex. 1.0.0
-	Title   string  `json:"title"`
-	License License `json:"license"`
-	// add licensing here
-}
-type Server struct {
-	Url         string `json:"url"`
-	Description string `json:"description"`
-}
-type Tag struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+type Reference struct {
+	Ref         string `json:"$ref"`
+	Summary     string `json:"$summary"`
+	Description string `json:"$description"`
 }
 
-//	type Schema struct {
-//		Type string `json:"type"`
-//	}
-type Parameter struct {
-	Name        string `json:"url"`
-	In          string `json:"in"` // path, query, header, cookie
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-	// Schema      Schema `json:"schema"`
-	Deprecated bool `json:"deprecated"`
-}
-
-type OpenAPIResponse struct {
-	Description string
-	// Headers []Header
-	// Content []Content
-	// Fix Me: https://swagger.io/specification/#responses-object
-}
-
-type Get struct {
-	*Method `json:"get"`
-}
-type Post struct {
-	*Method `json:"post"`
-}
-type Put struct {
-	*Method `json:"put"`
-}
-type Patch struct {
-	*Method `json:"patch"`
-}
-type Method struct {
-	// https://swagger.io/specification/#:~:text=style%3A%20simple-,Operation%20Object,-Describes%20a%20single
-	Summary     string                     `json:"summary"`
-	OperationID string                     `json:"operationId"`
-	Tags        []string                   `json:"tags"`
-	Parameters  []Parameter                `json:"parameters"`
-	Description string                     `json:"description"`
-	Responses   map[string]OpenAPIResponse `json:"responses"`
-	Deprecated  bool                       `json:"deprecated"`
-	// FIX ME: Request-Body
-}
-
+// OpenAPI struct represents the root of the OpenAPI document.
 type OpenAPI struct {
-	SpecVersion string                            `json:"openapi"` // this is the version, should be 3.1.0
-	Info        Info                              `json:"info"`
-	Servers     []Server                          `json:"servers"`
-	Paths       map[string]map[string]interface{} `json:"paths"` // the string key is the path
-	Tags        []Tag                             `json:"tags"`
+	SpecVersion       string                `json:"openapi"`
+	Info              Info                  `json:"info"`
+	JSONSchemaDialect string                `json:"jsonSchemaDialect"`
+	Servers           []Server              `json:"servers"`
+	Paths             Paths                 `json:"paths"`
+	Webhooks          map[string]any        `json:"webhooks"`
+	Components        Components            `json:"components"`
+	Security          []SecurityRequirement `json:"security"`
+	Tags              []Tag                 `json:"tags"`
+	ExternalDocs      ExternalDocumentation `json:"externalDocs"`
 }
 
-var OPENAPI_UI string = `
-<!DOCTYPE html>
-<html >
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="SwaggerUIMultifold" />
-      <link rel="icon" type="image/x-icon" href="https://fav.farm/💨">
-    <link rel="stylesheet" href="//unpkg.com/swagger-editor@5.0.0-alpha.86/dist/swagger-editor.css" />
-    <title>%s</title>
-  </head>
-  <body style="margin:0; padding:0;">
-    <section id="swagger-ui"></section>
-    <script src="//unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
-    <script src="//unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
-    <script>
-      ui = SwaggerUIBundle({});
-      // expose SwaggerUI React globally for SwaggerEditor to use
-      window.React = ui.React;
-    </script>
-    <script src="//unpkg.com/swagger-editor@5.0.0-alpha.86/dist/umd/swagger-editor.js"></script>
-    <script>
-      SwaggerUIBundle({
-        url: "%s",
-        dom_id: '#swagger-ui',
-        presets: [
-          SwaggerUIBundle.presets.apis,
-          SwaggerUIStandalonePreset,
-        ],
-        plugins: [
-          SwaggerEditor.plugins.EditorContentType,
-          SwaggerEditor.plugins.EditorPreviewAsyncAPI,
-          SwaggerEditor.plugins.EditorPreviewApiDesignSystems,
-          SwaggerEditor.plugins.SwaggerUIAdapter,
-          SwaggerUIBundle.plugins.DownloadUrl,
-        ],
-        layout: 'StandaloneLayout',
-      });
-    document.body.onload = function (){
-    const sc = document.getElementsByClassName("swagger-container")
-    const tb = document.getElementsByClassName("topbar")
-    sc[0].removeChild(tb[0])
-  }
-  </script>
-  </body>
-</html>
-`
+// Info struct provides metadata about the API.
+type Info struct {
+	Title          string  `json:"title"`
+	Summary        string  `json:"summary"`
+	Description    string  `json:"description"`
+	TermsOfService string  `json:"termsOfService"`
+	Contact        Contact `json:"contact"`
+	License        License `json:"license"`
+	Version        string  `json:"version"`
+}
+
+// Contact struct contains contact information for the API.
+type Contact struct {
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Email string `json:"email"`
+}
+
+// License struct contains license information for the API.
+type License struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// Server struct represents a server object in OpenAPI.
+type Server struct {
+	URL         string                    `json:"url"`
+	Description string                    `json:"description"`
+	Variables   map[string]ServerVariable `json:"variables"`
+}
+
+// Components struct holds reusable objects for different aspects of the OAS.
+type Components struct {
+	Schemas         map[string]any `json:"schemas"`
+	Responses       map[string]any `json:"responses"`
+	Parameters      map[string]any `json:"parameters"`
+	Examples        map[string]any `json:"examples"`
+	RequestBodies   map[string]any `json:"requestBodies"`
+	Headers         map[string]any `json:"headers"`
+	SecuritySchemes map[string]any `json:"securitySchemes"`
+	Links           map[string]any `json:"links"`
+	Callbacks       map[string]any `json:"callbacks"`
+	PathItems       map[string]any `json:"pathItems"`
+}
+
+// Tag struct represents a tag used by the OpenAPI document.
+type Tag struct {
+	Name         string                `json:"name"`
+	Description  string                `json:"description"`
+	ExternalDocs ExternalDocumentation `json:"externalDocs"`
+}
+
+// ExternalDocumentation struct provides external documentation for the API.
+type ExternalDocumentation struct {
+	Description string `json:"description"`
+	URL         string `json:"url"`
+}
+
+type Paths map[string]PathItem
+
+// PathItem struct describes operations available on a single path.
+type PathItem struct {
+	Ref         string                 `json:"$ref"`
+	Summary     string                 `json:"summary"`
+	Description string                 `json:"description"`
+	Get         *Operation             `json:"get,omitempty"`
+	Put         *Operation             `json:"put,omitempty"`
+	Post        *Operation             `json:"post,omitempty"`
+	Delete      *Operation             `json:"delete,omitempty"`
+	Options     *Operation             `json:"options,omitempty"`
+	Head        *Operation             `json:"head,omitempty"`
+	Patch       *Operation             `json:"patch,omitempty"`
+	Trace       *Operation             `json:"trace,omitempty"`
+	Servers     []Server               `json:"servers"`
+	Parameters  []ParameterOrReference `json:"parameters"`
+}
+
+type SecurityRequirement map[string][]string
+
+// Operation struct describes an operation in a PathItem.
+type Operation struct {
+	Tags         []string               `json:"tags"`
+	Summary      string                 `json:"summary"`
+	Description  string                 `json:"description"`
+	ExternalDocs ExternalDocumentation  `json:"externalDocs"`
+	OperationID  string                 `json:"operationId"`
+	Parameters   []ParameterOrReference `json:"parameters"`
+	RequestBody  RequestBodyOrReference `json:"requestBody"`
+	Responses    map[string]Response    `json:"responses"`
+	Callbacks    map[string]Callback    `json:"callbacks"`
+	Deprecated   bool                   `json:"deprecated"`
+	Security     []SecurityRequirement  `json:"security"`
+	Servers      []Server               `json:"servers"`
+}
+
+// ParameterOrReference is a union type representing either a Parameter Object or a Reference Object.
+type ParameterOrReference struct {
+	Reference string    `json:"$ref,omitempty"`
+	Parameter Parameter `json:"-"`
+}
+
+// Parameter struct describes a parameter in OpenAPI.
+type Parameter struct {
+	Name            string `json:"name"`
+	In              string `json:"in"`
+	Description     string `json:"description"`
+	Required        bool   `json:"required"`
+	Deprecated      bool   `json:"deprecated"`
+	AllowEmptyValue bool   `json:"allowEmptyValue"`
+	Style           string `json:"style"`
+	Explode         bool   `json:"explode"`
+	AllowReserved   bool   `json:"allowReserved"`
+	Schema          Schema `json:"schema"`
+}
+
+// RequestBodyOrReference is a union type representing either a Request Body Object or a Reference Object.
+type RequestBodyOrReference struct {
+	Reference   string      `json:"$ref,omitempty"`
+	RequestBody RequestBody `json:"-"`
+}
+
+// RequestBody struct describes a request body in OpenAPI.
+type RequestBody struct {
+	Description string               `json:"description"`
+	Content     map[string]MediaType `json:"content"`
+	Required    bool                 `json:"required"`
+}
+
+// MediaType struct describes a media type object in OpenAPI.
+type MediaType struct {
+	Schema   Schema         `json:"schema"`
+	Example  any            `json:"example"`
+	Examples map[string]any `json:"examples"`
+}
+
+// Schema struct represents a schema object in OpenAPI.
+type Schema struct {
+	// Define your schema fields based on your specific requirements
+	// Example fields could include type, format, properties, etc.
+	// This can be expanded based on the needs of your application.
+}
+
+// OpenAPIResponse struct describes possible responses in OpenAPI.
+type OpenAPIResponse struct {
+	Description string               `json:"description"`
+	Headers     map[string]Header    `json:"headers,omitempty"`
+	Content     map[string]MediaType `json:"content,omitempty"`
+	Links       map[string]Link      `json:"links,omitempty"`
+}
+
+type Callback map[string]PathItem
+
+type Example struct {
+	Summary       string      `json:"summary,omitempty"`
+	Description   string      `json:"description,omitempty"`
+	Value         interface{} `json:"value,omitempty"`
+	ExternalValue string      `json:"externalValue,omitempty"`
+}
+
+type Header struct {
+	// Add header fields as needed
+}
+
+type Link struct {
+	OperationRef string      `json:"operationRef,omitempty"`
+	OperationID  string      `json:"operationId,omitempty"`
+	Parameters   interface{} `json:"parameters,omitempty"`
+	RequestBody  interface{} `json:"requestBody,omitempty"`
+	Description  string      `json:"description,omitempty"`
+	Server       Server      `json:"server,omitempty"`
+}
+
+type Encoding struct {
+	ContentType   string            `json:"contentType,omitempty"`
+	Headers       map[string]Header `json:"headers,omitempty"`
+	Style         string            `json:"style,omitempty"`
+	Explode       bool              `json:"explode,omitempty"`
+	AllowReserved bool              `json:"allowReserved,omitempty"`
+}
+
+type ServerVariable struct {
+	Enum        []string `json:"enum,omitempty"`
+	Default     string   `json:"default"`
+	Description string   `json:"description,omitempty"`
+}
 
 func GenerateOpenAPIUI(document, title, docsURL string) string {
-	return fmt.Sprintf(OPENAPI_UI, title, docsURL)
+	return fmt.Sprintf(openAPIHTML, title, docsURL)
+}
+
+func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths *Paths) {
+	tag := router.Tag
+
+	if tag == "" {
+		tag = router.Name
+	}
+	if !slices.Contains(*tagNames, tag) {
+
+		*tagNames = append(*tagNames, tag)
+		*tags = append(*tags, Tag{Name: tag, Description: ""})
+	}
+
+	description := "This route does"
+	summary := description
+	if len(summary) > 100 {
+		summary = summary[:100] + " ..."
+	}
+	pathMethod := &Operation{
+		Summary:     summary,
+		OperationID: "",
+		Tags:        []string{tag},
+		Parameters:  []ParameterOrReference{},
+		Responses:   map[string]Response{},
+		Description: description, // TODO: needs to be dynamic on route
+	}
+	pathItem := PathItem{}
+	switch route.Protocol {
+	// TODO: handle other protocols
+	case http.MethodGet:
+		pathItem.Get = pathMethod
+	case http.MethodPut:
+		pathItem.Put = pathMethod
+	case http.MethodPatch:
+		pathItem.Patch = pathMethod
+	case http.MethodDelete:
+		pathItem.Delete = pathMethod
+
+	}
+	(*paths)[route.fullPath] = pathItem
+
 }
 
 func GenerateOpenAPISpec(
@@ -137,28 +266,13 @@ func GenerateOpenAPISpec(
 ) (string, error) {
 	var tags []Tag
 	var tagNames []string
-	var paths map[string]map[string]interface{} = make(map[string]map[string]interface{})
-
+	var paths = make(Paths)
+	for _, route := range rootRouter.Routes {
+		addRoute(rootRouter, *route, &tags, &tagNames, &paths)
+	}
 	for _, router := range rootRouter.Routers {
-
 		for _, route := range router.Routes {
-			if !slices.Contains(tagNames, router.Name) {
-				tagNames = append(tagNames, router.Name)
-				tags = append(tags, Tag{Name: router.Name, Description: ""})
-			}
-			pathMethod := Method{
-				Summary:     "",
-				OperationID: "",
-				Tags:        []string{router.Name},
-				Parameters:  []Parameter{},
-				Responses:   map[string]OpenAPIResponse{},
-				Description: "", // TODO: needs to be dynamic on route
-			}
-			if paths[route.fullPath] == nil {
-				paths[route.fullPath] = make(map[string]interface{})
-			}
-			paths[route.fullPath][strings.ToLower(route.Protocol)] = pathMethod
-
+			addRoute(*router, *route, &tags, &tagNames, &paths)
 		}
 	}
 

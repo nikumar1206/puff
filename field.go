@@ -5,6 +5,8 @@ import (
 	"reflect"
 )
 
+type Foo struct {
+}
 type Field struct {
 	// Description is the Route's description. To be reflected in OpenAPI spec
 	Description string
@@ -14,7 +16,7 @@ type Field struct {
 	// by default required. unless specified
 	PathParams map[string]reflect.Kind
 	Responses  map[int]Response
-	Validators []func() bool
+	// Validators []func() bool
 }
 
 type Query struct {
@@ -24,7 +26,6 @@ type Query struct {
 
 func (f *Field) ValidateIncomingAttribute(foo reflect.StructField, v any) error {
 	fmt.Println("found the following provided", foo.Type, v)
-
 	var err error
 	if err != nil {
 		err = fmt.Errorf("So wrong")

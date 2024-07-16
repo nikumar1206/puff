@@ -3,6 +3,7 @@ package main
 import (
 	"log/slog"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/nikumar1206/puff"
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-	app := puff.DefaultApp()
+	app := puff.DefaultApp("Restaurant Microservice")
 
 	app.IncludeMiddlewares(
 		middleware.Tracing(), middleware.CORS(), middleware.Panic(), middleware.Logging(),
@@ -20,7 +21,11 @@ func main() {
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
 	}
 	app.Get("/", g, func(ctx *puff.Context) {
-		html_file, err := os.ReadFile("assets/hello_world.html")
+		path, err := filepath.Abs("examples/restaurant_app/assets/hello_world.html")
+		if err != nil {
+			panic(err)
+		}
+		html_file, err := os.ReadFile(path)
 
 		switch {
 		case err != nil:
@@ -52,12 +57,13 @@ func main() {
 	app.Get("/foos/{name}", f, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
-	// app.Get("/", f, func(c *puff.Context) {
-	// 	c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
-	// })
+	app.Get("/rawr", f, func(c *puff.Context) {
+		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
+	})
 	// app.IncludeRouter(routes.PizzaRouter())
 	// dr := routes.DrinksRouter()
 	// app.IncludeRouter(dr)
 
+	app.SetDebug()
 	app.ListenAndServe()
 }
