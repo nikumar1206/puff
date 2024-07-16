@@ -46,3 +46,4 @@ app := App.New(h)
 - Server Side Events do not support all event types
 - Improve documentation everywhere
 - Better adherance to OpenAPI spec
+- Change the name for IncludeRouter/IncludeMiddleware. It is obtuse.

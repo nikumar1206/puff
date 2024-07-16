@@ -1,3 +1,4 @@
+// Package logger provides a simple logging implementation to be used in conjunction with Puff.
 package logger
 
 import (

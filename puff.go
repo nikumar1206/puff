@@ -1,3 +1,4 @@
+// Package puff provides primitives for implementing a Puff Server
 package puff
 
 import (
