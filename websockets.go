@@ -20,17 +20,31 @@ func (wsm *WebSocketMessage) To(i any) error {
 	return json.Unmarshal(wsm.Message, i)
 }
 
-// WebSocket represents a WebSocket connection and its related context and handlers.
+// WebSocket represents a WebSocket connection and its related context, connection, and events.
 type WebSocket struct {
 	connectionContext *context.Context
 	connectionCancel  context.CancelFunc
 
-	Context   *Context
-	Conn      *websocket.Conn
-	Channel   chan string
-	_isOpen   bool
-	OnMessage func(*WebSocket, WebSocketMessage) // optional: event handler for messages
-	OnClose   func(*WebSocket)                   // optional: event handler for closing the connection
+	// Context provides functionality for route handling.
+	// Context is generated along with the start of the websocket connection.
+	// It does not change after a new message.
+	Context *Context
+
+	// Conn represents the Conn object from nhooyr.io/websocket.
+	Conn *websocket.Conn
+
+	// Channel is the channel for messages coming through the websocket.
+	// It will be written to on every message.
+	// Every message going through the channel will be a string.
+	// See OnMessage if you would like populated structs from a message.
+	Channel chan string
+
+	_isOpen bool
+
+	// OnMessage will be invoked upon every message recieved from the WebSocket connection.
+	OnMessage func(*WebSocket, WebSocketMessage)
+	// OnClose will be invoked when WebSocket.close() is called.
+	OnClose func(*WebSocket)
 }
 
 // read continuously reads messages from the WebSocket connection.
@@ -53,7 +67,7 @@ func (ws *WebSocket) read() {
 	}
 }
 
-// Send sends the message  over the WebSocket connection.
+// Send sends message over the WebSocket connection.
 func (ws *WebSocket) Send(message string) error {
 	err := ws.Conn.Write(*ws.connectionContext, websocket.MessageText, []byte(message))
 	return err
@@ -64,7 +78,7 @@ func (ws *WebSocket) SendBytes(message []byte) error {
 	return ws.Conn.Write(*ws.connectionContext, websocket.MessageText, message)
 }
 
-// Sendf sends a formatted text message over the WebSocket connection.
+// Sendf sends a formatted message over the WebSocket connection.
 func (ws *WebSocket) Sendf(message string, a ...any) error {
 	return ws.Send(fmt.Sprintf(message, a...))
 }

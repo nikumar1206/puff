@@ -39,7 +39,7 @@ app := App.New(h)
     - Router name for Drinks Router doesnt appear.
   - Fix the way 'description' is set.
 
-
-
 ## Definitely need to fix/improve
+
 - Running from just `go run examples/restaurant_app/main.go` doesnt work. We need to fix
+- find something better than regex matching

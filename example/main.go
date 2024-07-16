@@ -21,7 +21,6 @@ func main() {
 			Content:    fmt.Sprintf("Hello there!"),
 		})
 	})
-
 	app.WebSocket("/getUser", puff.Field{}, func(c *puff.Context) {
 		c.WebSocket.OnMessage = func(ws *puff.WebSocket, msg puff.WebSocketMessage) {
 			user := new(User)
@@ -34,6 +33,10 @@ func main() {
 			ws.SendJSON(Response{})
 		}
 	})
-
+	app.Get("/hi", puff.Field{}, func(c *puff.Context) {
+		c.SendResponse(puff.RedirectResponse{
+			To: "https://youtube.com",
+		})
+	})
 	app.ListenAndServe()
 }
