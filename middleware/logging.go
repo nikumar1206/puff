@@ -28,11 +28,15 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 		default:
 			statusColor = color.New(color.BgHiGreen, color.FgBlack)
 		}
+		// TODO: make the below configurable
+		// Request ID should only be present if present
 		slog.Info(
-			fmt.Sprintf("|%s|%s|%s|",
+			fmt.Sprintf("|%s|%s|%s|%s|%s|",
 				statusColor.Sprint(fmt.Sprintf(" %d ", sc)),
 				fmt.Sprintf("\t%s %s\t", ctx.Request.Method, ctx.Request.URL.String()),
-				fmt.Sprintf("\t%s\t", processingTime),
+				processingTime,
+				fmt.Sprintf(ctx.GetRequestID()),
+				fmt.Sprintf(ctx.Request.RemoteAddr),
 			),
 		)
 	},

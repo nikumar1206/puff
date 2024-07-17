@@ -24,6 +24,10 @@ func (ctx *Context) GetHeader(k string) string {
 	return ctx.Request.Header.Get(k)
 }
 
+func (ctx *Context) GetResponseHeader(k string) string {
+	return ctx.ResponseWriter.Header().Get(k)
+}
+
 // sets a response header
 func (ctx *Context) SetHeader(k, v string) {
 	ctx.ResponseWriter.Header().Set(k, v)
@@ -48,7 +52,7 @@ func (ctx *Context) GetStatusCode() int {
 
 // provides x-request-id from headers if set, else returns ""
 func (ctx *Context) GetRequestID() string {
-	return ctx.GetHeader("X-Request-ID")
+	return ctx.GetResponseHeader("X-Request-ID")
 }
 
 func (ctx *Context) SendResponse(res Response) {
