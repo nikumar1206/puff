@@ -1,7 +1,6 @@
 package puff
 
 import (
-	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -14,7 +13,6 @@ type Context struct {
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	slog.Debug("Initiating new context for request", slog.String("path", r.URL.Path))
 	return &Context{
 		Request:        r,
 		ResponseWriter: w,
