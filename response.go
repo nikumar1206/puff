@@ -11,7 +11,7 @@ import (
 type Response interface {
 	GetStatusCode() int
 	GetContentType() string
-	WriteContent(http.ResponseWriter, *http.Request) error
+	WriteContent(*Context) error
 }
 
 // JSONResponse represents a response with JSON content.
@@ -30,8 +30,8 @@ func (j JSONResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the JSON response.
-func (j JSONResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
-	err := json.NewEncoder(w).Encode(j.Content)
+func (j JSONResponse) WriteContent(c *Context) error {
+	err := json.NewEncoder(c.ResponseWriter).Encode(j.Content)
 	if err != nil {
 		return fmt.Errorf("Writing JSONResponse Content failed with: %s", err.Error())
 	}
@@ -54,8 +54,8 @@ func (h HTMLResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the HTML response.
-func (h HTMLResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprint(w, h.Content)
+func (h HTMLResponse) WriteContent(c *Context) error {
+	fmt.Fprint(c.ResponseWriter, h.Content)
 	return nil
 }
 
@@ -77,14 +77,14 @@ func (f FileResponse) GetContentType() string {
 }
 
 // GetContent returns the file content.
-func (f FileResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
+func (f FileResponse) WriteContent(c *Context) error {
 	file, err := os.ReadFile(f.FilePath)
 	if err != nil {
-		writeErrorResponse(w, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
+		writeErrorResponse(c.ResponseWriter, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
 		return fmt.Errorf("Error retrieving file %s during FileResponse: %s", f.FilePath, err.Error())
 	}
 
-	w.Write(file)
+	c.ResponseWriter.Write(file)
 	return nil
 }
 
@@ -111,9 +111,9 @@ func (s StreamingResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the streaming response.
-func (s StreamingResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+func (s StreamingResponse) WriteContent(c *Context) error {
+	c.ResponseWriter.Header().Set("Cache-Control", "no-cache")
+	c.ResponseWriter.Header().Set("Connection", "keep-alive")
 
 	stream := make(chan string)
 	go func() {
@@ -122,8 +122,8 @@ func (s StreamingResponse) WriteContent(w http.ResponseWriter, r *http.Request) 
 	}()
 	// TODO: more than just data, (event, event_id, retry)
 	for value := range stream {
-		fmt.Fprintf(w, "data: %s\n\n", value)
-		w.(http.Flusher).Flush()
+		fmt.Fprintf(c.ResponseWriter, "data: %s\n\n", value)
+		c.ResponseWriter.(http.Flusher).Flush()
 	}
 	return nil
 }
@@ -153,15 +153,15 @@ func (r RedirectResponse) GetStatusCode() int {
 
 // GetContentType returns the content type for the redirect response.
 // It will always return an empty string since there is no body to
-// describe in content typw.
+// describe in content typc.ResponseWriter.
 func (r RedirectResponse) GetContentType() string {
 	return "text/html; charset=utf-8"
 }
 
 // WriteContent writes the header Location to redirect the client to.
-func (r RedirectResponse) WriteContent(w http.ResponseWriter, _ *http.Request) error {
-	w.Header().Set("Location", r.To)
-	fmt.Fprintf(w, `<!DOCTYPE HTML>
+func (r RedirectResponse) WriteContent(c *Context) error {
+	c.ResponseWriter.Header().Set("Location", r.To)
+	fmt.Fprintf(c.ResponseWriter, `<!DOCTYPE HTML>
     <html lang='en-US'>
     <head>
         <meta charset='UTF-8'>
@@ -195,7 +195,7 @@ func (g GenericResponse) GetContentType() string {
 }
 
 // GetContent returns the content of the generic response.
-func (g GenericResponse) WriteContent(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprint(w, g.Content)
+func (g GenericResponse) WriteContent(c *Context) error {
+	fmt.Fprint(c.ResponseWriter, g.Content)
 	return nil
 }

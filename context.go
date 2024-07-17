@@ -71,10 +71,19 @@ func (ctx *Context) GetRequestID() string {
 
 // SendResponse sends res back to the client.
 // Any errors at this point will be logged and the request will fail.
-func (ctx *Context) SendResponse(res Response) {
-	ctx.SetContentType(res.GetContentType())
-	ctx.SetStatusCode(res.GetStatusCode())
-	res.WriteContent(ctx.ResponseWriter, ctx.Request)
+func (c *Context) SendResponse(res Response) {
+	c.SetContentType(res.GetContentType())
+	c.SetStatusCode(res.GetStatusCode())
+	err := res.WriteContent(c)
+	if err != nil {
+		msg := fmt.Sprintf(
+			"[%s] An unexpected error occured while writing content with context: %s.",
+			c.GetRequestID(),
+			err.Error(),
+		)
+		slog.Error(msg)
+		fmt.Fprint(c.ResponseWriter, "An unknown error occured.")
+	}
 }
 
 // GetBearerToken gets the Bearer token if it exists.

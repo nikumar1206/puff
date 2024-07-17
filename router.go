@@ -156,7 +156,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// }
 			if route.WebSocket {
 				if !c.isWebSocket() {
-					c.BadRequest("This route uses the WebSocket protocl.")
+					c.BadRequest("This route uses the WebSocket protocol.")
 					return
 				}
 				handleWebSocket(c)
