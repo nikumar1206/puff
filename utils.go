@@ -30,14 +30,11 @@ func resolveContentType(provided, default_content_type string) string {
 	return provided
 }
 
-func resolveStatusCode(sc int, method string) int {
-	if sc == 0 {
-		if method == http.MethodPost {
-			return http.StatusCreated
-		}
-		return http.StatusOK
+func resolveStatusCode(provided int, _default int) int {
+	if provided == 0 {
+		return _default
 	}
-	return sc
+	return provided
 }
 
 func contentTypeFromFileName(name string) string {

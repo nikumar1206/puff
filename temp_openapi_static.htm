@@ -1,17 +1,15 @@
-package puff
-
-var openAPIHTML string = `<!doctype html>
+package puff var openAPIHTML string = `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#fff" />
+    <meta name="theme-color" content="#000000" />
     <meta name="description" content="SwaggerUIMultifold" />
     <link rel="icon" type="image/x-icon" href="https://fav.farm/💨" />
     <link
       rel="stylesheet"
-      href="https://unpkg.com/swagger-editor@5.0.0-alpha.86/dist/swagger-editor.css"
-    /> 
+      href="//unpkg.com/swagger-editor@5.0.0-alpha.86/dist/swagger-editor.css"
+    />
     <title>%s</title>
     <h1 id="connection-status"></h1>
   </head>
@@ -52,19 +50,19 @@ var openAPIHTML string = `<!doctype html>
           SWAGGER_WEBSOCKET.onopen = function () {
             console.log("Connected to WebSocket!");
             SWAGGER_WEBSOCKET_IS_OPEN = true;
-            window.location.reload();
           };
           SWAGGER_WEBSOCKET.onclose = function () {
             SWAGGER_WEBSOCKET_IS_OPEN = false;
           };
-      }
-      function update_swagger_websocket(){
-        setTimeout(update_swagger_websocket, 500);
-        if (SWAGGER_WEBSOCKET_IS_OPEN == false && SWAGGER_WEBSOCKET.readyState > 1) {
-          reset_websocket()
         }
       }
-      update_swagger_websocket()
+      function update_swagger_websocket(){
+        if SWAGGER_WEBSOCKET_IS_OPEN == false {
+          reset_websocket()
+        }
+        document.getElementById("connection-status").innerText = SWAGGER_WEBSOCKET_IS_OPEN ? "CONNECTED" : "DISCONNECTED"
+        setTimeout(update_swagger_websocket, 500);
+      }
       SWAGGER_WEBSOCKET.onopen = function () {
         console.log("Connected to WebSocket!");
       };

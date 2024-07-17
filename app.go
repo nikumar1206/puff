@@ -32,7 +32,7 @@ type PuffApp struct {
 // SetDebug sets the application mode to 'DEBUG'.
 //
 // In this mode, the application will use 'pretty' logging.
-func (a *PuffApp) SetDebug() {
+func (a *PuffApp) SetDev() {
 	logger := a.Logger.Handler().(*logger.PuffSlogHandler)
 	logger.SetLevel(slog.LevelDebug)
 }
@@ -89,6 +89,23 @@ func (a *PuffApp) addOpenAPIRoutes() {
 			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
 		}
 		c.SendResponse(res)
+	})
+	docsRouter.WebSocket("/ws", Field{}, func(c *Context) {
+		c.WebSocket.OnMessage = func(ws *WebSocket, wsm WebSocketMessage) {
+			msg := new(string)
+			err := wsm.To(msg)
+			if err != nil {
+				ws.Send(err.Error())
+				ws.Close()
+				return
+			}
+			if *msg == "ping" {
+				ws.Send("pong")
+			}
+			if *msg == "disconnect" {
+				ws.Close()
+			}
+		}
 	})
 
 	a.IncludeRouter(&docsRouter)

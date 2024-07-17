@@ -22,7 +22,7 @@ type JSONResponse struct {
 
 // GetStatusCode returns the status code of the JSON response.
 func (j JSONResponse) GetStatusCode() int {
-	return j.StatusCode
+	return resolveStatusCode(j.StatusCode, 200)
 }
 
 func (j JSONResponse) GetContentType() string {
@@ -46,7 +46,7 @@ type HTMLResponse struct {
 
 // GetStatusCode returns the status code of the HTML response.
 func (h HTMLResponse) GetStatusCode() int {
-	return h.StatusCode
+	return resolveStatusCode(h.StatusCode, 200)
 }
 
 func (h HTMLResponse) GetContentType() string {
@@ -69,11 +69,11 @@ type FileResponse struct {
 
 // GetStatusCode returns the status code of the file response.
 func (f FileResponse) GetStatusCode() int {
-	return f.StatusCode
+	return resolveStatusCode(f.StatusCode, 200)
 }
 
 func (f FileResponse) GetContentType() string {
-	return resolveContentType(f.ContentType, contentTypeFromFileName(f.FileName))
+	return resolveContentType(f.ContentType, contentTypeFromFileName(f.FilePath))
 }
 
 // GetContent returns the file content.
@@ -81,7 +81,7 @@ func (f FileResponse) WriteContent(w http.ResponseWriter, r *http.Request) error
 	file, err := os.ReadFile(f.FilePath)
 	if err != nil {
 		writeErrorResponse(w, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
-		return fmt.Errorf("Error retrieving file %s during FileResponse: %s", f.FileName, err.Error())
+		return fmt.Errorf("Error retrieving file %s during FileResponse: %s", f.FilePath, err.Error())
 	}
 
 	w.Write(file)
@@ -103,7 +103,7 @@ type StreamingResponse struct {
 
 // GetStatusCode returns the status code of the streaming response.
 func (s StreamingResponse) GetStatusCode() int {
-	return s.StatusCode
+	return resolveStatusCode(s.StatusCode, 200)
 }
 
 func (s StreamingResponse) GetContentType() string {
@@ -120,7 +120,7 @@ func (s StreamingResponse) WriteContent(w http.ResponseWriter, r *http.Request) 
 		defer close(stream)
 		s.StreamHandler(&stream)
 	}()
-
+	// TODO: more than just data, (event, event_id, retry)
 	for value := range stream {
 		fmt.Fprintf(w, "data: %s\n\n", value)
 		w.(http.Flusher).Flush()
@@ -187,7 +187,7 @@ type GenericResponse struct {
 
 // GetStatusCode returns the status code of the generic response.
 func (g GenericResponse) GetStatusCode() int {
-	return g.StatusCode
+	return resolveStatusCode(g.StatusCode, 200)
 }
 
 func (g GenericResponse) GetContentType() string {

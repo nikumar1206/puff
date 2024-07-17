@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
 
 	"nhooyr.io/websocket"
 )
@@ -17,7 +19,25 @@ type WebSocketMessage struct {
 // To populates i from the Message in WebSocketMessage.
 // i must be a pointer otherwise an error will occur.
 func (wsm *WebSocketMessage) To(i any) error {
-	return json.Unmarshal(wsm.Message, i)
+	switch it := i.(type) {
+	case *string:
+		*it = string(wsm.Message)
+	case *int:
+		intmsg, ok := strconv.Atoi(string(wsm.Message))
+		if ok != nil {
+			return fmt.Errorf("Impossible conversion to int.")
+		}
+		*it = intmsg
+	case *bool:
+		boolmsg, ok := strconv.ParseBool(string(wsm.Message))
+		if ok != nil {
+			return fmt.Errorf("Impossible conversion to bool.")
+		}
+		*it = boolmsg
+	default:
+		return json.Unmarshal(wsm.Message, i)
+	}
+	return nil
 }
 
 // WebSocket represents a WebSocket connection and its related context, connection, and events.
@@ -52,13 +72,16 @@ func (ws *WebSocket) read() {
 	for {
 		msg_type, msg, err := ws.Conn.Read(*ws.connectionContext)
 		if err != nil {
+			if strings.Contains(err.Error(), "recieved close frame") {
+				ws.Close()
+				break
+			}
 			slog.Debug("An error occurred while reading connection: %s", slog.Any("ERROR", err.Error()))
-			break
 		}
 		if msg_type != websocket.MessageText {
 			continue
 		}
-		ws.Channel <- string(msg)
+		go func() { ws.Channel <- string(msg) }()
 		if ws.OnMessage != nil {
 			ws.OnMessage(ws, WebSocketMessage{
 				Message: msg,
