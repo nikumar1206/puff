@@ -19,6 +19,8 @@ type Config struct {
 	Version string
 	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
 	DocsURL string
+	// DocsReload, if true, enables automatic reload on the Swagger documentation page.
+	DocsReload bool
 }
 
 type PuffApp struct {
@@ -90,23 +92,29 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		}
 		c.SendResponse(res)
 	})
-	docsRouter.WebSocket("/ws", nil, func(c *Context) {
-		c.WebSocket.OnMessage = func(ws *WebSocket, wsm WebSocketMessage) {
-			msg := new(string)
-			err := wsm.To(msg)
-			if err != nil {
-				ws.Send(err.Error())
-				ws.Close()
-				return
+	if a.DocsReload {
+		docsRouter.WebSocket("/ws", nil, func(c *Context) {
+			c.WebSocket.OnMessage = func(ws *WebSocket, wsm WebSocketMessage) {
+				msg := new(string)
+				err := wsm.To(msg)
+				if err != nil {
+					ws.Send(err.Error()) // do not care about errs here
+					ws.Close()
+					return
+				}
+				if *msg == "ping" {
+					ws.Send("pong")
+					// if err != nil {
+					// 	slog.Debug("pingpong swagger ws: " + err.Error())
+					// 	ws.Close()
+					// }
+				}
+				if *msg == "disconnect" {
+					ws.Close()
+				}
 			}
-			if *msg == "ping" {
-				ws.Send("pong")
-			}
-			if *msg == "disconnect" {
-				ws.Close()
-			}
-		}
-	})
+		})
+	}
 
 	a.IncludeRouter(&docsRouter)
 }
