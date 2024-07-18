@@ -96,14 +96,25 @@ func getCookieParam(c *Context, param param) (string, error) {
 	return handleParam(value, param)
 }
 
+func getPathParam(c *Context, index int, param param, matches []string) (string, error) {
+	if len(matches) > index {
+		m := matches[index]
+		return handleParam(m, param)
+	} else {
+		fmt.Println(index, param, matches)
+		return "", fmt.Errorf("required path param %s not provided", param.Name)
+	}
+}
+
 // getBodyParam gets the value of the param from the body.
 // It will return an error if it is not found AND required.
 
-func populateInputSchema(c *Context, s any, p []param) error {
+func populateInputSchema(c *Context, s any, p []param, matches []string) error {
 	if len(p) == 0 { //no input schema
 		return nil
 	}
 	sve := reflect.ValueOf(s).Elem()
+	pathparamsindex := 0
 	for _, pa := range p {
 		var value string
 		var err error
@@ -111,7 +122,8 @@ func populateInputSchema(c *Context, s any, p []param) error {
 		case "header":
 			value, err = getHeaderParam(c, pa)
 		case "path":
-			continue // FIXME: how do i get path?
+			value, err = getPathParam(c, pathparamsindex, pa, matches)
+			// continue // FIXME: how do i get path?
 		case "query":
 			value, err = getQueryParam(c, pa)
 		case "cookie":

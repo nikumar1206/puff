@@ -13,6 +13,10 @@ type PastaHomeInput struct {
 	LastDishOrdered string `description:"last dish ordered" kind:"cookie"`
 }
 
+type PastaCheeseInput struct {
+	ID int `kind:"path" description:"id of cheese"`
+}
+
 func PastaRouter() *puff.Router {
 	pasta_router := puff.NewRouter("Pasta", "/pasta")
 
@@ -41,5 +45,20 @@ func PastaRouter() *puff.Router {
 		})
 	})
 
+	pasta_cheese_input := new(PastaCheeseInput)
+	pasta_router.Get("/cheese/{id}", pasta_cheese_input, func(c *puff.Context) {
+		cheeses := map[int]string{
+			0: "Mozzerella",
+			1: "Swiss",
+		}
+		cheese, ok := cheeses[pasta_cheese_input.ID]
+		if !ok {
+			c.NotFound("Cheese with id %d not found.", pasta_cheese_input.ID)
+			return
+		}
+		c.SendResponse(puff.GenericResponse{
+			Content: cheese,
+		})
+	})
 	return pasta_router
 }

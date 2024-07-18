@@ -144,7 +144,14 @@ func (ctx *Context) BadRequest(message string, a ...any) {
 	ctx.response(400, message, a...)
 }
 
-// BadRequest returns a json response with status code 500
+// NotFound returns a json response with status code 404
+// with a key error and a value of the formatted string from
+// message and the arguments following.
+func (ctx *Context) NotFound(message string, a ...any) {
+	ctx.response(404, message, a...)
+}
+
+// InternalServerError returns a json response with status code 500
 // with a key error and a value of the formatted string from
 // message and the arguments following.
 func (ctx *Context) InternalServerError(message string, a ...any) {

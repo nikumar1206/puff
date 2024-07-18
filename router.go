@@ -154,7 +154,9 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// if err != nil {
 			// 	Unprocessable(w, req)
 			// }
-			err := populateInputSchema(c, route.Fields, route.params)
+			rg := regexp.MustCompile("^" + regexp.QuoteMeta(route.Path) + "$") //FIXME: is this how i should do this?
+			matches := rg.FindStringSubmatch(req.URL.Path)
+			err := populateInputSchema(c, route.Fields, route.params, matches)
 			if err != nil {
 				c.BadRequest(err.Error())
 				return
@@ -211,6 +213,7 @@ func (r *Router) patchRoutes() {
 			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
 		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
+		slog.Debug("", slog.Any("Params", route.params))
 	}
 	//TODO: ensure no route collision, will be a nice to have
 }
