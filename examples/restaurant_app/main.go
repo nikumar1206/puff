@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
+	"time"
 
 	"github.com/nikumar1206/puff"
 	"github.com/nikumar1206/puff/middleware"
@@ -50,7 +52,6 @@ func main() {
 			}
 			ctx.SendResponse(res)
 		}
-
 	})
 	f := puff.Field{
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
@@ -59,7 +60,14 @@ func main() {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
 	app.Get("/rawr", f, func(c *puff.Context) {
-		c.SendResponse(puff.JSONResponse{Content: map[string]any{"foo": "bar"}, StatusCode: 200})
+		c.SendResponse(
+			puff.StreamingResponse{StreamHandler: func(coca_cola *chan puff.ServerSideEvent) {
+				for i := range 3 {
+					*coca_cola <- puff.ServerSideEvent{Data: strconv.Itoa(i), Event: "foo", ID: puff.RandomNanoID(), Retry: 2}
+					time.Sleep(time.Duration(2 * time.Second))
+				}
+			}, StatusCode: 200},
+		)
 	})
 	// app.IncludeRouter(routes.PizzaRouter())
 	// dr := routes.DrinksRouter()
