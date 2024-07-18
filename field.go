@@ -161,7 +161,7 @@ func handleInputSchema(pa *[]param, s any) error { // should this return an erro
 	sve := sv.Elem()
 	svet := sve.Type()
 	if sve.Kind() != reflect.Struct {
-		return fmt.Errorf("fields must be pointer to struct")
+		return fmt.Errorf("fields must be pointer to STRUCT")
 	}
 
 	newParams := []param{}

@@ -66,7 +66,7 @@ type User struct {
 
 func main(){
     app := puff.DefaultApp()
-    app.Get("/", puff.Field{}, func (c *puff.Context){
+    app.Get("/", "", nil, func (c *puff.Context){
         user1 := User{
             Name: "John Doe",
         }
@@ -130,6 +130,52 @@ c.SendResponse(puff.GenericResponse{
     ContentType: "text/plain"
 })
 ```
+
+# Input Schemas
+
+Input schemas specify what types of inputs your application takes.
+
+Example Usage:
+
+```
+package main
+import "puff"
+
+type HelloWorldInput struct {
+    Name string `kind:"query"`
+}
+
+func main(){
+    app := puff.App("Input Schemas Example")
+
+    hello_world_input := new(HelloWorldInput)
+    app.Get(path: "/", description: "greets you by name", fields: hello_world_input, func (c *Context) {
+        c.SendResponse(hello_world_input.Name)
+    })
+}
+```
+
+The schema, `HelloWorldInput` in this example, specifies a query parameter of type string.
+
+The struct tag can take:
+| Field | Required | Description | Possible Values |
+| -------- | -- | -- |------- |
+| kind | Yes | where should the parameter be found | `query`, `path`, `header`, `cookie` |
+| description | No | a brief description of the parameter | anything |
+| required | No | specifies if the field is required. defaults to true for everything except cookie | `true`, `false`|
+| deprecated | No | marks field as deprecated. defaults to false. | `true`, `false`|
+| format | No | the format of the parameter. | examples: `email`, `password`, `uint64`|
+
+When passing in the input, it must be a pointer to something with the input schema as the type.
+
+**NOTE**: The proccessing of the input schema may panic. Here's what the panic messages mean.
+
+| Message                                                | Meaning                                                        |
+| ------------------------------------------------------ | -------------------------------------------------------------- |
+| field must be POINTER to structure                     | The value you passed in for the input schema is not a pointer. |
+| field must be pointer to STRUCT                        | The value you passed in for the input schma is not a struct.   |
+| type of field \_\_ must be string or int               | The type of the field must be string or int.                   |
+| specified kind on field \_\_ in struct tag must be ... | The kind on the field is not a supported kind.                 |
 
 # Middlewares
 
