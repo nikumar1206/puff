@@ -15,6 +15,7 @@ type Response struct {
 
 func main() {
 	app := puff.DefaultApp("Untitled 2.7")
+	app.SetDev()
 	app.Get("/", puff.Field{}, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{
 			StatusCode: 200,
