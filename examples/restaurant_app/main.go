@@ -65,6 +65,6 @@ func main() {
 	// dr := routes.DrinksRouter()
 	// app.IncludeRouter(dr)
 
-	app.SetDev()
+	app.SetProd()
 	app.ListenAndServe()
 }

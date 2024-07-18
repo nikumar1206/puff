@@ -90,6 +90,17 @@ func (c *Context) SendResponse(res Response) {
 	}
 }
 
+func (ctx *Context) ClientIP() string {
+	IPAddress := ctx.GetHeader("X-Real-Ip")
+	if IPAddress == "" {
+		IPAddress = ctx.GetHeader("X-Forwarded-For")
+	}
+	if IPAddress == "" {
+		IPAddress = ctx.Request.RemoteAddr
+	}
+	return IPAddress
+}
+
 // GetBearerToken gets the Bearer token if it exists.
 // This will work if the request contains an Authorization header
 // that has this syntax: Bearer this_token_here.
