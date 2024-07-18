@@ -21,37 +21,9 @@ func main() {
 	g := puff.Field{
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
 	}
-	app.Get("/", g, func(ctx *puff.Context) {
-		path, err := filepath.Abs("examples/restaurant_app/assets/hello_world.html")
-		if err != nil {
-			panic(err)
-		}
-		html_file, err := os.ReadFile(path)
 
-		switch {
-		case err != nil:
-			slog.Error(err.Error())
-			res := puff.HTMLResponse{
-				StatusCode: 500,
-				Content:    "<h1>Sorry, an internal server error occured, and we couldn't read a file.</h1>",
-			}
-			ctx.SendResponse(res)
+	app.Get("/", g)
 
-		case len(html_file) == 0:
-			res := puff.HTMLResponse{
-				StatusCode: 500,
-				Content:    "<h1>Sorry, an internal server error occured, and reading a file gave us no bytes.</h1>",
-			}
-			ctx.SendResponse(res)
-		default:
-			res := puff.HTMLResponse{
-				StatusCode: 200,
-				Content:    string(html_file),
-			}
-			ctx.SendResponse(res)
-		}
-
-	})
 	f := puff.Field{
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
 	}

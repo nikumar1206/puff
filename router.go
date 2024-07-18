@@ -32,7 +32,7 @@ func (r *Router) registerRoute(
 	method string,
 	path string,
 	handleFunc func(*Context),
-	fields Field,
+	fields any,
 ) {
 	newRoute := Route{
 		Path:     path,
@@ -46,7 +46,7 @@ func (r *Router) registerRoute(
 
 func (r *Router) Get(
 	path string,
-	fields Field,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodGet, path, handleFunc, fields)
@@ -54,7 +54,7 @@ func (r *Router) Get(
 
 func (r *Router) Post(
 	path string,
-	fields Field,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodPost, path, handleFunc, fields)
@@ -62,7 +62,7 @@ func (r *Router) Post(
 
 func (r *Router) Put(
 	path string,
-	fields Field,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodPut, path, handleFunc, fields)
@@ -70,7 +70,7 @@ func (r *Router) Put(
 
 func (r *Router) Patch(
 	path string,
-	fields Field,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodPatch, path, handleFunc, fields)
@@ -78,7 +78,7 @@ func (r *Router) Patch(
 
 func (r *Router) Delete(
 	path string,
-	fields Field,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	r.registerRoute(http.MethodDelete, path, handleFunc, fields)
@@ -86,7 +86,7 @@ func (r *Router) Delete(
 
 func (r *Router) WebSocket(
 	path string,
-	fields Field,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	newRoute := Route{
@@ -150,7 +150,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		isMatch := route.regexp.MatchString(req.URL.Path)
 		if isMatch && req.Method == route.Protocol {
-			// err := route.Fields.ValidateIncomingAttribute(Field.Responses, "cheese")
+			// err := route.anys.ValidateIncomingAttribute(any.Responses, "cheese")
 			// if err != nil {
 			// 	Unprocessable(w, req)
 			// }
