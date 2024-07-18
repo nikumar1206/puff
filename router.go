@@ -84,6 +84,21 @@ func (r *Router) Delete(
 	r.registerRoute(http.MethodDelete, path, handleFunc, fields)
 }
 
+func (r *Router) WebSocket(
+	path string,
+	fields Field,
+	handleFunc func(*Context),
+) {
+	newRoute := Route{
+		WebSocket: true,
+		Protocol:  "GET",
+		Path:      path,
+		Handler:   handleFunc,
+		Fields:    fields,
+	}
+	r.Routes = append(r.Routes, &newRoute)
+}
+
 func (r *Router) IncludeRouter(rt *Router) {
 	if rt.parent != nil {
 		err := fmt.Errorf(
@@ -139,6 +154,21 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// if err != nil {
 			// 	Unprocessable(w, req)
 			// }
+			if route.WebSocket {
+				if !c.isWebSocket() {
+					c.BadRequest("This route uses the WebSocket protocol.")
+					return
+				}
+				handleWebSocket(c)
+				go c.WebSocket.read()
+				handler := route.Handler
+				for _, m := range r.Middlewares {
+					handler = (*m)(handler)
+				}
+				handler(c)
+				for c.WebSocket.IsOpen() {
+				}
+			}
 			handler := route.Handler
 			for _, m := range r.Middlewares {
 				handler = (*m)(handler)
@@ -174,5 +204,5 @@ func (r *Router) patchRoutes() {
 		r.createRegexMatch(route)
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
 	}
-	// TODO: ensure no route collision, will be a nice to have
+	//TODO: ensure no route collision, will be a nice to have
 }

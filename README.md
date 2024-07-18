@@ -53,3 +53,4 @@ app := App.New(h)
 - Allow configuring the logger and making it more generic
   - Allow indenting/non-indenting in JSON logger.
 - Should puff.Context have context on the app? So that it knows to log in JSON or not.
+- find something better than regex matching

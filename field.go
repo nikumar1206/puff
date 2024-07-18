@@ -1,14 +1,12 @@
 package puff
 
 import (
-	"fmt"
 	"reflect"
 )
 
-type Foo struct {
-}
+// Field defines required fields to be inputted.
+// FIXME: This is not how we are going to do this.
 type Field struct {
-	// Description is the Route's description. To be reflected in OpenAPI spec
 	Description string
 	Body        map[string]any
 	// by default not required. unless specified
@@ -17,18 +15,4 @@ type Field struct {
 	PathParams map[string]reflect.Kind
 	Responses  map[int]Response
 	// Validators []func() bool
-}
-
-type Query struct {
-	foo string
-	bar string
-}
-
-func (f *Field) ValidateIncomingAttribute(foo reflect.StructField, v any) error {
-	fmt.Println("found the following provided", foo.Type, v)
-	var err error
-	if err != nil {
-		err = fmt.Errorf("So wrong")
-	}
-	return err
 }
