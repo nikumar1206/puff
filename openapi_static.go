@@ -48,6 +48,7 @@ var openAPIHTML string = `<!doctype html>
       let SWAGGER_WEBSOCKET_IS_OPEN = false;
       function reset_websocket() {
           console.log("Reset WebSocket connection.");
+          SWAGGER_WEBSOCKET.close();
           SWAGGER_WEBSOCKET = new WebSocket("/docs/ws");
           SWAGGER_WEBSOCKET.onopen = function () {
             console.log("Connected to WebSocket!");

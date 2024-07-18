@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
-	"strings"
 
 	"nhooyr.io/websocket"
 )
@@ -72,11 +71,9 @@ func (ws *WebSocket) read() {
 	for {
 		msg_type, msg, err := ws.Conn.Read(*ws.connectionContext)
 		if err != nil {
-			if strings.Contains(err.Error(), "recieved close frame") {
-				ws.Close()
-				break
-			}
-			slog.Warn("An error occurred while reading connection: %s", slog.Any("ERROR", err.Error()))
+			slog.Debug("An error occurred while reading connection:", slog.String("ERROR", err.Error()))
+			ws.Close()
+			break
 		}
 		if msg_type != websocket.MessageText {
 			continue
