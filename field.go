@@ -2,6 +2,7 @@ package puff
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 )
 
@@ -63,6 +64,34 @@ func boolFromSpecified(spec string, def bool) (bool, error) {
 	return b, nil
 }
 
+func getHeaderParam(c *Context, param param) (string, error) {
+	value := c.GetHeader(param.Name)
+	ok := !(value == "") // if value is empty - not ok, else ok
+
+	if !ok && param.Required {
+		return "", fmt.Errorf("Required field not provided")
+	}
+
+	return "", nil
+}
+
+func populateInputSchema(c *Context, s any, p []param) error {
+	sve := reflect.ValueOf(s).Elem()
+	for _, pa := range p {
+		var value string
+		var err error
+		switch pa.In {
+		case "header":
+			value, err = getHeaderParam(c, pa)
+		}
+		if err != nil {
+			return err
+		}
+		field := sve.FieldByName(pa.Name) //has to be there because handleInputSchema
+		field.SetString(value)
+	}
+	return nil
+}
 func handleInputSchema(s any) error { // should this return an error or should it panic?
 	sv := reflect.ValueOf(s) //
 	svk := sv.Kind()
