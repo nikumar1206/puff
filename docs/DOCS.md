@@ -96,3 +96,103 @@ c.SendResponse(puff.FileResponse{
 	ContentType string // ContentType is inferred from extenstion of
 })
 ```
+
+## StreamingResponse
+
+```golang
+c.SendResponse(puff.StreamingResponse{
+    StatusCode: 200,
+    StreamHandler: func(s *chan string){
+        defer close(s) // The connection does not close until you close the channel.
+        for i := range 3 {
+            s <- i
+            time.Sleep(5 * time.Second)
+        }
+    }
+})
+```
+
+## RedirectResponse
+
+```golang
+c.SendResponse(puff.RedirectResponse{
+    StatusCode: 308,
+    To: "https://google.com"
+})
+```
+
+## GenericResponse
+
+```golang
+c.SendResponse(puff.GenericResponse{
+    StatusCode: 200,
+    Content: "Hello, world!"
+    ContentType: "text/plain"
+})
+```
+
+# Middlewares
+
+Middlewares provide many useful tools to enhance your application. Puff comes with many middlewares in the middleware package.
+
+To install the middleware package:
+
+`go get https://github.com/nikumar1206/puff/middleware`
+
+## Attaching a Middleware
+
+```golang
+package main
+
+import (
+	"github.com/nikumar1206/puff"
+	"github.com/nikumar1206/puff/middleware"
+)
+
+func main() {
+	app := puff.DefaultApp("Restaurant Microservice")
+	app.Use(middleware.CSRF())
+}
+```
+
+The middleware package provides many middlewares. You can view the middleware docs at [the middleware pkg documentation](https://pkg.go.dev/github.com/nikumar1206/puff/middleware#section-documentation).
+
+## The Middleware Standard
+
+Each middleware should have all the following.
+
+### Configuration
+
+```golang
+type MyMiddlewareConfig struct {
+    // include configuration fields here
+}
+```
+
+The `MyMiddlewareConfig` should contain configuration fields for your middleware.
+
+### Default Configuration
+
+```golang
+var DefaultMyMiddlewareConfig MyMiddlewareConfig = MyMiddlewareConfig{
+    // specify default configuration here
+}
+```
+
+The `DefaultMyMiddlewareConfig` should completely populate MyMiddlewareConfig.
+
+### Middleware Function
+
+```golang
+func MyMiddleware() puff.Middleware
+```
+
+The `MyMiddleware` function should return a `puff.Middleware` without asking for a configuration. Instead, it should use the default configuration at `DefaultMyMiddlewareConfig`.
+
+### Middleware Function with Configuration
+
+```golang
+func MyMiddlewareWithConfig(*MyMiddlewareConfig) puff.Middleware
+```
+
+The `MyMiddlewareWithConfig` function should take in a pointer to `MyMiddlewareConfig` and return a `puff.Middleware`.

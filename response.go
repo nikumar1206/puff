@@ -98,7 +98,7 @@ func (f *FileResponse) Handler() func(*Context) {
 // StreamingResponse represents a response that streams content.
 type StreamingResponse struct {
 	StatusCode    int
-	StreamHandler func(*chan string)
+	StreamHandler func(*chan string) //Write to this channel to write to the response. Close the channel once you are done.
 }
 
 // GetStatusCode returns the status code of the streaming response.
@@ -136,7 +136,7 @@ func (s StreamingResponse) Handler() func(*Context) {
 
 // RedirectResponse represents a response that sends a redirect to the client.
 type RedirectResponse struct {
-	// StatusCode provides the 3xx status code of the redirect response.
+	// StatusCode provides the 3xx status code of the redirect response. Default: 308.
 	StatusCode int
 	// To provides the URL to redirect the client to.
 	To string

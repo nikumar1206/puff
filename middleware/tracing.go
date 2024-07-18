@@ -6,8 +6,8 @@ import (
 )
 
 type TracingConfig struct {
-	TracerName  string
-	IDGenerator func() string
+	TracerName  string        //TracerName is the name of the response header where the request id will be.
+	IDGenerator func() string // IDGenerator is a function that returns a string that will be used as the request id.
 }
 
 var DefaultTracingConfig TracingConfig = TracingConfig{
@@ -24,6 +24,7 @@ func createTracingMiddleware(tc TracingConfig) puff.Middleware {
 	}
 }
 
+// Tracing middleware provides the ability to automatically trace every route with a request id.
 func Tracing() puff.Middleware {
 	return createTracingMiddleware(DefaultTracingConfig)
 }
