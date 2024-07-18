@@ -252,20 +252,23 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 		Responses:   map[string]Response{},
 		Description: description, // TODO: needs to be dynamic on route
 	}
-	pathItem := PathItem{}
+	var pathItem PathItem
+	storedPathItem, ok := (*paths)[route.fullPath]
+	if ok {
+		pathItem = storedPathItem
+	}
 	switch route.Protocol {
 	// TODO: handle other protocols
 	case http.MethodGet:
 		pathItem.Get = pathMethod
+	case http.MethodPost:
+		pathItem.Post = pathMethod
 	case http.MethodPut:
 		pathItem.Put = pathMethod
 	case http.MethodPatch:
 		pathItem.Patch = pathMethod
-	case http.MethodPost:
-		pathItem.Post = pathMethod
 	case http.MethodDelete:
 		pathItem.Delete = pathMethod
-
 	}
 	(*paths)[route.fullPath] = pathItem
 }
