@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/nikumar1206/puff"
 )
 
@@ -39,5 +40,5 @@ func main() {
 			To: "https://youtube.com",
 		})
 	})
-	app.ListenAndServe()
+	app.ListenAndServe(":8000")
 }
