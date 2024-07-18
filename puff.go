@@ -22,10 +22,9 @@ func App(c *Config) *PuffApp {
 
 func DefaultApp(name string) *PuffApp {
 	c := Config{
-		Version:    "1.0.0",
-		Name:       name,
-		ListenAddr: ":8000",
-		DocsURL:    "/docs",
+		Version: "1.0.0",
+		Name:    name,
+		DocsURL: "/docs",
 	}
 	a := App(&c)
 	a.Logger = logger.DefaultPuffLogger()

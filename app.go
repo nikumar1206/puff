@@ -10,9 +10,6 @@ import (
 )
 
 type Config struct {
-	// ListenAddr is the address to listen on.
-	// TODO: Remove ListenAddr, specify as argument to listen and serve.
-	ListenAddr string
 	// Name is the application name
 	Name string
 	// Version is the application version.
@@ -126,12 +123,12 @@ func (a *PuffApp) patchAllRoutes() {
 	}
 }
 
-func (a *PuffApp) ListenAndServe() {
+func (a *PuffApp) ListenAndServe(listenAddr string) {
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
-	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", a.ListenAddr))
+	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
 
-	err := http.ListenAndServe(a.ListenAddr, a.RootRouter)
+	err := http.ListenAndServe(listenAddr, a.RootRouter)
 
 	if err != nil {
 		slog.Error(err.Error())

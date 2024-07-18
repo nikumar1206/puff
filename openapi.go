@@ -261,6 +261,8 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 		pathItem.Put = pathMethod
 	case http.MethodPatch:
 		pathItem.Patch = pathMethod
+	case http.MethodPost:
+		pathItem.Post = pathMethod
 	case http.MethodDelete:
 		pathItem.Delete = pathMethod
 

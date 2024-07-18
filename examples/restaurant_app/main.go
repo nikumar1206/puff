@@ -33,5 +33,5 @@ func main() {
 	app.IncludeRouter(routes.DrinksRouter())
 
 	app.SetDev()
-	app.ListenAndServe()
+	app.ListenAndServe(":8000")
 }
