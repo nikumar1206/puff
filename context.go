@@ -20,12 +20,10 @@ type Context struct {
 }
 
 func NewContext(w http.ResponseWriter, r *http.Request) *Context {
-	slog.Debug("Initiating new context for request")
-	newContext := Context{
+	return &Context{
 		Request:        r,
 		ResponseWriter: w,
 	}
-	return &newContext
 }
 
 func (ctx *Context) isWebSocket() bool {
@@ -38,6 +36,12 @@ func (ctx *Context) isWebSocket() bool {
 // It returns an empty string if not found.
 func (ctx *Context) GetHeader(k string) string {
 	return ctx.Request.Header.Get(k)
+}
+
+// GetHeader gets the value of a response header with key k.
+// It returns an empty string if not found.
+func (ctx *Context) GetResponseHeader(k string) string {
+	return ctx.ResponseWriter.Header().Get(k)
 }
 
 // SetHeader sets the value of the response header k to v.
@@ -66,7 +70,7 @@ func (ctx *Context) GetStatusCode() int {
 // GetRequestID gets the X-Request-ID if set (empty string if not set).
 // puff/middleware provides a tracing middleware the sets X-Request-ID.
 func (ctx *Context) GetRequestID() string {
-	return ctx.GetHeader("X-Request-ID")
+	return ctx.GetResponseHeader("X-Request-ID")
 }
 
 // SendResponse sends res back to the client.
@@ -84,6 +88,17 @@ func (c *Context) SendResponse(res Response) {
 		slog.Error(msg)
 		fmt.Fprint(c.ResponseWriter, "An unknown error occured.")
 	}
+}
+
+func (ctx *Context) ClientIP() string {
+	IPAddress := ctx.GetHeader("X-Real-Ip")
+	if IPAddress == "" {
+		IPAddress = ctx.GetHeader("X-Forwarded-For")
+	}
+	if IPAddress == "" {
+		IPAddress = ctx.Request.RemoteAddr
+	}
+	return IPAddress
 }
 
 // GetBearerToken gets the Bearer token if it exists.

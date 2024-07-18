@@ -55,7 +55,7 @@ func main() {
 	f := puff.Field{
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
 	}
-	app.Get("/foos/{name}", f, func(c *puff.Context) {
+	app.Post("/foos/{name}", f, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
 	app.Get("/rawr", f, func(c *puff.Context) {

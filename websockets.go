@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"nhooyr.io/websocket"
 	"strconv"
+
+	"nhooyr.io/websocket"
 )
 
 // WebSocketMessage represents a message received via a WebSocket connection.
