@@ -52,6 +52,11 @@ func main() {
 		}
 
 	})
+	app.Post("/", puff.Field{}, func(c *puff.Context) {
+		c.SendResponse(puff.GenericResponse{
+			Content: "This route as well as the get route should pop up in swagger.",
+		})
+	})
 	f := puff.Field{
 		PathParams: map[string]reflect.Kind{"name": reflect.String},
 	}
