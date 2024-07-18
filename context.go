@@ -45,6 +45,31 @@ func (ctx *Context) SetHeader(k, v string) {
 	ctx.ResponseWriter.Header().Set(k, v)
 }
 
+// GetQueryParam retrives the value of a query param from k.
+// If not found, it will return an empty string.
+func (ctx *Context) GetQueryParam(k string) string {
+	return ctx.Request.URL.Query().Get(k)
+}
+
+// GetCookie retrives a cookie from the context with key "k".
+// If not found, it will return an empty string.
+func (ctx *Context) GetCookie(k string) string {
+	cookie, err := ctx.Request.Cookie(k)
+	if err != nil {
+		return ""
+	}
+	return cookie.Value
+}
+
+// SetCookie writes a new cookie to the request with key "k" and
+// value "v". Invalid cookies will be silently dropped. Invalid
+// characters will also be silently dropped. Ex. SetCookie with value
+// ""HELLO WORLD"". The quotation marks are invalid characters,
+// therefore the final cookie will be "HELLO WORLD" instead.
+func (ctx *Context) SetCookie(cookie *http.Cookie) {
+	http.SetCookie(ctx.ResponseWriter, cookie)
+}
+
 // SetContentType sets the content type of the response.
 func (ctx *Context) SetContentType(v string) {
 	ctx.SetHeader("Content-Type", v)

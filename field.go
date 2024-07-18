@@ -2,18 +2,18 @@ package puff
 
 import (
 	"fmt"
-	"net/http"
 	"reflect"
+	"strconv"
 )
 
 type param struct {
 	// modeled after https://swagger.io/specification/#:~:text=to%20the%20API.-,Fixed%20Fields,-Field%20Name
-	Name        string
-	Type        string // string, integer
-	In          string //query, path, header, cookie
-	Description string
-	Required    bool
-	Deprecated  bool
+	Name        string `json:"name"`
+	Type        string `json:"type"` // string, integer
+	In          string `json:"in"`   //query, path, header, cookie
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
+	Deprecated  bool   `json:"deprecated"`
 }
 
 // type HelloWorld struct {
@@ -64,18 +64,45 @@ func boolFromSpecified(spec string, def bool) (bool, error) {
 	return b, nil
 }
 
-func getHeaderParam(c *Context, param param) (string, error) {
-	value := c.GetHeader(param.Name)
-	ok := !(value == "") // if value is empty - not ok, else ok
-
+// handleParam takes the value as recieved, returns an error if the value
+// is empty AND required.
+func handleParam(value string, param param) (string, error) {
+	ok := !(value == "")
 	if !ok && param.Required {
-		return "", fmt.Errorf("Required field not provided")
+		return "", fmt.Errorf("Required %s param %s not provided.", param.In, param.Name)
 	}
-
-	return "", nil
+	return value, nil
 }
 
+// getHeaderParam gets the value of the param from the header. It may return error
+// if it not found AND required.
+func getHeaderParam(c *Context, param param) (string, error) {
+	value := c.GetHeader(param.Name)
+	return handleParam(value, param)
+}
+
+// getQueryParam gets the value of the param from the query. It may return error
+// if it not found AND required.
+func getQueryParam(c *Context, param param) (string, error) {
+	//FIXME: only the first letter should be lowered.
+	value := c.GetQueryParam(param.Name)
+	return handleParam(value, param)
+}
+
+// getHeaderParam gets the value of the param from the cookie header.
+// It may return an error if it not found AND required.
+func getCookieParam(c *Context, param param) (string, error) {
+	value := c.GetCookie(param.Name)
+	return handleParam(value, param)
+}
+
+// getBodyParam gets the value of the param from the body.
+// It will return an error if it is not found AND required.
+
 func populateInputSchema(c *Context, s any, p []param) error {
+	if len(p) == 0 { //no input schema
+		return nil
+	}
 	sve := reflect.ValueOf(s).Elem()
 	for _, pa := range p {
 		var value string
@@ -83,16 +110,36 @@ func populateInputSchema(c *Context, s any, p []param) error {
 		switch pa.In {
 		case "header":
 			value, err = getHeaderParam(c, pa)
+		case "path":
+			continue // FIXME: how do i get path?
+		case "query":
+			value, err = getQueryParam(c, pa)
+		case "cookie":
+			value, err = getCookieParam(c, pa)
 		}
 		if err != nil {
 			return err
 		}
+
 		field := sve.FieldByName(pa.Name) //has to be there because handleInputSchema
+		if pa.Type == "int" {
+			valuei, err := strconv.Atoi(value)
+			if err != nil {
+				return fmt.Errorf("Expected type integer on param %s.", pa.Name)
+			}
+			field.SetInt(int64(valuei))
+			continue
+		}
 		field.SetString(value)
 	}
 	return nil
 }
-func handleInputSchema(s any) error { // should this return an error or should it panic?
+
+func handleInputSchema(pa *[]param, s any) error { // should this return an error or should it panic?
+	if s == nil {
+		*pa = []param{}
+		return nil
+	}
 	sv := reflect.ValueOf(s) //
 	svk := sv.Kind()
 	if svk != reflect.Ptr {
@@ -118,7 +165,7 @@ func handleInputSchema(s any) error { // should this return an error or should i
 		//param.In
 		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
 		if !isValidKind(specified_kind) {
-			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, body, or formData", svetf.Name)
+			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, or formData", svetf.Name)
 		}
 
 		//param.Description
@@ -128,7 +175,12 @@ func handleInputSchema(s any) error { // should this return an error or should i
 		specified_required := svetf.Tag.Get("required")
 		specified_deprecated := svetf.Tag.Get("deprecated")
 
-		required, err := boolFromSpecified(specified_required, true)
+		required_def := true
+		if specified_kind == "cookie" { // cookies by default should never be required
+			required_def = false
+		}
+
+		required, err := boolFromSpecified(specified_required, required_def)
 		if err != nil {
 			return err
 		}
@@ -146,5 +198,6 @@ func handleInputSchema(s any) error { // should this return an error or should i
 
 		newParams = append(newParams, newParam)
 	}
+	*pa = newParams
 	return nil
 }

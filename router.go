@@ -154,6 +154,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// if err != nil {
 			// 	Unprocessable(w, req)
 			// }
+			err := populateInputSchema(c, route.Fields, route.params)
+			if err != nil {
+				c.BadRequest(err.Error())
+				return
+			}
 			if route.WebSocket {
 				if !c.isWebSocket() {
 					c.BadRequest("This route uses the WebSocket protocol.")
@@ -177,7 +182,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-
 	http.NotFound(w, req)
 }
 
@@ -202,6 +206,10 @@ func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
 		r.getCompletePath(route)
 		r.createRegexMatch(route)
+		err := handleInputSchema(&route.params, route.Fields)
+		if err != nil {
+			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
+		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
 	}
 	//TODO: ensure no route collision, will be a nice to have

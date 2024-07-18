@@ -89,19 +89,19 @@ type Paths map[string]PathItem
 
 // PathItem struct describes operations available on a single path.
 type PathItem struct {
-	Ref         string                 `json:"$ref"`
-	Summary     string                 `json:"summary"`
-	Description string                 `json:"description"`
-	Get         *Operation             `json:"get,omitempty"`
-	Put         *Operation             `json:"put,omitempty"`
-	Post        *Operation             `json:"post,omitempty"`
-	Delete      *Operation             `json:"delete,omitempty"`
-	Options     *Operation             `json:"options,omitempty"`
-	Head        *Operation             `json:"head,omitempty"`
-	Patch       *Operation             `json:"patch,omitempty"`
-	Trace       *Operation             `json:"trace,omitempty"`
-	Servers     []Server               `json:"servers"`
-	Parameters  []ParameterOrReference `json:"parameters"`
+	Ref         string      `json:"$ref"`
+	Summary     string      `json:"summary"`
+	Description string      `json:"description"`
+	Get         *Operation  `json:"get,omitempty"`
+	Put         *Operation  `json:"put,omitempty"`
+	Post        *Operation  `json:"post,omitempty"`
+	Delete      *Operation  `json:"delete,omitempty"`
+	Options     *Operation  `json:"options,omitempty"`
+	Head        *Operation  `json:"head,omitempty"`
+	Patch       *Operation  `json:"patch,omitempty"`
+	Trace       *Operation  `json:"trace,omitempty"`
+	Servers     []Server    `json:"servers"`
+	Parameters  []Parameter `json:"parameters"`
 }
 
 type SecurityRequirement map[string][]string
@@ -113,7 +113,7 @@ type Operation struct {
 	Description  string                 `json:"description"`
 	ExternalDocs ExternalDocumentation  `json:"externalDocs"`
 	OperationID  string                 `json:"operationId"`
-	Parameters   []ParameterOrReference `json:"parameters"`
+	Parameters   []Parameter            `json:"parameters"`
 	RequestBody  RequestBodyOrReference `json:"requestBody"`
 	Responses    map[string]Response    `json:"responses"`
 	Callbacks    map[string]Callback    `json:"callbacks"`
@@ -122,18 +122,13 @@ type Operation struct {
 	Servers      []Server               `json:"servers"`
 }
 
-// ParameterOrReference is a union type representing either a Parameter Object or a Reference Object.
-type ParameterOrReference struct {
-	Reference string    `json:"$ref,omitempty"`
-	Parameter Parameter `json:"-"`
-}
-
 // Parameter struct describes a parameter in OpenAPI.
 type Parameter struct {
 	Name            string `json:"name"`
 	In              string `json:"in"`
 	Description     string `json:"description"`
 	Required        bool   `json:"required"`
+	Type            string `json:"type"`
 	Deprecated      bool   `json:"deprecated"`
 	AllowEmptyValue bool   `json:"allowEmptyValue"`
 	Style           string `json:"style"`
@@ -167,6 +162,7 @@ type Schema struct {
 	// Define your schema fields based on your specific requirements
 	// Example fields could include type, format, properties, etc.
 	// This can be expanded based on the needs of your application.
+	Ref string `json:"$ref"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.
@@ -218,13 +214,11 @@ func GenerateOpenAPIUI(document, title, docsURL string) string {
 }
 
 func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths *Paths) {
-	tag := router.Tag
-
+	tag := router.Tag //FIXME: tag on route should not just be tag on router
 	if tag == "" {
 		tag = router.Name
 	}
 	if !slices.Contains(*tagNames, tag) {
-
 		*tagNames = append(*tagNames, tag)
 		*tags = append(*tags, Tag{Name: tag, Description: ""})
 	}
@@ -232,13 +226,29 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 	description := "This route does"
 	summary := description
 	if len(summary) > 100 {
-		summary = summary[:100] + " ..."
+		summary = summary[:97] + " ..."
+	}
+	parameters := []Parameter{}
+	for _, p := range route.params {
+		np := Parameter{
+			Name:        p.Name,
+			Description: p.Description,
+			Required:    p.Required,
+			In:          p.In,
+			Deprecated:  p.Deprecated,
+		}
+		if p.Type == "int" {
+			np.Type = "integer"
+		} else {
+			np.Type = "string"
+		}
+		parameters = append(parameters, np)
 	}
 	pathMethod := &Operation{
 		Summary:     summary,
-		OperationID: "",
+		OperationID: "", //FIXME: needs operation id
 		Tags:        []string{tag},
-		Parameters:  []ParameterOrReference{},
+		Parameters:  parameters, //NOTE: check json struct tag on ParameterOrReference
 		Responses:   map[string]Response{},
 		Description: description, // TODO: needs to be dynamic on route
 	}
@@ -256,7 +266,6 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 
 	}
 	(*paths)[route.fullPath] = pathItem
-
 }
 
 func GenerateOpenAPISpec(
@@ -275,7 +284,6 @@ func GenerateOpenAPISpec(
 			addRoute(*router, *route, &tags, &tagNames, &paths)
 		}
 	}
-
 	info := Info{
 		Version: appVersion,
 		Title:   appName,
@@ -285,8 +293,8 @@ func GenerateOpenAPISpec(
 		Info:        info,
 		Servers:     []Server{},
 		Tags:        tags,
-		// FIX ME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
-		// FIX ME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
+		// FIXME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
+		// FIXME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
 		Paths: paths,
 	}
 	openapiJSON, err := json.Marshal(openapi)

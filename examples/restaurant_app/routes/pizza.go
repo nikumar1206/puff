@@ -35,9 +35,9 @@ func PizzaRouter() *puff.Router {
 		Prefix: "/pizza",
 	}
 
-	r.Get("", "Returns the greatest piza recipe you will ever find.", getPizza)
+	r.Get("", nil, getPizza)
 
-	r.Post("", "Places an order for a pizza.", func(c *puff.Context) {
+	r.Post("", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
@@ -47,15 +47,15 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Patch("", "Unburns a burnt pizza.", func(c *puff.Context) {
+	r.Patch("", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]interface{}{"message": "Unburning a pizza is impossible."},
 		}
 		c.SendResponse(res)
 	})
-	ThumbnailFileResp := puff.FileResponse{FileName: "assets/chezpizawef.jpg"}
-	r.Get("/thumbnail", "returns thumbnail of pizza", ThumbnailFileResp.Handler())
+	ThumbnailFileResp := puff.FileResponse{FilePath: "assets/chezpizawef.jpg"}
+	r.Get("/thumbnail", nil, ThumbnailFileResp.Handler())
 
 	return r
 }
