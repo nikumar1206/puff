@@ -15,22 +15,25 @@ func main() {
 	app.Use(middleware.Panic())
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
-	app.Get("/", nil, func(c *puff.Context) {
+
+	app.Get("/", "", nil, func(c *puff.Context) {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/hello_world.html",
 		})
 	})
 
-	app.Get("/foos/{name}", nil, func(c *puff.Context) {
+	app.Get("/foos/{name}", "", nil, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
-	app.Get("/rawr", nil, func(c *puff.Context) {
+	app.Get("/rawr", "", nil, func(c *puff.Context) {
 		c.SendResponse(puff.JSONResponse{Content: map[string]any{"foo": "bar"}, StatusCode: 200})
 	})
 
 	app.IncludeRouter(PastaRouter())
 	app.IncludeRouter(routes.PizzaRouter())
 	app.IncludeRouter(routes.DrinksRouter())
+	app.IncludeRouter(routes.SodaRouter())
+	app.IncludeRouter(routes.WaterRouter())
 
 	app.SetDev()
 	app.ListenAndServe(":8000")

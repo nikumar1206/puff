@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/nikumar1206/puff"
@@ -32,13 +31,13 @@ func getPizza(c *puff.Context) {
 
 func PizzaRouter() *puff.Router {
 	r := &puff.Router{
-		Name:   "Pizza related APIs for the restaurant",
+		Name:   "Pizza",
 		Prefix: "/pizza",
 	}
 
-	r.Get("/", nil, getPizza)
+	r.Get("/", "", nil, getPizza)
 
-	r.Post("/", nil, func(c *puff.Context) {
+	r.Post("/", "", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
@@ -48,7 +47,7 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Patch("/", nil, func(c *puff.Context) {
+	r.Patch("/", "", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]interface{}{"message": "Unburning a pizza is impossible."},
@@ -56,9 +55,10 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Get("/thumbnail", nil, func(c *puff.Context) {
-		fmt.Println("hello world")
-		c.SendResponse(puff.FileResponse{})
+	r.Get("/thumbnail", "", nil, func(c *puff.Context) {
+		c.SendResponse(puff.FileResponse{
+			FilePath: "examples/restaurant_app/assets/chezpiza.jpg",
+		})
 	})
 
 	return r

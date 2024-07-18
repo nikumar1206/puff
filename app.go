@@ -75,7 +75,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		Name:   "OpenAPI Documentation Router",
 	}
 
-	docsRouter.Get(".json", nil, func(c *Context) {
+	docsRouter.Get(".json", "Provides JSON OpenAPI Schema.", nil, func(c *Context) {
 		res := GenericResponse{
 			Content:     spec,
 			ContentType: "application/json",
@@ -83,14 +83,14 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		c.SendResponse(res)
 	})
 
-	docsRouter.Get("", nil, func(c *Context) {
+	docsRouter.Get("", "Render OpenAPI schema.", nil, func(c *Context) {
 		res := HTMLResponse{
 			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
 		}
 		c.SendResponse(res)
 	})
 	if a.DocsReload {
-		docsRouter.WebSocket("/ws", nil, func(c *Context) {
+		docsRouter.WebSocket("/ws", "WebSocket for live reload of swagger page.", nil, func(c *Context) {
 			c.WebSocket.OnMessage = func(ws *WebSocket, wsm WebSocketMessage) {
 				msg := new(string)
 				err := wsm.To(msg)
@@ -136,27 +136,27 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	}
 }
 
-func (a *PuffApp) Get(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Get(path, fields, handleFunc)
+func (a *PuffApp) Get(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Get(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Post(path, fields, handleFunc)
+func (a *PuffApp) Post(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Post(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Patch(path, fields, handleFunc)
+func (a *PuffApp) Patch(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Patch(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Put(path, fields, handleFunc)
+func (a *PuffApp) Put(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Put(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Delete(path, fields, handleFunc)
+func (a *PuffApp) Delete(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Delete(path, description, fields, handleFunc)
 }
-func (a *PuffApp) WebSocket(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.WebSocket(path, fields, handleFunc)
+func (a *PuffApp) WebSocket(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.WebSocket(path, description, fields, handleFunc)
 }
 
 func (a *PuffApp) AllRoutes() []*Route {

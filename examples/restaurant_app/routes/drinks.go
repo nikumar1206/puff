@@ -9,11 +9,11 @@ import (
 
 func DrinksRouter() *puff.Router {
 	r := puff.NewRouter(
-		"All the drinks available at the store",
+		"Drinks",
 		"/drinks",
 	)
 
-	r.Get("/stream-coca-cola", nil, func(c *puff.Context) {
+	r.Get("/stream-coca-cola", "", nil, func(c *puff.Context) {
 		res := puff.StreamingResponse{
 			StreamHandler: func(coca_cola *chan string) {
 				for i := range 3 {
@@ -24,7 +24,7 @@ func DrinksRouter() *puff.Router {
 		}
 		c.SendResponse(res)
 	})
-	r.Get("/{name}", nil, func(c *puff.Context) {
+	r.Get("/{name}", "", nil, func(c *puff.Context) {
 		res := puff.StreamingResponse{
 			StreamHandler: func(coca_cola *chan string) {
 				for i := range 3 {

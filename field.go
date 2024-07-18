@@ -8,12 +8,14 @@ import (
 
 type param struct {
 	// modeled after https://swagger.io/specification/#:~:text=to%20the%20API.-,Fixed%20Fields,-Field%20Name
-	Name        string `json:"name"`
-	Type        string `json:"type"` // string, integer
-	In          string `json:"in"`   //query, path, header, cookie
+	Name string `json:"name"`
+	// Type        string `json:"type"` // string, integer
+	In          string `json:"in"` //query, path, header, cookie
+	Format      string `json:"format"`
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
 	Deprecated  bool   `json:"deprecated"`
+	Schema      Schema
 }
 
 // type HelloWorld struct {
@@ -133,7 +135,7 @@ func populateInputSchema(c *Context, s any, p []param, matches []string) error {
 		}
 
 		field := sve.FieldByName(pa.Name) //has to be there because handleInputSchema
-		if pa.Type == "int" {
+		if pa.Schema.Type == "int" {
 			valuei, err := strconv.Atoi(value)
 			if err != nil {
 				return fmt.Errorf("Expected type integer on param %s.", pa.Name)
@@ -200,9 +202,15 @@ func handleInputSchema(pa *[]param, s any) error { // should this return an erro
 			return err
 		}
 
+		//param.Schema.format
+		format := svetf.Tag.Get("format")
+
 		newParam.Name = svetf.Name
 		newParam.In = specified_kind
-		newParam.Type = _type
+		newParam.Schema = Schema{
+			Type:   _type,
+			Format: format,
+		}
 		newParam.Description = description
 		newParam.Required = required
 		newParam.Deprecated = deprecated

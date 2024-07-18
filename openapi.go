@@ -162,7 +162,9 @@ type Schema struct {
 	// Define your schema fields based on your specific requirements
 	// Example fields could include type, format, properties, etc.
 	// This can be expanded based on the needs of your application.
-	Ref string `json:"$ref"`
+	Type   string `json:"type"`
+	Format string `json:"format"`
+	Ref    string `json:"$ref"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.
@@ -223,7 +225,7 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 		*tags = append(*tags, Tag{Name: tag, Description: ""})
 	}
 
-	description := "This route does"
+	description := route.Description
 	summary := description
 	if len(summary) > 100 {
 		summary = summary[:97] + " ..."
@@ -237,11 +239,7 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 			In:          p.In,
 			Deprecated:  p.Deprecated,
 		}
-		if p.Type == "int" {
-			np.Type = "integer"
-		} else {
-			np.Type = "string"
-		}
+		np.Schema = p.Schema
 		parameters = append(parameters, np)
 	}
 	pathMethod := &Operation{
