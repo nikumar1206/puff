@@ -129,12 +129,9 @@ func (r *Router) getCompletePath(route *Route) {
 }
 
 func (r *Router) createRegexMatch(route *Route) {
-	placeholderRegex := regexp.MustCompile(`\{[^/]+\}`)
-	regexPattern := placeholderRegex.ReplaceAllString(route.Path, `([^/]+)`)
-	route.regexp = regexp.MustCompile(regexPattern)
-	// escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
-	// regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "[^\\/]+")
-	// route.regexp = regexp.MustCompile("^" + regexPattern + "$")
+	escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
+	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "([^/]+)")
+	route.regexp = regexp.MustCompile("^" + regexPattern + "$")
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -215,7 +212,6 @@ func (r *Router) patchRoutes() {
 			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
 		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
-		slog.Debug("", slog.Any("Params", route.params))
 	}
 	//TODO: ensure no route collision, will be a nice to have
 }

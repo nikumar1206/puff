@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/nikumar1206/puff"
@@ -54,8 +55,11 @@ func PizzaRouter() *puff.Router {
 		}
 		c.SendResponse(res)
 	})
-	ThumbnailFileResp := puff.FileResponse{FilePath: "assets/chezpizawef.jpg"}
-	r.Get("/thumbnail", nil, ThumbnailFileResp.Handler())
+
+	r.Get("/thumbnail", nil, func(c *puff.Context) {
+		fmt.Println("hello world")
+		c.SendResponse(puff.FileResponse{})
+	})
 
 	return r
 }
