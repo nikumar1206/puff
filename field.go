@@ -97,11 +97,10 @@ func getCookieParam(c *Context, param param) (string, error) {
 }
 
 func getPathParam(c *Context, index int, param param, matches []string) (string, error) {
-	if len(matches) > index {
-		m := matches[index]
+	if len(matches) > 1+index {
+		m := matches[1+index]
 		return handleParam(m, param)
 	} else {
-		fmt.Println(index, param, matches)
 		return "", fmt.Errorf("required path param %s not provided", param.Name)
 	}
 }

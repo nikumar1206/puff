@@ -129,9 +129,12 @@ func (r *Router) getCompletePath(route *Route) {
 }
 
 func (r *Router) createRegexMatch(route *Route) {
-	escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
-	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "[^\\/]+")
-	route.regexp = regexp.MustCompile("^" + regexPattern + "$")
+	placeholderRegex := regexp.MustCompile(`\{[^/]+\}`)
+	regexPattern := placeholderRegex.ReplaceAllString(route.Path, `([^/]+)`)
+	route.regexp = regexp.MustCompile(regexPattern)
+	// escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
+	// regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "[^\\/]+")
+	// route.regexp = regexp.MustCompile("^" + regexPattern + "$")
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -154,8 +157,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// if err != nil {
 			// 	Unprocessable(w, req)
 			// }
-			rg := regexp.MustCompile("^" + regexp.QuoteMeta(route.Path) + "$") //FIXME: is this how i should do this?
-			matches := rg.FindStringSubmatch(req.URL.Path)
+			matches := route.regexp.FindStringSubmatch(req.URL.Path)
 			err := populateInputSchema(c, route.Fields, route.params, matches)
 			if err != nil {
 				c.BadRequest(err.Error())

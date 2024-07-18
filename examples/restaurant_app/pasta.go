@@ -14,7 +14,7 @@ type PastaHomeInput struct {
 }
 
 type PastaCheeseInput struct {
-	ID int `kind:"path" description:"id of cheese"`
+	ID int `kind:"path" description:"id of cheese" deprecated:"true"`
 }
 
 func PastaRouter() *puff.Router {

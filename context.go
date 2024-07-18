@@ -144,6 +144,13 @@ func (ctx *Context) BadRequest(message string, a ...any) {
 	ctx.response(400, message, a...)
 }
 
+// Forbidden returns a json response with status code 403
+// a key error and a value of the formatted string from
+// message and the arguments following.
+func (ctx *Context) Forbidden(message string, a ...any) {
+	ctx.response(403, message, a...)
+}
+
 // NotFound returns a json response with status code 404
 // with a key error and a value of the formatted string from
 // message and the arguments following.

@@ -14,7 +14,7 @@ func main() {
 	app.Use(middleware.CORS())
 	app.Use(middleware.Panic())
 	app.Use(middleware.Logging())
-
+	app.Use(middleware.CSRF())
 	app.Get("/", nil, func(c *puff.Context) {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/hello_world.html",

@@ -35,9 +35,9 @@ func PizzaRouter() *puff.Router {
 		Prefix: "/pizza",
 	}
 
-	r.Get("", nil, getPizza)
+	r.Get("/", nil, getPizza)
 
-	r.Post("", nil, func(c *puff.Context) {
+	r.Post("/", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
@@ -47,7 +47,7 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Patch("", nil, func(c *puff.Context) {
+	r.Patch("/", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]interface{}{"message": "Unburning a pizza is impossible."},
