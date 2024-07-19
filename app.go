@@ -18,6 +18,10 @@ type Config struct {
 	DocsURL string
 	// DocsReload, if true, enables automatic reload on the Swagger documentation page.
 	DocsReload bool
+	// TLSPublicKeyFile specifies the file for the TLS public key (usually .pem or .crt).
+	TLSPublicKeyFile string
+	// TLSPrivateKeyFile specifies the filre for the TLS private key (usually .key).
+	TLSPrivateKeyFile string
 }
 
 type PuffApp struct {
@@ -127,9 +131,12 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
-
-	err := http.ListenAndServe(listenAddr, a.RootRouter)
-
+	var err error
+	if a.TLSPublicKeyFile != "" && a.TLSPrivateKeyFile != "" {
+		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicKeyFile, a.TLSPrivateKeyFile, a.RootRouter)
+	} else {
+		err = http.ListenAndServe(listenAddr, a.RootRouter)
+	}
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
