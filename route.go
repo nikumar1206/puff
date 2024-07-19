@@ -8,7 +8,7 @@ import (
 type Route struct {
 	fullPath string
 	regexp   *regexp.Regexp
-	params   []param
+	params   []Parameter
 
 	Description string
 	WebSocket   bool

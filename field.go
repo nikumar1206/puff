@@ -8,8 +8,7 @@ import (
 
 type param struct {
 	// modeled after https://swagger.io/specification/#:~:text=to%20the%20API.-,Fixed%20Fields,-Field%20Name
-	Name string `json:"name"`
-	// Type        string `json:"type"` // string, integer
+	Name        string `json:"name"`
 	In          string `json:"in"` //query, path, header, cookie
 	Format      string `json:"format"`
 	Description string `json:"description"`
@@ -17,20 +16,6 @@ type param struct {
 	Deprecated  bool   `json:"deprecated"`
 	Schema      Schema
 }
-
-// type HelloWorld struct {
-// 	Name int `kind:"QueryParam" description:"Specify a name to issue a greeting to."`
-// }
-//
-// func main() {
-// 	var router Router
-// 	HelloWorldInput := new(HelloWorld)
-// 	router.Get("/hello-world", HelloWorldInput, func(c *Context) {
-// 		c.SendResponse(GenericResponse{
-// 			Content: fmt.Sprintf("Hello, %s!", HelloWorldInput.Name),
-// 		})
-// 	})
-// }
 
 func isValidType(_type string) bool {
 	// https://swagger.io/specification/#:~:text=openapi.yaml.-,Data%20Types,-Data%20types%20in
@@ -68,7 +53,7 @@ func boolFromSpecified(spec string, def bool) (bool, error) {
 
 // handleParam takes the value as recieved, returns an error if the value
 // is empty AND required.
-func handleParam(value string, param param) (string, error) {
+func handleParam(value string, param Parameter) (string, error) {
 	ok := !(value == "")
 	if !ok && param.Required {
 		return "", fmt.Errorf("Required %s param %s not provided.", param.In, param.Name)
@@ -78,14 +63,14 @@ func handleParam(value string, param param) (string, error) {
 
 // getHeaderParam gets the value of the param from the header. It may return error
 // if it not found AND required.
-func getHeaderParam(c *Context, param param) (string, error) {
+func getHeaderParam(c *Context, param Parameter) (string, error) {
 	value := c.GetHeader(param.Name)
 	return handleParam(value, param)
 }
 
 // getQueryParam gets the value of the param from the query. It may return error
 // if it not found AND required.
-func getQueryParam(c *Context, param param) (string, error) {
+func getQueryParam(c *Context, param Parameter) (string, error) {
 	//FIXME: only the first letter should be lowered.
 	value := c.GetQueryParam(param.Name)
 	return handleParam(value, param)
@@ -93,12 +78,12 @@ func getQueryParam(c *Context, param param) (string, error) {
 
 // getHeaderParam gets the value of the param from the cookie header.
 // It may return an error if it not found AND required.
-func getCookieParam(c *Context, param param) (string, error) {
+func getCookieParam(c *Context, param Parameter) (string, error) {
 	value := c.GetCookie(param.Name)
 	return handleParam(value, param)
 }
 
-func getPathParam(c *Context, index int, param param, matches []string) (string, error) {
+func getPathParam(c *Context, index int, param Parameter, matches []string) (string, error) {
 	if len(matches) > 1+index {
 		m := matches[1+index]
 		return handleParam(m, param)
@@ -110,7 +95,7 @@ func getPathParam(c *Context, index int, param param, matches []string) (string,
 // getBodyParam gets the value of the param from the body.
 // It will return an error if it is not found AND required.
 
-func populateInputSchema(c *Context, s any, p []param, matches []string) error {
+func populateInputSchema(c *Context, s any, p []Parameter, matches []string) error {
 	if len(p) == 0 { //no input schema
 		return nil
 	}
@@ -148,9 +133,9 @@ func populateInputSchema(c *Context, s any, p []param, matches []string) error {
 	return nil
 }
 
-func handleInputSchema(pa *[]param, s any) error { // should this return an error or should it panic?
+func handleInputSchema(pa *[]Parameter, s any) error { // should this return an error or should it panic?
 	if s == nil {
-		*pa = []param{}
+		*pa = []Parameter{}
 		return nil
 	}
 	sv := reflect.ValueOf(s) //
@@ -164,9 +149,9 @@ func handleInputSchema(pa *[]param, s any) error { // should this return an erro
 		return fmt.Errorf("fields must be pointer to STRUCT")
 	}
 
-	newParams := []param{}
+	newParams := []Parameter{}
 	for i := range svet.NumField() {
-		newParam := param{}
+		newParam := Parameter{}
 		svetf := svet.Field(i)
 
 		// param.Type
