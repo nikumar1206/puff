@@ -7,6 +7,8 @@ import (
 	"slices"
 )
 
+var openapi OpenAPI
+
 type Reference struct {
 	Ref         string `json:"$ref"`
 	Summary     string `json:"$summary"`
@@ -16,6 +18,7 @@ type Reference struct {
 // OpenAPI struct represents the root of the OpenAPI document.
 type OpenAPI struct {
 	SpecVersion       string                `json:"openapi"`
+	Definitions       map[string]*Schema    `json:"definitions"`
 	Info              Info                  `json:"info"`
 	JSONSchemaDialect string                `json:"jsonSchemaDialect"`
 	Servers           []Server              `json:"servers"`
@@ -25,6 +28,20 @@ type OpenAPI struct {
 	Security          []SecurityRequirement `json:"security"`
 	Tags              []Tag                 `json:"tags"`
 	ExternalDocs      ExternalDocumentation `json:"externalDocs"`
+}
+
+// // Definitions contains schemas that can be referenced throughout
+// // the rest of the document. Reference:
+// // https://spec.openapis.org/oas/v3.1.0#schema-object
+// type Definition struct {
+// 	Type       string   `json:"type"`
+// 	Required   []string `json:"required"`
+// 	Properties map[string]Property
+// }
+
+type Property struct {
+	Type   string `json:"type"`
+	Format string `json:"format"`
 }
 
 // Info struct provides metadata about the API.
@@ -162,9 +179,12 @@ type Schema struct {
 	// Define your schema fields based on your specific requirements
 	// Example fields could include type, format, properties, etc.
 	// This can be expanded based on the needs of your application.
-	Type   string `json:"type"`
-	Format string `json:"format"`
-	Ref    string `json:"$ref"`
+	Type                 string             `json:"type,omitempty"`
+	Format               string             `json:"format,omitempty"`
+	Items                *Schema            `json:"items,omitempty"`
+	Ref                  string             `json:"$ref,omitempty"`
+	Properties           map[string]*Schema `json:"properties,omitempty"`
+	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.
@@ -287,18 +307,24 @@ func GenerateOpenAPISpec(
 		Version: appVersion,
 		Title:   appName,
 	}
-	openapi := OpenAPI{
-		SpecVersion: "3.1.0",
-		Info:        info,
-		Servers:     []Server{},
-		Tags:        tags,
-		// FIXME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
-		// FIXME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
-		Paths: paths,
-	}
+	openapi.SpecVersion = "3.1.0"
+	openapi.Info = info
+	openapi.Servers = []Server{}
+	openapi.Tags = tags
+	openapi.Paths = paths
+	// FIXME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
+	// FIXME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
 	openapiJSON, err := json.Marshal(openapi)
 	if err != nil {
 		return "", err
 	}
 	return string(openapiJSON), nil
+}
+
+func AddDefinition(name string, s Schema) {
+	fmt.Println("add definition", s.Properties)
+	if openapi.Definitions == nil {
+		openapi.Definitions = make(map[string]*Schema)
+	}
+	openapi.Definitions[name] = &s
 }

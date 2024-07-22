@@ -6,21 +6,10 @@ import (
 	"strconv"
 )
 
-type param struct {
-	// modeled after https://swagger.io/specification/#:~:text=to%20the%20API.-,Fixed%20Fields,-Field%20Name
-	Name        string `json:"name"`
-	In          string `json:"in"` //query, path, header, cookie
-	Format      string `json:"format"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-	Deprecated  bool   `json:"deprecated"`
-	Schema      Schema
-}
-
-func isValidType(_type string) bool {
-	// https://swagger.io/specification/#:~:text=openapi.yaml.-,Data%20Types,-Data%20types%20in
-	return _type == "string" || _type == "int"
-}
+// func isValidType(_type string) bool {
+// 	// https://swagger.io/specification/#:~:text=openapi.yaml.-,Data%20Types,-Data%20types%20in
+// 	return _type == "string" || _type == "int"
+// }
 
 func isValidKind(specified_kind string) bool {
 	// https://swagger.io/specification/#:~:text=the%20in%20property.-,in,query%22%2C%20%22header%22%2C%20%22path%22%20or%20%22cookie%22.,-description
@@ -83,7 +72,7 @@ func getCookieParam(c *Context, param Parameter) (string, error) {
 	return handleParam(value, param)
 }
 
-func getPathParam(c *Context, index int, param Parameter, matches []string) (string, error) {
+func getPathParam(index int, param Parameter, matches []string) (string, error) {
 	if len(matches) > 1+index {
 		m := matches[1+index]
 		return handleParam(m, param)
@@ -108,7 +97,7 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 		case "header":
 			value, err = getHeaderParam(c, pa)
 		case "path":
-			value, err = getPathParam(c, pathparamsindex, pa, matches)
+			value, err = getPathParam(pathparamsindex, pa, matches)
 			// continue // FIXME: how do i get path?
 		case "query":
 			value, err = getQueryParam(c, pa)
@@ -133,6 +122,43 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	return nil
 }
 
+func newDefinition(schema any) Schema {
+	newSchema := new(Schema)
+
+	st := reflect.TypeOf(schema)
+	sv := reflect.ValueOf(schema)
+	if st.Kind() != reflect.Struct && st.Kind() != reflect.Slice && st.Kind() != reflect.Map && st.Kind() != reflect.Array {
+		newSchema.Type = st.String()
+		return *newSchema
+	}
+	if st.Kind() == reflect.Map {
+		if st.Key().Kind() != reflect.String {
+			panic("Map key type must always be string.")
+		}
+		nd := newDefinition(sv.Elem().Interface())
+		newSchema.AdditionalProperties = &nd
+		return *newSchema
+	}
+	if st.Kind() == reflect.Array || st.Kind() == reflect.Slice {
+		newSchema.Type = "array"
+		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
+		newSchema.Items = &nd
+		return *newSchema
+	}
+	// last remaining kind- reflect.Struct
+	newDef := Schema{}
+	newDef.Properties = make(map[string]*Schema)
+	for i := range st.NumField() {
+		newDef.Type = "object"
+		field := st.Field(i)
+		nd := newDefinition(sv.Field(i).Interface())
+		newDef.Properties[field.Name] = &nd
+	}
+	AddDefinition(st.Name(), newDef)
+	newSchema.Ref = "#/definitions/" + st.Name()
+	return *newSchema
+}
+
 func handleInputSchema(pa *[]Parameter, s any) error { // should this return an error or should it panic?
 	if s == nil {
 		*pa = []Parameter{}
@@ -154,11 +180,8 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 		newParam := Parameter{}
 		svetf := svet.Field(i)
 
-		// param.Type
-		_type := svetf.Type.String()
-		if !isValidType(_type) {
-			return fmt.Errorf("type on field %s must be string or int", svetf.Name)
-		}
+		// param.Schema
+		newParam.Schema = newDefinition(sve.Field(i).Interface())
 
 		//param.In
 		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
@@ -192,10 +215,7 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 
 		newParam.Name = svetf.Name
 		newParam.In = specified_kind
-		newParam.Schema = Schema{
-			Type:   _type,
-			Format: format,
-		}
+		newParam.Schema.Format = format
 		newParam.Description = description
 		newParam.Required = required
 		newParam.Deprecated = deprecated

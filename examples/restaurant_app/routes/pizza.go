@@ -29,6 +29,14 @@ func getPizza(c *puff.Context) {
 	c.SendResponse(res)
 }
 
+type Pizza struct {
+	Name        string
+	Ingredients []string
+}
+type NewPizzaInput struct {
+	Pizza Pizza `kind:"body"`
+}
+
 func PizzaRouter() *puff.Router {
 	r := &puff.Router{
 		Name:   "Pizza",
@@ -61,5 +69,7 @@ func PizzaRouter() *puff.Router {
 		})
 	})
 
+	newPizzaInput := new(NewPizzaInput)
+	r.Post("/new", "", newPizzaInput, func(c *puff.Context) {})
 	return r
 }
