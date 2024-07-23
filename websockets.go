@@ -104,7 +104,7 @@ func (ws *WebSocket) Sendf(message string, a ...any) error {
 }
 
 // SendJSON sends a JSON-encoded message over the WebSocket connection.
-func (ws *WebSocket) SendJSON(s interface{}) error {
+func (ws *WebSocket) SendJSON(s any) error {
 	message, err := json.Marshal(s)
 	if err != nil {
 		return err

@@ -5,8 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/nikumar1206/puff/logger"
 )
 
 type Config struct {
@@ -32,7 +30,7 @@ type PuffApp struct {
 //
 // In this mode, the application will use 'pretty' logging.
 func (a *PuffApp) SetDev() {
-	logger := a.Logger.Handler().(*logger.PuffSlogHandler)
+	logger := a.Logger.Handler().(*SlogHandler)
 	logger.SetLevel(slog.LevelDebug)
 }
 
@@ -40,7 +38,7 @@ func (a *PuffApp) SetDev() {
 //
 // In this mode, the application will use structured logging.
 func (a *PuffApp) SetProd() {
-	handler := a.Logger.Handler().(*logger.PuffSlogHandler)
+	handler := a.Logger.Handler().(*SlogHandler)
 	handler.SetLevel(slog.LevelInfo)
 }
 

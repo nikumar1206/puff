@@ -1,10 +1,6 @@
 // Package puff provides primitives for implementing a Puff Server
 package puff
 
-import (
-	"github.com/nikumar1206/puff/logger"
-)
-
 type HandlerFunc func(*Context)
 type Middleware func(next HandlerFunc) HandlerFunc
 
@@ -27,6 +23,6 @@ func DefaultApp(name string) *PuffApp {
 		DocsURL: "/docs",
 	}
 	a := App(&c)
-	a.Logger = logger.DefaultPuffLogger()
+	a.Logger = DefaultLogger()
 	return a
 }
