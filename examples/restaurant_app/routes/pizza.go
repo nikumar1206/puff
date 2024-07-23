@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"strings"
 	"time"
 
 	"github.com/nikumar1206/puff"
@@ -34,6 +35,7 @@ type Pizza struct {
 	Ingredients []string
 }
 type NewPizzaInput struct {
+	// Pizza []string `kind:"body"`
 	Pizza Pizza `kind:"body"`
 }
 
@@ -70,6 +72,10 @@ func PizzaRouter() *puff.Router {
 	})
 
 	newPizzaInput := new(NewPizzaInput)
-	r.Post("/new", "", newPizzaInput, func(c *puff.Context) {})
+	r.Post("/new", "", newPizzaInput, func(c *puff.Context) {
+		c.SendResponse(puff.GenericResponse{
+			Content: "creating " + newPizzaInput.Pizza.Name + " with ingredients " + strings.Join(newPizzaInput.Pizza.Ingredients, ","),
+		})
+	})
 	return r
 }

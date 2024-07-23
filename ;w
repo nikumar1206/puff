@@ -1,7 +1,6 @@
 package puff
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -113,24 +112,17 @@ func getBodyParam(c *Context, param Parameter) (string, error) {
 	return handleParam(string(body), param)
 }
 
-func populateField(value string, field reflect.Value) error {
-	fieldType := field.Type()
-	newField := reflect.New(fieldType)
-
-	err := json.Unmarshal([]byte(value), newField.Interface())
-	if err != nil {
-		return err
-	}
-	field.Set(newField.Elem())
+func populateField(rf reflect.StructField, value string, field reflect.Value) error {
 	return nil
 }
 func populateInputSchema(c *Context, s any, p []Parameter, matches []string) error {
 	if len(p) == 0 { //no input schema
 		return nil
 	}
+	ste := reflect.TypeOf(s).Elem()
 	sve := reflect.ValueOf(s).Elem() //will not panic because we can confirm
 	pathparamsindex := 0             //pathparamsindex is the amount of path params already reviewed
-	for i, pa := range p {
+	for _, pa := range p {
 		var value string
 		var err error
 
@@ -150,7 +142,7 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 			return err
 		}
 		field := sve.Field(i) //has to be there because handleInputSchema
-		err = populateField(value, field)
+		err = populateField(ste.Field(i), value, field)
 		if err != nil {
 			return err
 		}

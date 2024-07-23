@@ -2,6 +2,7 @@ package puff
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -47,6 +48,11 @@ func (ctx *Context) GetResponseHeader(k string) string {
 // SetHeader sets the value of the response header k to v.
 func (ctx *Context) SetHeader(k, v string) {
 	ctx.ResponseWriter.Header().Set(k, v)
+}
+
+// GetBody returns the request body.
+func (ctx *Context) GetBody() ([]byte, error) {
+	return io.ReadAll(ctx.Request.Body)
 }
 
 // GetQueryParam retrives the value of a query param from k.
