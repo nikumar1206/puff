@@ -80,8 +80,16 @@ func (f FileResponse) GetContentType() string {
 func (f FileResponse) WriteContent(c *Context) error {
 	file, err := os.ReadFile(f.FilePath)
 	if err != nil {
-		writeErrorResponse(c.ResponseWriter, http.StatusInternalServerError, "Error retrieving file: "+err.Error())
-		return fmt.Errorf("Error retrieving file %s during FileResponse: %s", f.FilePath, err.Error())
+		writeErrorResponse(
+			c.ResponseWriter,
+			http.StatusInternalServerError,
+			"Error retrieving file: "+err.Error(),
+		)
+		return fmt.Errorf(
+			"error retrieving file %s during FileResponse: %s",
+			f.FilePath,
+			err.Error(),
+		)
 	}
 
 	c.ResponseWriter.Write(file)
@@ -98,7 +106,14 @@ func (f *FileResponse) Handler() func(*Context) {
 // StreamingResponse represents a response that streams content.
 type StreamingResponse struct {
 	StatusCode    int
-	StreamHandler func(*chan string) //Write to this channel to write to the response. Close the channel once you are done.
+	StreamHandler func(*chan ServerSideEvent) // Write to this channel to write to the response. Close the channel once you are done.
+}
+
+type ServerSideEvent struct {
+	Event string
+	Data  string
+	ID    string
+	Retry int
 }
 
 // GetStatusCode returns the status code of the streaming response.
@@ -115,17 +130,37 @@ func (s StreamingResponse) WriteContent(c *Context) error {
 	c.ResponseWriter.Header().Set("Cache-Control", "no-cache")
 	c.ResponseWriter.Header().Set("Connection", "keep-alive")
 
-	stream := make(chan string)
+	stream := make(chan ServerSideEvent)
 	go func() {
 		defer close(stream)
 		s.StreamHandler(&stream)
 	}()
-	// TODO: more than just data, (event, event_id, retry)
+	// TODO: more than just data, (event, EventID, retry)
 	for value := range stream {
-		fmt.Fprintf(c.ResponseWriter, "data: %s\n\n", value)
+		fmt.Fprint(c.ResponseWriter, constructSSE(value))
 		c.ResponseWriter.(http.Flusher).Flush()
 	}
 	return nil
+}
+
+func constructSSE(eventStruct ServerSideEvent) string {
+	finalEvent := ""
+
+	if eventStruct.ID != "" {
+		finalEvent += fmt.Sprintf("id: %s\n", eventStruct.ID)
+	}
+
+	if eventStruct.Event != "" {
+		finalEvent += fmt.Sprintf("event: %s\n", eventStruct.Event)
+	}
+
+	if eventStruct.Retry != 0 {
+		finalEvent += fmt.Sprintf("retry: %d\n", eventStruct.Retry)
+	}
+
+	finalEvent += fmt.Sprintf("data: %s\n\n", eventStruct.Data)
+
+	return finalEvent
 }
 
 func (s StreamingResponse) Handler() func(*Context) {
