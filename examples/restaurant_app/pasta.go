@@ -66,7 +66,7 @@ func PastaRouter() *puff.Router {
 
 	pasta_newcheese_input := new(PastaNewCheeseInput)
 	pasta_router.Post("/cheese/{id}", "", pasta_newcheese_input, func(c *puff.Context) {
-
 	})
+
 	return pasta_router
 }

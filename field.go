@@ -6,9 +6,11 @@ import (
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // FIXME: Allow for the names of params to be different than the names of the structfields.
+// maybe we could even automatically lower it?
 
 // isValidKind takes in specified_kind and returns
 // if it is a supported and valid kind
@@ -19,7 +21,7 @@ func isValidKind(specified_kind string) bool {
 		specified_kind == "query" ||
 		specified_kind == "cookie" ||
 		specified_kind == "body" ||
-		specified_kind == "formData"
+		specified_kind == "formdata"
 }
 
 // boolFromSpecified resolves the specified bool (as a string type)
@@ -124,6 +126,7 @@ func populateField(value string, field reflect.Value) error {
 	field.Set(newField.Elem())
 	return nil
 }
+
 func populateInputSchema(c *Context, s any, p []Parameter, matches []string) error {
 	if len(p) == 0 { //no input schema
 		return nil
@@ -158,21 +161,48 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	return nil
 }
 
+var supportedTypes = map[string]string{
+	"string": "string",
+	"int":    "integer",
+	// FIXME: int8, int16, int32, int64 are not the same thing as int
+	"int8":  "integer",
+	"int16": "integer",
+	"int32": "integer",
+	"int64": "integer",
+	// FIXME: uint, uint8, uint16, uint32, uint64 are not the same thing as int
+	"uint":   "integer",
+	"uint8":  "integer",
+	"uint16": "integer",
+	"uint32": "integer",
+	"uint64": "integer",
+	// FIXME: float32 and float64 are not the same thing
+	"float32": "number",
+	"float64": "number",
+	"bool":    "boolean",
+}
+
 func newDefinition(schema any) Schema {
 	newSchema := new(Schema)
-
 	st := reflect.TypeOf(schema)
 	sv := reflect.ValueOf(schema)
-	if st.Kind() != reflect.Struct && st.Kind() != reflect.Slice && st.Kind() != reflect.Map && st.Kind() != reflect.Array {
+	// FIXME: refactor this it could look better
+	if st.Kind() != reflect.Struct && st.Kind() != reflect.Slice && st.Kind() != reflect.Map && st.Kind() != reflect.Array && st.Kind() != reflect.Pointer {
 		// FIXME: st.String will return int even though the specification uses integer.
-		newSchema.Type = st.String()
+		ts, ok := supportedTypes[st.String()]
+		if !ok {
+			panic("Unsupported type " + st.String() + ".")
+		}
+		newSchema.Type = ts
 		return *newSchema
+	}
+	if st.Kind() == reflect.Pointer {
+		panic("Pointers are not supported.")
 	}
 	if st.Kind() == reflect.Map {
 		if st.Key().Kind() != reflect.String {
 			panic("Map key type must always be string.")
 		}
-		nd := newDefinition(sv.Elem().Interface())
+		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
 		newSchema.AdditionalProperties = &nd
 		return *newSchema
 	}
@@ -192,7 +222,13 @@ func newDefinition(schema any) Schema {
 		newDef.Type = "object"
 		field := st.Field(i)
 		nd := newDefinition(sv.Field(i).Interface())
-		newDef.Properties[field.Name] = &nd
+
+		fieldName := field.Name
+		fieldNameSplit := strings.Split(field.Tag.Get("json"), ",")
+		if len(fieldName) > 0 {
+			fieldName = fieldNameSplit[0]
+		}
+		newDef.Properties[fieldName] = &nd
 	}
 	AddDefinition(st.Name(), newDef)
 	newSchema.Ref = "#/definitions/" + st.Name()
@@ -220,13 +256,21 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 		newParam := Parameter{}
 		svetf := svet.Field(i)
 
+		name := svetf.Tag.Get("name")
+		if name == "" {
+			name = svetf.Name
+		}
+
 		// param.Schema
 		newParam.Schema = newDefinition(sve.Field(i).Interface())
 
 		//param.In
 		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
+		if name == "Body" && specified_kind == "" {
+			specified_kind = "body"
+		}
 		if !isValidKind(specified_kind) {
-			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, or formData", svetf.Name)
+			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, or formdata", svetf.Name)
 		}
 
 		//param.Description
@@ -252,8 +296,7 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 
 		//param.Schema.format
 		format := svetf.Tag.Get("format")
-
-		newParam.Name = svetf.Name
+		newParam.Name = name
 		newParam.In = specified_kind
 		newParam.Schema.Format = format
 		newParam.Description = description

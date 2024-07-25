@@ -13,7 +13,6 @@ type Route struct {
 	Description string
 	WebSocket   bool
 	Protocol    string
-	Pattern     string // TODO: remove this. un-necessary
 	Path        string
 	Handler     func(*Context)
 	Fields      any
@@ -22,7 +21,7 @@ type Route struct {
 }
 
 func (r *Route) String() string {
-	return fmt.Sprintf("Protocol: %s\nPattern: %s\nPath: %s\n", r.Protocol, r.Pattern, r.Path)
+	return fmt.Sprintf("Protocol: %s\nPath: %s\n", r.Protocol, r.Path)
 }
 
 func (r *Route) GetFullPath() string {
