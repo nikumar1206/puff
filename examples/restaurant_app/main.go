@@ -17,7 +17,6 @@ func main() {
 	// app.Config.TLSPrivateKeyFile = "examples/restaurant_app/server.key"
 	app.Use(middleware.Tracing())
 	app.Use(middleware.CORS())
-	app.Use(middleware.Panic())
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
 

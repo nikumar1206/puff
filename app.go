@@ -118,11 +118,26 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	a.IncludeRouter(&docsRouter)
 }
 
+func attachMiddlewares(middleware_combo *[]Middleware, router *Router) {
+	for _, m := range router.Middlewares {
+		nmc := append(*middleware_combo, *m)
+		middleware_combo = &nmc
+	}
+	for _, route := range router.Routes {
+		for _, m := range *middleware_combo {
+			route.Handler = (m)(route.Handler)
+		}
+	}
+	for _, router := range router.Routers {
+		attachMiddlewares((middleware_combo), router)
+	}
+}
 func (a *PuffApp) patchAllRoutes() {
 	a.RootRouter.patchRoutes()
 	for _, r := range a.RootRouter.Routers {
 		r.patchRoutes()
 	}
+	attachMiddlewares(&[]Middleware{}, a.RootRouter)
 }
 
 func (a *PuffApp) ListenAndServe(listenAddr string) {

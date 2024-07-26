@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/nikumar1206/puff"
+	"github.com/nikumar1206/puff/middleware"
 )
 
 type OrderSodaInput struct {
@@ -10,6 +11,7 @@ type OrderSodaInput struct {
 
 func SodaRouter() *puff.Router {
 	r := puff.NewRouter("Soda", "/soda")
+	r.Use(middleware.Panic())
 	r.Get("/", "", nil, func(c *puff.Context) {
 		res := puff.GenericResponse{
 			Content: "dropping a bucket of water on you within 45 seconds",

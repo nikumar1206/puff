@@ -114,6 +114,10 @@ func (r *Router) IncludeRouter(rt *Router) {
 	r.Routers = append(r.Routers, rt)
 }
 
+func (r *Router) Use(m Middleware) {
+	r.Middlewares = append(r.Middlewares, &m)
+}
+
 func (r *Router) String() string {
 	return fmt.Sprintf("Name: %s Prefix: %s", r.Name, r.Prefix)
 }
@@ -170,17 +174,17 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				handleWebSocket(c)
 				go c.WebSocket.read()
 				handler := route.Handler
-				for _, m := range r.Middlewares {
-					handler = (*m)(handler)
-				}
+				// for _, m := range r.Middlewares {
+				// 	handler = (*m)(handler)
+				// }
 				handler(c)
 				for c.WebSocket.IsOpen() {
 				}
 			}
 			handler := route.Handler
-			for _, m := range r.Middlewares {
-				handler = (*m)(handler)
-			}
+			// for _, m := range r.Middlewares {
+			// 	handler = (*m)(handler)
+			// }
 			handler(c)
 			return
 		}
