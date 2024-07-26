@@ -135,7 +135,6 @@ func (s StreamingResponse) WriteContent(c *Context) error {
 		defer close(stream)
 		s.StreamHandler(&stream)
 	}()
-	// TODO: more than just data, (event, EventID, retry)
 	for value := range stream {
 		fmt.Fprint(c.ResponseWriter, constructSSE(value))
 		c.ResponseWriter.(http.Flusher).Flush()
