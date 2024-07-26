@@ -316,3 +316,42 @@ func MyMiddlewareWithConfig(*MyMiddlewareConfig) puff.Middleware
 ```
 
 The `MyMiddlewareWithConfig` function should take in a pointer to `MyMiddlewareConfig` and return a `puff.Middleware`.
+
+## Using Transport Layer Security
+
+### Step 1: Obtain public and private key certificates.
+
+#### Self-Signed Certicate
+
+Using OpenSSL: `openssl req -new -x509 -sha256 -key private.key -out public.crt -days 3650`
+
+It will ask you a for a new passkey and information for your certificates. When finished, there should be two files in the current working directory, public.crt and private.key.
+
+### Step 2: Provide the path to these files in the configuration.
+
+Assuming this directory structure:
+
+```
+🗂️ my_app
+│   go.mod
+│   main.go
+│   private.key
+│   public.crt
+```
+
+`TLSPublicKeyFile` in `puff.Config` should be `"public.crt"`.
+
+`TLSPrivateKeyFile` in `puff.Config` should be `"private.key"`.
+
+#### Usage in Default App
+
+```golang
+package main
+import "puff"
+
+func main(){
+    app *puff.PuffApp := puff.DefaultApp()
+    app.Config.TLSPublicKeyFile = "public.crt"
+    app.Config.TLSPrivateKeyFile = "private.key"
+}
+```

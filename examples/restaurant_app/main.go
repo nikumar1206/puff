@@ -54,5 +54,4 @@ func main() {
 	})
 	slog.Info("hello there")
 	app.ListenAndServe(":8000")
-
 }
