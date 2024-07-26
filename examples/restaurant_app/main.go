@@ -1,6 +1,9 @@
 package main
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/nikumar1206/puff"
 	"github.com/nikumar1206/puff/examples/restaurant_app/routes"
 	"github.com/nikumar1206/puff/middleware"
@@ -27,13 +30,13 @@ func main() {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
 	app.Get("/rawr", "", nil, func(c *puff.Context) {
-		c.SendResponse(c.SendResponse(
-			puff.StreamingResponse{StreamHandler: func(coca_cola *chan puff.ServerSideEvent) {
+		c.SendResponse(puff.StreamingResponse{
+			StreamHandler: func(coca_cola *chan puff.ServerSideEvent) {
 				for i := range 3 {
 					*coca_cola <- puff.ServerSideEvent{Data: strconv.Itoa(i), Event: "foo", ID: puff.RandomNanoID(), Retry: 2}
 					time.Sleep(time.Duration(2 * time.Second))
 				}
-			}, StatusCode: 200},
+			}},
 		)
 	})
 

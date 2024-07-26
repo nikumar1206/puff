@@ -9,8 +9,7 @@ import (
 	"strings"
 )
 
-// FIXME: Allow for the names of params to be different than the names of the structfields.
-// maybe we could even automatically lower it?
+// FIXME: allow for example values
 
 // isValidKind takes in specified_kind and returns
 // if it is a supported and valid kind

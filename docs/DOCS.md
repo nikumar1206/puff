@@ -1,4 +1,6 @@
-# Creating a Puff App
+<h1 style="text-align:center;"> Documentation for Puff </h1>
+
+## Creating a Puff App
 
 ```golang
 package main
@@ -20,7 +22,7 @@ config := puff.Config{
 app *puff.PuffApp := puff.App(config)
 ```
 
-# Creating a Router
+## Creating a Router
 
 ```golang
 package main
@@ -38,11 +40,11 @@ func main(){
 
 It is possible to do `router.IncludeRouter(anotherRouter)`.
 
-# Example Router Tree
+## Example Router Tree
 
 <img src="example router structure.png"></img>
 
-# Writing a GET Request
+## Writing a GET Request
 
 ```golang
 router.GET("/", puff.Field{}, func(c *puff.Context){
@@ -50,11 +52,11 @@ router.GET("/", puff.Field{}, func(c *puff.Context){
 })
 ```
 
-# Response Types
+## Response Types
 
 There are a few provided response types that you can send through `*puff.Context.SendResponse` during route handling.
 
-## JSONResponse
+### JSONResponse
 
 ```golang
 package main
@@ -77,7 +79,7 @@ func main(){
     })
 ```
 
-## HTMLResponse
+### HTMLResponse
 
 ```golang
 c.SendResponse(puff.HTMLResponse{
@@ -86,7 +88,7 @@ c.SendResponse(puff.HTMLResponse{
 })
 ```
 
-## FileResponse
+### FileResponse
 
 ```golang
 c.SendResponse(puff.FileResponse{
@@ -97,7 +99,7 @@ c.SendResponse(puff.FileResponse{
 })
 ```
 
-## StreamingResponse
+### StreamingResponse
 
 ```golang
 c.SendResponse(puff.StreamingResponse{
@@ -112,7 +114,7 @@ c.SendResponse(puff.StreamingResponse{
 })
 ```
 
-## RedirectResponse
+### RedirectResponse
 
 ```golang
 c.SendResponse(puff.RedirectResponse{
@@ -121,7 +123,7 @@ c.SendResponse(puff.RedirectResponse{
 })
 ```
 
-## GenericResponse
+### GenericResponse
 
 ```golang
 c.SendResponse(puff.GenericResponse{
@@ -131,7 +133,7 @@ c.SendResponse(puff.GenericResponse{
 })
 ```
 
-# Input Schemas
+## Input Schemas
 
 Input schemas specify what types of inputs your application takes.
 
@@ -139,7 +141,10 @@ Example Usage:
 
 ```
 package main
-import "puff"
+import (
+    "puff"
+    "fmt"
+)
 
 type HelloWorldInput struct {
     Name string `kind:"query"`
@@ -150,34 +155,103 @@ func main(){
 
     hello_world_input := new(HelloWorldInput)
     app.Get(path: "/", description: "greets you by name", fields: hello_world_input, func (c *Context) {
-        c.SendResponse(hello_world_input.Name)
+        c.SendResponse(puff.GenericResponse {
+            Content: fmt.Sprintf(hello_world_input.Name)
+        })
     })
 }
 ```
 
 The schema, `HelloWorldInput` in this example, specifies a query parameter of type string.
 
+**IMPORTANT**: The **ENTIRE body** will be unmarshalled into any field with kind `body`. This is unlike the behavior for `header`, `cookie`, and `query`, whom all have a key value structure that will be used based on the `name`.
+
+Niceties:
+
+No error handling with inputs, requests will automatically be rejected.
+
+Puff's OpenAPI generation supports the `json` tag during definition generation to specify names for fields not part of the main input schema.
+
+More examples:
+
+```
+package main
+import (
+    "puff"
+    "fmt"
+    "time"
+)
+
+type NewUserInput struct {
+    Body struct {
+        // notice how the entire response structure must be passed in
+        Name        string
+        DateOfBirth time.Time
+        Latitude    float32
+        Longitude   float64
+    } // notice how the kind of Body is assumed
+}
+
+func main(){
+    app := puff.App("Input Schemas Example")
+
+    new_user_input := new(NewUserInput)
+    app.Get(path: "/new", description: "creates a user and greets you", fields: new_user_input, func (c *Context) {
+        // ...
+        c.SendResponse(puff.GenericResponse {
+            Content: fmt.Sprintf("Hello, %s. Welcome!", new_user_input.Name)
+        })
+    })
+}
+```
+
+Supported Types:
+
+```
+- bool
+- int
+- int8
+- int16
+- int32
+- int64
+- uint
+- uint8
+- uint16
+- uint32
+- uint64
+- float32
+- float64
+- array
+- map
+- pointer
+- slice
+- string
+- struct
+```
+
 The struct tag can take:
 | Field | Required | Description | Possible Values |
 | -------- | -- | -- |------- |
-| kind | Yes | where should the parameter be found | `query`, `path`, `header`, `cookie` |
-| description | No | a brief description of the parameter | anything |
-| required | No | specifies if the field is required. defaults to true for everything except cookie | `true`, `false`|
-| deprecated | No | marks field as deprecated. defaults to false. | `true`, `false`|
-| format | No | the format of the parameter. | examples: `email`, `password`, `uint64`|
+| name | no | overrides the name (by default its the name of the structfield) | anything |
+| kind | yes | where should the parameter be found | `query`, `path`, `header`, `cookie`, `body`, `formdata` |
+| description | no | a brief description of the parameter | anything |
+| required | no | specifies if the field is required. defaults to true for everything except cookie | `true`, `false`|
+| deprecated | no | marks field as deprecated. defaults to false. | `true`, `false`|
+| format | no | the format of the parameter. | examples: `email`, `password`, `uint64`|
 
 When passing in the input, it must be a pointer to something with the input schema as the type.
 
 **NOTE**: The proccessing of the input schema may panic. Here's what the panic messages mean.
 
-| Message                                                | Meaning                                                        |
-| ------------------------------------------------------ | -------------------------------------------------------------- |
-| field must be POINTER to structure                     | The value you passed in for the input schema is not a pointer. |
-| field must be pointer to STRUCT                        | The value you passed in for the input schma is not a struct.   |
-| type of field \_\_ must be string or int               | The type of the field must be string or int.                   |
-| specified kind on field \_\_ in struct tag must be ... | The kind on the field is not a supported kind.                 |
+| Message                                              | Meaning                                                        |
+| ---------------------------------------------------- | -------------------------------------------------------------- |
+| unsupported type <>                                  | The type is not supported (see supported types).               |
+| ... unexported fields                                | ALL struct field names MUST be capitalied.                     |
+| field must be POINTER to structure                   | The value you passed in for the input schema is not a pointer. |
+| field must be pointer to STRUCT                      | The value you passed in for the input schma is not a struct.   |
+| specified kind on field <> in struct tag must be ... | The kind on the field is not a supported kind.                 |
 
-# Middlewares
+## Middlewares
 
 Middlewares provide many useful tools to enhance your application. Puff comes with many middlewares in the middleware package.
 
@@ -185,7 +259,7 @@ To install the middleware package:
 
 `go get https://github.com/nikumar1206/puff/middleware`
 
-## Attaching a Middleware
+### Attaching a Middleware
 
 ```golang
 package main
@@ -203,11 +277,11 @@ func main() {
 
 The middleware package provides many middlewares. You can view the middleware docs at [the middleware pkg documentation](https://pkg.go.dev/github.com/nikumar1206/puff/middleware#section-documentation).
 
-## The Middleware Standard
+### The Middleware Standard
 
 Each middleware should have all the following.
 
-### Configuration
+#### Configuration
 
 ```golang
 type MyMiddlewareConfig struct {
@@ -217,7 +291,7 @@ type MyMiddlewareConfig struct {
 
 The `MyMiddlewareConfig` should contain configuration fields for your middleware.
 
-### Default Configuration
+#### Default Configuration
 
 ```golang
 var DefaultMyMiddlewareConfig MyMiddlewareConfig = MyMiddlewareConfig{
@@ -227,7 +301,7 @@ var DefaultMyMiddlewareConfig MyMiddlewareConfig = MyMiddlewareConfig{
 
 The `DefaultMyMiddlewareConfig` should completely populate MyMiddlewareConfig.
 
-### Middleware Function
+#### Middleware Function
 
 ```golang
 func MyMiddleware() puff.Middleware
@@ -235,7 +309,7 @@ func MyMiddleware() puff.Middleware
 
 The `MyMiddleware` function should return a `puff.Middleware` without asking for a configuration. Instead, it should use the default configuration at `DefaultMyMiddlewareConfig`.
 
-### Middleware Function with Configuration
+#### Middleware Function with Configuration
 
 ```golang
 func MyMiddlewareWithConfig(*MyMiddlewareConfig) puff.Middleware
