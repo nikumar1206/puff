@@ -20,7 +20,7 @@ type Config struct {
 	DocsReload bool
 	// TLSPublicKeyFile specifies the file for the TLS public key (usually .pem or .crt).
 	TLSPublicKeyFile string
-	// TLSPrivateKeyFile specifies the filre for the TLS private key (usually .key).
+	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
 	TLSPrivateKeyFile string
 }
 
