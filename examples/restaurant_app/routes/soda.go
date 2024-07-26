@@ -16,7 +16,8 @@ func SodaRouter() *puff.Router {
 		}
 		c.SendResponse(res)
 	})
-	r.Post("/order/{name}", "", nil, func(c *puff.Context) {
+	r.Get("/fanta", "get fanta", nil, func(c *puff.Context) {
+		panic("we no serve fanta.")
 	})
 	return r
 }

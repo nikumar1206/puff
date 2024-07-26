@@ -9,13 +9,13 @@ import (
 )
 
 type PanicConfig struct {
-	FormatErrorResponse func(e any, c puff.Context) puff.Response
+	FormatErrorResponse func(c puff.Context, err any) puff.Response
 }
 
 var DefaultPanicConfig PanicConfig = PanicConfig{
-	FormatErrorResponse: func(e any, c puff.Context) puff.Response {
+	FormatErrorResponse: func(c puff.Context, err any) puff.Response {
 		errorID := puff.RandomNanoID()
-		slog.Error("Panic During Execution", slog.String("ERROR ID", errorID), slog.Any("Error", e))
+		slog.Error("Panic During Execution", slog.String("ERROR ID", errorID), slog.Any("Error", err))
 		errorMsg := fmt.Sprintf("There was a panic during the execution recovered by the panic handling middleware. Error ID: " + errorID)
 		return puff.JSONResponse{StatusCode: http.StatusInternalServerError, Content: map[string]any{"error": errorMsg, "Request-ID": c.GetRequestID()}}
 	},
@@ -27,7 +27,7 @@ func createPanicMiddleware(pc PanicConfig) puff.Middleware {
 			defer func() {
 				a := recover()
 				if a != nil {
-					res := pc.FormatErrorResponse(a, *c)
+					res := pc.FormatErrorResponse(*c, a)
 					c.SendResponse(res)
 				}
 			}()
