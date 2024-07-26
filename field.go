@@ -160,24 +160,63 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	return nil
 }
 
-var supportedTypes = map[string]string{
-	"string": "string",
-	"int":    "integer",
-	// FIXME: int8, int16, int32, int64 are not the same thing as int
-	"int8":  "integer",
-	"int16": "integer",
-	"int32": "integer",
-	"int64": "integer",
-	// FIXME: uint, uint8, uint16, uint32, uint64 are not the same thing as int
-	"uint":   "integer",
-	"uint8":  "integer",
-	"uint16": "integer",
-	"uint32": "integer",
-	"uint64": "integer",
-	// FIXME: float32 and float64 are not the same thing
-	"float32": "number",
-	"float64": "number",
-	"bool":    "boolean",
+type typeInfo struct {
+	Type string
+	Info map[string]string
+}
+
+func newTypeInfo(_type string, info map[string]string) typeInfo {
+	return typeInfo{
+		Type: _type,
+		Info: info,
+	}
+}
+
+var supportedTypes = map[string]typeInfo{
+	"string": newTypeInfo("string", map[string]string{}),
+	"int":    newTypeInfo("integer", map[string]string{}),
+	"int8": newTypeInfo("number", map[string]string{
+		// https://spec.openapis.org/registry/format/int8
+		"format": "int8",
+	}),
+	"int16": newTypeInfo("number", map[string]string{
+		// https://spec.openapis.org/registry/format/int16
+		"format": "int16",
+	}),
+	"int32": newTypeInfo("number", map[string]string{
+		// https://spec.openapis.org/registry/format/int32
+		"format": "int32",
+	}),
+	"int64": newTypeInfo("number", map[string]string{
+		// https://spec.openapis.org/registry/format/int64
+		"format": "int64",
+	}),
+	"uint": newTypeInfo("integer", map[string]string{
+		"minimum": "0",
+	}),
+	"uint8": newTypeInfo("integer", map[string]string{
+		"format":  "int8",
+		"minimum": "0",
+	}),
+	"uint16": newTypeInfo("integer", map[string]string{
+		"format":  "int16",
+		"minimum": "0",
+	}),
+	"uint32": newTypeInfo("integer", map[string]string{
+		"format":  "int32",
+		"minimum": "0",
+	}),
+	"uint64": newTypeInfo("integer", map[string]string{
+		"format":  "int64",
+		"minimum": "0",
+	}),
+	"float32": newTypeInfo("number", map[string]string{
+		"format": "float",
+	}),
+	"float64": newTypeInfo("number", map[string]string{
+		"format": "float",
+	}),
+	"bool": newTypeInfo("boolean", map[string]string{}),
 }
 
 func newDefinition(schema any) Schema {
@@ -191,7 +230,9 @@ func newDefinition(schema any) Schema {
 		if !ok {
 			panic("Unsupported type " + st.String() + ".")
 		}
-		newSchema.Type = ts
+		newSchema.Type = ts.Type
+		newSchema.Format = ts.Info["format"]
+		newSchema.Minimum = ts.Info["minimum"]
 		return *newSchema
 	}
 	if st.Kind() == reflect.Pointer {
@@ -295,9 +336,11 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 
 		//param.Schema.format
 		format := svetf.Tag.Get("format")
+		if format != "" {
+			newParam.Schema.Format = format
+		}
 		newParam.Name = name
 		newParam.In = specified_kind
-		newParam.Schema.Format = format
 		newParam.Description = description
 		newParam.Required = required
 		newParam.Deprecated = deprecated

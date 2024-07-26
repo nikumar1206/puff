@@ -181,6 +181,7 @@ type Schema struct {
 	// This can be expanded based on the needs of your application.
 	Type                 string             `json:"type,omitempty"`
 	Format               string             `json:"format,omitempty"`
+	Minimum              string             `json:"minimum,omitempty"`
 	Items                *Schema            `json:"items,omitempty"`
 	Ref                  string             `json:"$ref,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
