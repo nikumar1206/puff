@@ -8,7 +8,7 @@ import (
 
 func getPizza(c *puff.Context) {
 	res := puff.JSONResponse{
-		Content: map[string]interface{}{
+		Content: map[string]any{
 			"name": "Margherita Pizza",
 			"ingredients": map[string]string{
 				"Pizza dough":       "1 ball",
@@ -51,7 +51,7 @@ func PizzaRouter() *puff.Router {
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
 			StatusCode: 201,
-			Content:    map[string]interface{}{"completed": true, "waitTime": timeOut},
+			Content:    map[string]any{"completed": true, "waitTime": timeOut},
 		}
 		c.SendResponse(res)
 	})
@@ -59,7 +59,7 @@ func PizzaRouter() *puff.Router {
 	r.Patch("/", "", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
-			Content:    map[string]interface{}{"message": "Unburning a pizza is impossible."},
+			Content:    map[string]any{"message": "Unburning a pizza is impossible."},
 		}
 		c.SendResponse(res)
 	})

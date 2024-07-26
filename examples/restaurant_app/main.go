@@ -46,6 +46,12 @@ func main() {
 	app.IncludeRouter(routes.SodaRouter())
 	app.IncludeRouter(routes.WaterRouter())
 
-	app.SetDev()
+	app.Logger = puff.NewLogger(puff.LoggerConfig{
+		UseJSON:   false,
+		AddSource: false,
+		Level:     slog.LevelDebug,
+	})
+	slog.Info("hello there")
 	app.ListenAndServe(":8000")
+
 }

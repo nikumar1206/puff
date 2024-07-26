@@ -198,10 +198,10 @@ type OpenAPIResponse struct {
 type Callback map[string]PathItem
 
 type Example struct {
-	Summary       string      `json:"summary,omitempty"`
-	Description   string      `json:"description,omitempty"`
-	Value         interface{} `json:"value,omitempty"`
-	ExternalValue string      `json:"externalValue,omitempty"`
+	Summary       string `json:"summary,omitempty"`
+	Description   string `json:"description,omitempty"`
+	Value         any    `json:"value,omitempty"`
+	ExternalValue string `json:"externalValue,omitempty"`
 }
 
 type Header struct {
@@ -209,12 +209,12 @@ type Header struct {
 }
 
 type Link struct {
-	OperationRef string      `json:"operationRef,omitempty"`
-	OperationID  string      `json:"operationId,omitempty"`
-	Parameters   interface{} `json:"parameters,omitempty"`
-	RequestBody  interface{} `json:"requestBody,omitempty"`
-	Description  string      `json:"description,omitempty"`
-	Server       Server      `json:"server,omitempty"`
+	OperationRef string `json:"operationRef,omitempty"`
+	OperationID  string `json:"operationId,omitempty"`
+	Parameters   any    `json:"parameters,omitempty"`
+	RequestBody  any    `json:"requestBody,omitempty"`
+	Description  string `json:"description,omitempty"`
+	Server       Server `json:"server,omitempty"`
 }
 
 type Encoding struct {
