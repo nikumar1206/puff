@@ -42,8 +42,9 @@ type OpenAPI struct {
 // Property defines a property in the OpenAPI spec that defines information
 // about a property (parameters, definitions, etc).
 type Property struct {
-	Type   string `json:"type"`
-	Format string `json:"format"`
+	Type    string `json:"type"`
+	Format  string `json:"format"`
+	Example any    `json:"example"`
 }
 
 // Info struct provides metadata about the API.
