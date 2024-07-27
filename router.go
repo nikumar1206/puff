@@ -156,10 +156,6 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		isMatch := route.regexp.MatchString(req.URL.Path)
 		if isMatch && req.Method == route.Protocol {
-			// err := route.anys.ValidateIncomingAttribute(any.Responses, "cheese")
-			// if err != nil {
-			// 	Unprocessable(w, req)
-			// }
 			matches := route.regexp.FindStringSubmatch(req.URL.Path)
 			err := populateInputSchema(c, route.Fields, route.params, matches)
 			if err != nil {
@@ -174,17 +170,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				handleWebSocket(c)
 				go c.WebSocket.read()
 				handler := route.Handler
-				// for _, m := range r.Middlewares {
-				// 	handler = (*m)(handler)
-				// }
 				handler(c)
 				for c.WebSocket.IsOpen() {
 				}
 			}
 			handler := route.Handler
-			// for _, m := range r.Middlewares {
-			// 	handler = (*m)(handler)
-			// }
 			handler(c)
 			return
 		}

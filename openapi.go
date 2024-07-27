@@ -39,6 +39,8 @@ type OpenAPI struct {
 // 	Properties map[string]Property
 // }
 
+// Property defines a property in the OpenAPI spec that defines information
+// about a property (parameters, definitions, etc).
 type Property struct {
 	Type   string `json:"type"`
 	Format string `json:"format"`

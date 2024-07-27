@@ -16,8 +16,8 @@ type Config struct {
 	DocsURL string
 	// DocsReload, if true, enables automatic reload on the Swagger documentation page.
 	DocsReload bool
-	// TLSPublicKeyFile specifies the file for the TLS public key (usually .pem or .crt).
-	TLSPublicKeyFile string
+	// TLSPublicCertFile specifies the file for the TLS certificate (usually .pem or .crt).
+	TLSPublicCertFile string
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
 	TLSPrivateKeyFile string
 }

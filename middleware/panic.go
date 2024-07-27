@@ -8,10 +8,14 @@ import (
 	"github.com/nikumar1206/puff"
 )
 
+// PanicConfig provides a struct to configure the Panic middleware.
 type PanicConfig struct {
+	// FormatErrorResponse provides a function that recieves the context of the route that resulted in a panic and the error.
+	// It should provide a response that can be sent back to the user.
 	FormatErrorResponse func(c puff.Context, err any) puff.Response
 }
 
+// DefaultCSRFMiddleware is a PanicConfig with specified default values.
 var DefaultPanicConfig PanicConfig = PanicConfig{
 	FormatErrorResponse: func(c puff.Context, err any) puff.Response {
 		errorID := puff.RandomNanoID()
@@ -21,6 +25,7 @@ var DefaultPanicConfig PanicConfig = PanicConfig{
 	},
 }
 
+// createCSRFMiddleware is used to create a panic middleware with a config.
 func createPanicMiddleware(pc PanicConfig) puff.Middleware {
 	return func(next puff.HandlerFunc) puff.HandlerFunc {
 		return func(c *puff.Context) {
@@ -36,10 +41,12 @@ func createPanicMiddleware(pc PanicConfig) puff.Middleware {
 	}
 }
 
+// Panic middleware returns a middleware with the default configuration.
 func Panic() puff.Middleware {
 	return createPanicMiddleware(DefaultPanicConfig)
 }
 
+// PanicWithConfig returns a middleware with your configuration.
 func PanicWithConfig(pc PanicConfig) puff.Middleware {
 	return createPanicMiddleware(pc)
 }

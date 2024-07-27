@@ -105,8 +105,11 @@ func (f *FileResponse) Handler() func(*Context) {
 
 // StreamingResponse represents a response that streams content.
 type StreamingResponse struct {
-	StatusCode    int
-	StreamHandler func(*chan ServerSideEvent) // Write to this channel to write to the response. Close the channel once you are done.
+	StatusCode int
+	// StreamHandler is a function that takes in a pointer to a channel.
+	// The channel should be written to with a ServerSideEvent to write
+	// to the response. It should be closed once done writing.
+	StreamHandler func(*chan ServerSideEvent)
 }
 
 type ServerSideEvent struct {
