@@ -10,7 +10,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/fatih/color"
+	"github.com/nikumar1206/puff/color"
 )
 
 // LoggerConfig is used to dictate logger behavior.
@@ -52,13 +52,13 @@ func (h *SlogHandler) Handle(c context.Context, r slog.Record) error {
 	level := fmt.Sprintf("%s:", r.Level.String())
 	switch r.Level {
 	case slog.LevelDebug:
-		level = color.New(color.FgMagenta, color.Bold).Sprint(level)
+		level = color.ColorizeBold(level, color.FgMagenta)
 	case slog.LevelInfo:
-		level = color.New(color.FgBlue, color.Bold).Sprint(level)
+		level = color.ColorizeBold(level, color.FgBlue)
 	case slog.LevelWarn:
-		level = color.New(color.FgYellow, color.Bold).Sprint(level)
+		level = color.ColorizeBold(level, color.FgYellow)
 	case slog.LevelError:
-		level = color.New(color.FgRed, color.Bold).Sprint(level)
+		level = color.ColorizeBold(level, color.FgRed)
 	}
 
 	fields := make(map[string]any, r.NumAttrs())
@@ -139,7 +139,6 @@ func NewLogger(c LoggerConfig) *slog.Logger {
 			),
 		)
 	}
-	slog.SetDefault(logger)
 	return logger
 }
 
