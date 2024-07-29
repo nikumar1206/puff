@@ -51,6 +51,5 @@ func main() {
 		AddSource: false,
 		Level:     slog.LevelDebug,
 	})
-	slog.Info("hello there")
 	app.ListenAndServe(":8000")
 }

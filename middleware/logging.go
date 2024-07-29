@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/nikumar1206/puff"
+	color "github.com/nikumar1206/puff/color"
 )
 
 type LoggingConfig struct {
@@ -17,22 +17,22 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 	LoggingFunction: func(ctx puff.Context, startTime time.Time) {
 		processingTime := time.Since(startTime).String()
 		sc := ctx.GetStatusCode()
-		var statusColor *color.Color
+		var statusColor = fmt.Sprintf(" %d ", sc)
 		switch {
 		case sc >= 500:
-			statusColor = color.New(color.BgHiRed, color.FgBlack)
+			statusColor = color.ColorizeBold(string(sc), color.BgBrightRed, color.FgBlack)
 		case sc >= 400:
-			statusColor = color.New(color.BgHiYellow, color.FgBlack)
+			statusColor = color.ColorizeBold(string(sc), color.BgBrightYellow, color.FgBlack)
 		case sc >= 300:
-			statusColor = color.New(color.BgHiCyan, color.FgBlack)
+			statusColor = color.ColorizeBold(string(sc), color.BgBrightCyan, color.FgBlack)
 		default:
-			statusColor = color.New(color.BgHiGreen, color.FgBlack)
+			statusColor = color.ColorizeBold(string(sc), color.BgBrightGreen, color.FgBlack)
 		}
 		// TODO: make the below configurable
 		// Request ID should only be present if present
 		slog.Info(
 			fmt.Sprintf("%s %s| %s | %s | %s ",
-				statusColor.Sprint(fmt.Sprintf(" %d ", sc)),
+				statusColor,
 				fmt.Sprintf("%s %s\t", ctx.Request.Method, ctx.Request.URL.String()),
 				processingTime,
 				fmt.Sprintf(ctx.GetRequestID()),

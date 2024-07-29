@@ -132,6 +132,7 @@ func attachMiddlewares(middleware_combo *[]Middleware, router *Router) {
 		attachMiddlewares((middleware_combo), router)
 	}
 }
+
 func (a *PuffApp) patchAllRoutes() {
 	a.RootRouter.patchRoutes()
 	for _, r := range a.RootRouter.Routers {
@@ -141,12 +142,13 @@ func (a *PuffApp) patchAllRoutes() {
 }
 
 func (a *PuffApp) ListenAndServe(listenAddr string) {
+	slog.SetDefault(a.Logger)
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
 	var err error
-	if a.TLSPublicKeyFile != "" && a.TLSPrivateKeyFile != "" {
-		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicKeyFile, a.TLSPrivateKeyFile, a.RootRouter)
+	if a.TLSPublicCertFile != "" && a.TLSPrivateKeyFile != "" {
+		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicCertFile, a.TLSPrivateKeyFile, a.RootRouter)
 	} else {
 		err = http.ListenAndServe(listenAddr, a.RootRouter)
 	}

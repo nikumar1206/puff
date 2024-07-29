@@ -326,7 +326,6 @@ func GenerateOpenAPISpec(
 }
 
 func AddDefinition(name string, s Schema) {
-	fmt.Println("add definition", s.Properties)
 	if openapi.Definitions == nil {
 		openapi.Definitions = make(map[string]*Schema)
 	}

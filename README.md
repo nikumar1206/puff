@@ -43,14 +43,11 @@ app := App.New(h)
 
 - Separate Makefile build commands. Currently everything running via `make reload`
 - Fix route collision issue
-- Server Side Events do not support all event types
-- Improve documentation everywhere
-- Better adherance to OpenAPI spec
-- Change the name for IncludeRouter/IncludeMiddleware. It is obtuse.
-- JSON should only do JSON logging. Text logger, shouldn't indent JSON
+  - should we even do this? or is this for the user to avoid?
+- Routes should be a map
 - Add a Middleware skipper function that depends on context.
 - Remove color package dependency.
 - Allow configuring the logger and making it more generic
   - Allow indenting/non-indenting in JSON logger.
-- Should puff.Context have context on the app? So that it knows to log in JSON or not.
-- find something better than regex matching
+- improve route matching system.
+- implement pulling and placing context in the pool. rather than creating new objects and forcing GC.
