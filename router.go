@@ -173,6 +173,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				handler(c)
 				for c.WebSocket.IsOpen() {
 				}
+				return
 			}
 			handler := route.Handler
 			handler(c)

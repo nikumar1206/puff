@@ -44,9 +44,9 @@ func createCSRFMiddleware(config *CSRFMiddlewareConfig) puff.Middleware {
 					Value:  puff.RandomToken(config.CookieLength),
 					MaxAge: config.MaxAge, //expires after hour or session whichever comes first
 				})
-				next(c)
 				break
 			}
+			next(c)
 		}
 	}
 }
