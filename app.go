@@ -145,8 +145,8 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	a.addOpenAPIRoutes()
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
 	var err error
-	if a.TLSPublicKeyFile != "" && a.TLSPrivateKeyFile != "" {
-		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicKeyFile, a.TLSPrivateKeyFile, a.RootRouter)
+	if a.TLSPublicCertFile != "" && a.TLSPrivateKeyFile != "" {
+		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicCertFile, a.TLSPrivateKeyFile, a.RootRouter)
 	} else {
 		err = http.ListenAndServe(listenAddr, a.RootRouter)
 	}

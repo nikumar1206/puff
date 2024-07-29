@@ -13,7 +13,12 @@ type PastaHomeInput struct {
 	LastDishOrdered string `description:"last dish ordered" kind:"cookie"`
 }
 
-type PastaNewCheeseInput struct{}
+type Pizza struct {
+	Name string `json:"name"`
+}
+type PastaNewCheeseInput struct {
+	HelloWorld Pizza `kind:"header"`
+}
 
 var cheeses = map[int]string{
 	0: "Mozzerella",

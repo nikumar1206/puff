@@ -3,9 +3,7 @@ package puff
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -23,9 +21,9 @@ func isValidKind(specified_kind string) bool {
 		specified_kind == "formdata"
 }
 
-// boolFromSpecified resolves the specified bool (as a string type)
+// resolveBool resolves the specified bool (as a string type)
 // and the default bool. It gives priority to the specified.
-func boolFromSpecified(spec string, def bool) (bool, error) {
+func resolveBool(spec string, def bool) (bool, error) {
 	var b bool
 	switch spec {
 	case "":
@@ -35,7 +33,7 @@ func boolFromSpecified(spec string, def bool) (bool, error) {
 	case "false":
 		b = false
 	default:
-		return false, fmt.Errorf("specified required on field must be either true or false")
+		return false, fmt.Errorf("specified boolean on field must be either true or false")
 	}
 	return b, nil
 }
@@ -81,33 +79,11 @@ func getPathParam(index int, param Parameter, matches []string) (string, error) 
 	}
 }
 
-func setStringField(sf reflect.Value, body []byte, param Parameter) error {
-	content, err := handleParam(string(body), param)
-	if err != nil {
-		return err
-	}
-	sf.SetString(content)
-	return nil
-}
-func setIntField(sf reflect.Value, body []byte, param Parameter) error {
-	content, err := handleParam(string(body), param)
-	if err != nil {
-		return err
-	}
-	ci, err := strconv.Atoi(content)
-	if err != nil {
-		return err
-	}
-	sf.SetInt(int64(ci))
-	return nil
-}
-
 // getBodyParam gets the value of the param from the body.
 // It will return an error if it is not found AND required.
 func getBodyParam(c *Context, param Parameter) (string, error) {
 	// Read the body content
-	defer c.Request.Body.Close()
-	body, err := io.ReadAll(c.Request.Body)
+	body, err := c.GetBody()
 	if err != nil {
 		return "", fmt.Errorf("an error occurred while reading the body: %s", err.Error())
 	}
@@ -160,15 +136,16 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	return nil
 }
 
+// FIXME: type info lowercase
 type typeInfo struct {
-	Type string
-	Info map[string]string
+	_type string
+	info  map[string]string
 }
 
 func newTypeInfo(_type string, info map[string]string) typeInfo {
 	return typeInfo{
-		Type: _type,
-		Info: info,
+		_type: _type,
+		info:  info,
 	}
 }
 
@@ -214,7 +191,7 @@ var supportedTypes = map[string]typeInfo{
 		"format": "float",
 	}),
 	"float64": newTypeInfo("number", map[string]string{
-		"format": "float",
+		"format": "double",
 	}),
 	"bool": newTypeInfo("boolean", map[string]string{}),
 }
@@ -225,22 +202,24 @@ func newDefinition(schema any) Schema {
 	sv := reflect.ValueOf(schema)
 	// FIXME: refactor this it could look better
 	if st.Kind() != reflect.Struct && st.Kind() != reflect.Slice && st.Kind() != reflect.Map && st.Kind() != reflect.Array && st.Kind() != reflect.Pointer {
-		// FIXME: st.String will return int even though the specification uses integer.
 		ts, ok := supportedTypes[st.String()]
 		if !ok {
 			panic("Unsupported type " + st.String() + ".")
 		}
-		newSchema.Type = ts.Type
-		newSchema.Format = ts.Info["format"]
-		newSchema.Minimum = ts.Info["minimum"]
+		newSchema.Type = ts._type
+		newSchema.Format = ts.info["format"]
+		newSchema.Minimum = ts.info["minimum"]
 		return *newSchema
 	}
+
+	// FIXME: allow pointers
 	if st.Kind() == reflect.Pointer {
-		panic("Pointers are not supported.")
+		panic("pointers are not supported.")
 	}
+
 	if st.Kind() == reflect.Map {
 		if st.Key().Kind() != reflect.String {
-			panic("Map key type must always be string.")
+			panic("map key type must always be string.")
 		}
 		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
 		newSchema.AdditionalProperties = &nd
@@ -253,7 +232,7 @@ func newDefinition(schema any) Schema {
 		return *newSchema
 	}
 	if st.Kind() != reflect.Struct {
-		panic("Type on field must either be string, int, bool, struct, slice, map, or array.")
+		panic("type on field must either be string, int, bool, struct, slice, map, or array.")
 	}
 	// last remaining kind- reflect.Struct
 	newDef := Schema{}
@@ -325,11 +304,11 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 			required_def = false
 		}
 
-		required, err := boolFromSpecified(specified_required, required_def)
+		required, err := resolveBool(specified_required, required_def)
 		if err != nil {
 			return err
 		}
-		deprecated, err := boolFromSpecified(specified_deprecated, false)
+		deprecated, err := resolveBool(specified_deprecated, false)
 		if err != nil {
 			return err
 		}
@@ -339,6 +318,7 @@ func handleInputSchema(pa *[]Parameter, s any) error { // should this return an 
 		if format != "" {
 			newParam.Schema.Format = format
 		}
+
 		newParam.Name = name
 		newParam.In = specified_kind
 		newParam.Description = description
