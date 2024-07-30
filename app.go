@@ -91,29 +91,6 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		}
 		c.SendResponse(res)
 	})
-	if a.DocsReload {
-		docsRouter.WebSocket("/ws", "WebSocket for live reload of swagger page.", nil, func(c *Context) {
-			c.WebSocket.OnMessage = func(ws *WebSocket, wsm WebSocketMessage) {
-				msg := new(string)
-				err := wsm.To(msg)
-				if err != nil {
-					ws.Send(err.Error()) // do not care about errs here
-					ws.Close()
-					return
-				}
-				if *msg == "ping" {
-					ws.Send("pong")
-					// if err != nil {
-					// 	slog.Debug("pingpong swagger ws: " + err.Error())
-					// 	ws.Close()
-					// }
-				}
-				if *msg == "disconnect" {
-					ws.Close()
-				}
-			}
-		})
-	}
 
 	a.IncludeRouter(&docsRouter)
 }

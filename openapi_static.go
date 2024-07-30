@@ -11,7 +11,7 @@ var openAPIHTML string = `<!doctype html>
     <link
       rel="stylesheet"
       href="https://unpkg.com/swagger-editor@5.0.0-alpha.86/dist/swagger-editor.css"
-    /> 
+    />
     <title>%s</title>
     <h1 id="connection-status"></h1>
   </head>
@@ -43,37 +43,6 @@ var openAPIHTML string = `<!doctype html>
         const sc = document.getElementsByClassName("swagger-container");
         const tb = document.getElementsByClassName("topbar");
         sc[0].removeChild(tb[0]);
-      };
-      let SWAGGER_WEBSOCKET = new WebSocket("/docs/ws");
-      let SWAGGER_WEBSOCKET_IS_OPEN = false;
-      function reset_websocket() {
-          console.log("Reset WebSocket connection.");
-          SWAGGER_WEBSOCKET.close();
-          SWAGGER_WEBSOCKET = new WebSocket("/docs/ws");
-          SWAGGER_WEBSOCKET.onopen = function () {
-            console.log("Connected to WebSocket!");
-            SWAGGER_WEBSOCKET_IS_OPEN = true;
-            window.location.reload();
-          };
-          SWAGGER_WEBSOCKET.onclose = function () {
-            SWAGGER_WEBSOCKET_IS_OPEN = false;
-          };
-      }
-      function update_swagger_websocket(){
-        setTimeout(update_swagger_websocket, 500);
-        if (SWAGGER_WEBSOCKET_IS_OPEN == false && SWAGGER_WEBSOCKET.readyState > 1) {
-          reset_websocket()
-        }
-      }
-      update_swagger_websocket()
-      SWAGGER_WEBSOCKET.onopen = function () {
-        console.log("Connected to WebSocket!");
-      };
-      SWAGGER_WEBSOCKET.onclose = function () {
-        SWAGGER_WEBSOCKET_IS_OPEN = false;
-      };
-      window.onbeforeunload = function () {
-        SWAGGER_WEBSOCKET.close();
       };
     </script>
   </body>
