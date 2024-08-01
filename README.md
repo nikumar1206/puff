@@ -44,6 +44,7 @@ app := App.New(h)
 - Separate Makefile build commands. Currently everything running via `make reload`
 - Fix route collision issue
   - should we even do this? or is this for the user to avoid?
+  - Leaving this for the user to decide.
 - Routes should be a map
 - Add a Middleware skipper function that depends on context.
 - Remove color package dependency.

@@ -9,7 +9,13 @@ import (
 	color "github.com/nikumar1206/puff/color"
 )
 
+// LoggingConfig defines the configuration for the Logging middleware.
 type LoggingConfig struct {
+	// Skip allows skipping the middleware for specific requests.
+	// The function receives the request context and should return true if the middleware should be skipped.
+	Skip func(*puff.Context) bool
+	// LoggingFunction is a definable function for customizing the log on an http request.
+	// Should theoretically call a method deriving from slog.Log
 	LoggingFunction func(ctx puff.Context, startTime time.Time)
 }
 
@@ -40,11 +46,16 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 			),
 		)
 	},
+	Skip: DefaultSkipper,
 }
 
 func createLoggingMiddleware(lc LoggingConfig) puff.Middleware {
 	return func(next puff.HandlerFunc) puff.HandlerFunc {
 		return func(ctx *puff.Context) {
+			if lc.Skip != nil && lc.Skip(ctx) {
+				next(ctx)
+				return
+			}
 			startTime := time.Now()
 			next(ctx)
 			lc.LoggingFunction(*ctx, startTime)
@@ -52,10 +63,12 @@ func createLoggingMiddleware(lc LoggingConfig) puff.Middleware {
 	}
 }
 
+// Logging returns a Logging middleware with the default configuration.
 func Logging() puff.Middleware {
 	return createLoggingMiddleware(DefaultLoggingConfig)
 }
 
+// LoggingWithConfig returns a Logging middleware with the specified configuration.
 func LoggingWithConfig(tc LoggingConfig) puff.Middleware {
 	return createLoggingMiddleware(tc)
 }

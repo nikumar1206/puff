@@ -47,9 +47,9 @@ func main() {
 	app.IncludeRouter(routes.WaterRouter())
 
 	app.Logger = puff.NewLogger(puff.LoggerConfig{
-		UseJSON:   false,
-		AddSource: false,
-		Level:     slog.LevelDebug,
+		Level:      slog.LevelDebug,
+		Colorize:   true,
+		TimeFormat: time.DateTime,
 	})
 	app.ListenAndServe(":8000")
 }
