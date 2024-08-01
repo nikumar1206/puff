@@ -8,6 +8,9 @@ import (
 
 // CSRFMiddlewareConfig is a struct to configure the CSRF middleware.
 type CSRFMiddlewareConfig struct {
+	// Skip allows skipping the middleware for specific requests.
+	// The function receives the request context and should return true if the middleware should be skipped.
+	Skip func(*puff.Context) bool
 	// CookieLength specifies the length of the token.
 	CookieLength int
 	// MaxAge specifies the maximum length for the CSRF cookie.
@@ -24,6 +27,7 @@ var DefaultCSRFMiddleware *CSRFMiddlewareConfig = &CSRFMiddlewareConfig{
 	MaxAge:           31449600,
 	ExpectedHeader:   "X-CSRFMiddlewareToken",
 	ProtectedMethods: []string{},
+	Skip:             DefaultSkipper,
 }
 
 // createCSRFMiddleware is used to create a CSRF middleware with a config.
@@ -31,6 +35,10 @@ func createCSRFMiddleware(config *CSRFMiddlewareConfig) puff.Middleware {
 	cookie_name := "CSRFMiddlewareToken"
 	return func(next puff.HandlerFunc) puff.HandlerFunc {
 		return func(c *puff.Context) {
+			if config.Skip != nil && config.Skip(c) {
+				next(c)
+				return
+			}
 			for _, m := range config.ProtectedMethods {
 				if c.Request.Method != m {
 					continue

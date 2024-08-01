@@ -10,6 +10,9 @@ import (
 
 // PanicConfig provides a struct to configure the Panic middleware.
 type PanicConfig struct {
+	// Skip allows skipping the middleware for specific requests.
+	// The function receives the request context and should return true if the middleware should be skipped.
+	Skip func(*puff.Context) bool
 	// FormatErrorResponse provides a function that recieves the context of the route that resulted in a panic and the error.
 	// It should provide a response that can be sent back to the user.
 	FormatErrorResponse func(c puff.Context, err any) puff.Response
@@ -23,12 +26,17 @@ var DefaultPanicConfig PanicConfig = PanicConfig{
 		errorMsg := fmt.Sprintf("There was a panic during the execution recovered by the panic handling middleware. Error ID: " + errorID)
 		return puff.JSONResponse{StatusCode: http.StatusInternalServerError, Content: map[string]any{"error": errorMsg, "Request-ID": c.GetRequestID()}}
 	},
+	Skip: DefaultSkipper,
 }
 
 // createCSRFMiddleware is used to create a panic middleware with a config.
 func createPanicMiddleware(pc PanicConfig) puff.Middleware {
 	return func(next puff.HandlerFunc) puff.HandlerFunc {
 		return func(c *puff.Context) {
+			if pc.Skip != nil && pc.Skip(c) {
+				next(c)
+				return
+			}
 			defer func() {
 				a := recover()
 				if a != nil {
