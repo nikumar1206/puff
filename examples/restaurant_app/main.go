@@ -12,9 +12,8 @@ import (
 
 func main() {
 	app := puff.DefaultApp("Restaurant Microservice")
-	app.Config.DocsReload = true
-	// app.Config.TLSPublicKeyFile = "examples/restaurant_app/server.crt"
-	// app.Config.TLSPrivateKeyFile = "examples/restaurant_app/server.key"
+	app.DocsReload = true
+
 	app.Use(middleware.Tracing())
 	app.Use(middleware.CORS())
 	app.Use(middleware.Logging())
