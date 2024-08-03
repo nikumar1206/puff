@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -92,13 +93,45 @@ func getBodyParam(c *Context, param Parameter) (string, error) {
 
 func populateField(value string, field reflect.Value) error {
 	fieldType := field.Type()
-	newField := reflect.New(fieldType)
-
-	err := json.Unmarshal([]byte(value), newField.Interface())
-	if err != nil {
-		return err
+	switch fieldType.Kind() {
+	case reflect.String:
+		field.SetString(value)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		valuei, err := strconv.Atoi(value)
+		if err != nil {
+			return FieldTypeError(value, fieldType.Kind().String())
+		}
+		switch fieldType.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			field.SetInt(int64(valuei))
+		default:
+			if valuei < 0 {
+				return FieldTypeError(value, fieldType.Kind().String())
+			}
+			valueui := uint64(valuei)
+			field.SetUint(valueui)
+		}
+	case reflect.Float32, reflect.Float64:
+		valuef, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return FieldTypeError(value, "float32")
+		}
+		field.SetFloat(valuef)
+	case reflect.Bool:
+		valueb, err := strconv.ParseBool(value)
+		if err != nil {
+			return FieldTypeError(value, "boolean")
+		}
+		field.SetBool(valueb)
+	case reflect.Struct:
+		newField := reflect.New(fieldType)
+		err := json.Unmarshal([]byte(value), newField.Interface())
+		if err != nil {
+			return FieldTypeError(value, fieldType.Name())
+		}
+		field.Set(newField.Elem())
 	}
-	field.Set(newField.Elem())
+
 	return nil
 }
 
