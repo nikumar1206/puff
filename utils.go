@@ -1,6 +1,8 @@
 package puff
 
 import (
+	cryptorand "crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/rand/v2"
@@ -9,6 +11,10 @@ import (
 	"strings"
 )
 
+// RandomNanoID generates a random NanoID with format
+// LLLL-NNNN. IMPORTANT: THIS FUNCTION IS NOT
+// CRYPTOGRAPHICALLY SECURE. DO NOT USE THIS TO GENERATE
+// TOKENS WITH AUTHORITY (instead see RandomToken).
 func RandomNanoID() string {
 	id := ""
 	for range 4 {
@@ -21,6 +27,17 @@ func RandomNanoID() string {
 		id += fmt.Sprint(r)
 	}
 	return id
+}
+
+// RandomToken generates a crytographically secure
+// random base64 token with the provided length.
+func RandomToken(length int) string {
+	randomBytes := make([]byte, length)
+	_, err := cryptorand.Read(randomBytes)
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(randomBytes)
 }
 
 func resolveContentType(provided, default_content_type string) string {

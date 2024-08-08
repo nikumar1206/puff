@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type Config struct {
+type PuffApp struct {
 	// Name is the application name
 	Name string
 	// Version is the application version.
@@ -16,37 +16,14 @@ type Config struct {
 	DocsURL string
 	// DocsReload, if true, enables automatic reload on the Swagger documentation page.
 	DocsReload bool
-}
-
-type PuffApp struct {
-	// Config is the Puff App Config.
-	*Config
+	// TLSPublicCertFile specifies the file for the TLS certificate (usually .pem or .crt).
+	TLSPublicCertFile string
+	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
+	TLSPrivateKeyFile string
 	// RootRouter is the application's default router. All routers extend from one.
 	RootRouter *Router
-	Logger     *slog.Logger
-}
-
-// SetDebug sets the application mode to 'DEBUG'.
-//
-// In this mode, the application will use 'pretty' logging.
-func (a *PuffApp) SetDev() {
-	logger := a.Logger.Handler().(*SlogHandler)
-	logger.SetLevel(slog.LevelDebug)
-}
-
-// SetProd sets the application mode to 'PROD'.
-//
-// In this mode, the application will use structured logging.
-func (a *PuffApp) SetProd() {
-	handler := a.Logger.Handler().(*SlogHandler)
-	handler.SetLevel(slog.LevelInfo)
-}
-
-// SetVersion sets the version of the application.
-//
-// This can be useful for tracking and managing application versions.
-func (a *PuffApp) SetVersion(v string) {
-	a.Config.Version = v
+	// Logger is the reference to the application's logger. Equivalent to slog.Default()
+	Logger *slog.Logger
 }
 
 // Add a Router to the main app.
@@ -73,7 +50,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		Name:   "OpenAPI Documentation Router",
 	}
 
-	docsRouter.Get(".json", Field{}, func(c *Context) {
+	docsRouter.Get(".json", "Provides JSON OpenAPI Schema.", nil, func(c *Context) {
 		res := GenericResponse{
 			Content:     spec,
 			ContentType: "application/json",
@@ -81,14 +58,14 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		c.SendResponse(res)
 	})
 
-	docsRouter.Get("", Field{}, func(c *Context) {
+	docsRouter.Get("", "Render OpenAPI schema.", nil, func(c *Context) {
 		res := HTMLResponse{
 			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
 		}
 		c.SendResponse(res)
 	})
 	if a.DocsReload {
-		docsRouter.WebSocket("/ws", Field{}, func(c *Context) {
+		docsRouter.WebSocket("/ws", "WebSocket for live reload of swagger page.", nil, func(c *Context) {
 			c.WebSocket.OnMessage = func(ws *WebSocket, wsm WebSocketMessage) {
 				msg := new(string)
 				err := wsm.To(msg)
@@ -114,47 +91,67 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	a.IncludeRouter(&docsRouter)
 }
 
+func attachMiddlewares(middleware_combo *[]Middleware, router *Router) {
+	for _, m := range router.Middlewares {
+		nmc := append(*middleware_combo, *m)
+		middleware_combo = &nmc
+	}
+	for _, route := range router.Routes {
+		for _, m := range *middleware_combo {
+			route.Handler = (m)(route.Handler)
+		}
+	}
+	for _, router := range router.Routers {
+		attachMiddlewares((middleware_combo), router)
+	}
+}
+
 func (a *PuffApp) patchAllRoutes() {
 	a.RootRouter.patchRoutes()
 	for _, r := range a.RootRouter.Routers {
 		r.patchRoutes()
 	}
+	attachMiddlewares(&[]Middleware{}, a.RootRouter)
 }
 
 func (a *PuffApp) ListenAndServe(listenAddr string) {
+	slog.SetDefault(a.Logger)
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
-
-	err := http.ListenAndServe(listenAddr, a.RootRouter)
-
+	var err error
+	if a.TLSPublicCertFile != "" && a.TLSPrivateKeyFile != "" {
+		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicCertFile, a.TLSPrivateKeyFile, a.RootRouter)
+	} else {
+		err = http.ListenAndServe(listenAddr, a.RootRouter)
+	}
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 }
 
-func (a *PuffApp) Get(path string, fields Field, handleFunc func(*Context)) {
-	a.RootRouter.Get(path, fields, handleFunc)
+func (a *PuffApp) Get(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Get(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, fields Field, handleFunc func(*Context)) {
-	a.RootRouter.Post(path, fields, handleFunc)
+func (a *PuffApp) Post(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Post(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, fields Field, handleFunc func(*Context)) {
-	a.RootRouter.Patch(path, fields, handleFunc)
+func (a *PuffApp) Patch(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Patch(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, fields Field, handleFunc func(*Context)) {
-	a.RootRouter.Put(path, fields, handleFunc)
+func (a *PuffApp) Put(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Put(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, fields Field, handleFunc func(*Context)) {
-	a.RootRouter.Delete(path, fields, handleFunc)
+func (a *PuffApp) Delete(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.Delete(path, description, fields, handleFunc)
 }
-func (a *PuffApp) WebSocket(path string, fields Field, handleFunc func(*Context)) {
-	a.RootRouter.WebSocket(path, fields, handleFunc)
+func (a *PuffApp) WebSocket(path string, description string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.WebSocket(path, description, fields, handleFunc)
 }
 
 func (a *PuffApp) AllRoutes() []*Route {
