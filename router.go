@@ -29,64 +29,66 @@ func NewRouter(name string, prefix string) *Router {
 }
 
 func (r *Router) registerRoute(
+	description string,
 	method string,
 	path string,
 	handleFunc func(*Context),
-	fields Field,
+	fields any,
 ) {
 	newRoute := Route{
-		Path:     path,
-		Handler:  handleFunc,
-		Protocol: method,
-		Fields:   fields,
+		Description: description,
+		Path:        path,
+		Handler:     handleFunc,
+		Protocol:    method,
+		Fields:      fields,
 	}
 
 	r.Routes = append(r.Routes, &newRoute)
 }
 
 func (r *Router) Get(
-	path string,
-	fields Field,
+	path string, description string,
+	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodGet, path, handleFunc, fields)
+	r.registerRoute(description, http.MethodGet, path, handleFunc, fields)
 }
 
 func (r *Router) Post(
-	path string,
-	fields Field,
+	path string, description string,
+	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodPost, path, handleFunc, fields)
+	r.registerRoute(description, http.MethodPost, path, handleFunc, fields)
 }
 
 func (r *Router) Put(
-	path string,
-	fields Field,
+	path string, description string,
+	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodPut, path, handleFunc, fields)
+	r.registerRoute(description, http.MethodPut, path, handleFunc, fields)
 }
 
 func (r *Router) Patch(
-	path string,
-	fields Field,
+	path string, description string,
+	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodPatch, path, handleFunc, fields)
+	r.registerRoute(description, http.MethodPatch, path, handleFunc, fields)
 }
 
 func (r *Router) Delete(
-	path string,
-	fields Field,
+	path string, description string,
+	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(http.MethodDelete, path, handleFunc, fields)
+	r.registerRoute(description, http.MethodDelete, path, handleFunc, fields)
 }
 
 func (r *Router) WebSocket(
-	path string,
-	fields Field,
+	path string, description string,
+	fields any,
 	handleFunc func(*Context),
 ) {
 	newRoute := Route{
@@ -112,6 +114,10 @@ func (r *Router) IncludeRouter(rt *Router) {
 	r.Routers = append(r.Routers, rt)
 }
 
+func (r *Router) Use(m Middleware) {
+	r.Middlewares = append(r.Middlewares, &m)
+}
+
 func (r *Router) String() string {
 	return fmt.Sprintf("Name: %s Prefix: %s", r.Name, r.Prefix)
 }
@@ -130,7 +136,7 @@ func (r *Router) getCompletePath(route *Route) {
 
 func (r *Router) createRegexMatch(route *Route) {
 	escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
-	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "[^\\/]+")
+	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "([^/]+)")
 	route.regexp = regexp.MustCompile("^" + regexPattern + "$")
 }
 
@@ -150,10 +156,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 		isMatch := route.regexp.MatchString(req.URL.Path)
 		if isMatch && req.Method == route.Protocol {
-			// err := route.Fields.ValidateIncomingAttribute(Field.Responses, "cheese")
-			// if err != nil {
-			// 	Unprocessable(w, req)
-			// }
+			matches := route.regexp.FindStringSubmatch(req.URL.Path)
+			err := populateInputSchema(c, route.Fields, route.params, matches)
+			if err != nil {
+				c.BadRequest(err.Error())
+				return
+			}
 			if route.WebSocket {
 				if !c.isWebSocket() {
 					c.BadRequest("This route uses the WebSocket protocol.")
@@ -162,22 +170,16 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				handleWebSocket(c)
 				go c.WebSocket.read()
 				handler := route.Handler
-				for _, m := range r.Middlewares {
-					handler = (*m)(handler)
-				}
 				handler(c)
 				for c.WebSocket.IsOpen() {
 				}
+				return
 			}
 			handler := route.Handler
-			for _, m := range r.Middlewares {
-				handler = (*m)(handler)
-			}
 			handler(c)
 			return
 		}
 	}
-
 	http.NotFound(w, req)
 }
 
@@ -202,6 +204,10 @@ func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
 		r.getCompletePath(route)
 		r.createRegexMatch(route)
+		err := handleInputSchema(&route.params, route.Fields)
+		if err != nil {
+			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
+		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
 	}
 	//TODO: ensure no route collision, will be a nice to have

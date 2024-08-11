@@ -7,6 +7,8 @@ import (
 	"slices"
 )
 
+var openapi OpenAPI
+
 type Reference struct {
 	Ref         string `json:"$ref"`
 	Summary     string `json:"$summary"`
@@ -16,6 +18,7 @@ type Reference struct {
 // OpenAPI struct represents the root of the OpenAPI document.
 type OpenAPI struct {
 	SpecVersion       string                `json:"openapi"`
+	Definitions       map[string]*Schema    `json:"definitions"`
 	Info              Info                  `json:"info"`
 	JSONSchemaDialect string                `json:"jsonSchemaDialect"`
 	Servers           []Server              `json:"servers"`
@@ -25,6 +28,23 @@ type OpenAPI struct {
 	Security          []SecurityRequirement `json:"security"`
 	Tags              []Tag                 `json:"tags"`
 	ExternalDocs      ExternalDocumentation `json:"externalDocs"`
+}
+
+// // Definitions contains schemas that can be referenced throughout
+// // the rest of the document. Reference:
+// // https://spec.openapis.org/oas/v3.1.0#schema-object
+// type Definition struct {
+// 	Type       string   `json:"type"`
+// 	Required   []string `json:"required"`
+// 	Properties map[string]Property
+// }
+
+// Property defines a property in the OpenAPI spec that defines information
+// about a property (parameters, definitions, etc).
+type Property struct {
+	Type    string `json:"type"`
+	Format  string `json:"format"`
+	Example any    `json:"example"`
 }
 
 // Info struct provides metadata about the API.
@@ -89,19 +109,19 @@ type Paths map[string]PathItem
 
 // PathItem struct describes operations available on a single path.
 type PathItem struct {
-	Ref         string                 `json:"$ref"`
-	Summary     string                 `json:"summary"`
-	Description string                 `json:"description"`
-	Get         *Operation             `json:"get,omitempty"`
-	Put         *Operation             `json:"put,omitempty"`
-	Post        *Operation             `json:"post,omitempty"`
-	Delete      *Operation             `json:"delete,omitempty"`
-	Options     *Operation             `json:"options,omitempty"`
-	Head        *Operation             `json:"head,omitempty"`
-	Patch       *Operation             `json:"patch,omitempty"`
-	Trace       *Operation             `json:"trace,omitempty"`
-	Servers     []Server               `json:"servers"`
-	Parameters  []ParameterOrReference `json:"parameters"`
+	Ref         string      `json:"$ref"`
+	Summary     string      `json:"summary"`
+	Description string      `json:"description"`
+	Get         *Operation  `json:"get,omitempty"`
+	Put         *Operation  `json:"put,omitempty"`
+	Post        *Operation  `json:"post,omitempty"`
+	Delete      *Operation  `json:"delete,omitempty"`
+	Options     *Operation  `json:"options,omitempty"`
+	Head        *Operation  `json:"head,omitempty"`
+	Patch       *Operation  `json:"patch,omitempty"`
+	Trace       *Operation  `json:"trace,omitempty"`
+	Servers     []Server    `json:"servers"`
+	Parameters  []Parameter `json:"parameters"`
 }
 
 type SecurityRequirement map[string][]string
@@ -113,19 +133,13 @@ type Operation struct {
 	Description  string                 `json:"description"`
 	ExternalDocs ExternalDocumentation  `json:"externalDocs"`
 	OperationID  string                 `json:"operationId"`
-	Parameters   []ParameterOrReference `json:"parameters"`
-	RequestBody  RequestBodyOrReference `json:"requestBody"`
+	Parameters   []Parameter            `json:"parameters"`
+	RequestBody  RequestBodyOrReference `json:"requestBody,omitempty"`
 	Responses    map[string]Response    `json:"responses"`
 	Callbacks    map[string]Callback    `json:"callbacks"`
 	Deprecated   bool                   `json:"deprecated"`
 	Security     []SecurityRequirement  `json:"security"`
 	Servers      []Server               `json:"servers"`
-}
-
-// ParameterOrReference is a union type representing either a Parameter Object or a Reference Object.
-type ParameterOrReference struct {
-	Reference string    `json:"$ref,omitempty"`
-	Parameter Parameter `json:"-"`
 }
 
 // Parameter struct describes a parameter in OpenAPI.
@@ -134,6 +148,7 @@ type Parameter struct {
 	In              string `json:"in"`
 	Description     string `json:"description"`
 	Required        bool   `json:"required"`
+	Type            string `json:"type"`
 	Deprecated      bool   `json:"deprecated"`
 	AllowEmptyValue bool   `json:"allowEmptyValue"`
 	Style           string `json:"style"`
@@ -144,15 +159,10 @@ type Parameter struct {
 
 // RequestBodyOrReference is a union type representing either a Request Body Object or a Reference Object.
 type RequestBodyOrReference struct {
-	Reference   string      `json:"$ref,omitempty"`
-	RequestBody RequestBody `json:"-"`
-}
-
-// RequestBody struct describes a request body in OpenAPI.
-type RequestBody struct {
-	Description string               `json:"description"`
-	Content     map[string]MediaType `json:"content"`
-	Required    bool                 `json:"required"`
+	Reference   string               `json:"$ref,omitempty"`
+	Description string               `json:"description,omitempty"`
+	Content     map[string]MediaType `json:"content,omitempty"`
+	Required    bool                 `json:"required,omitempty"`
 }
 
 // MediaType struct describes a media type object in OpenAPI.
@@ -167,6 +177,14 @@ type Schema struct {
 	// Define your schema fields based on your specific requirements
 	// Example fields could include type, format, properties, etc.
 	// This can be expanded based on the needs of your application.
+	Type                 string             `json:"type,omitempty"`
+	Format               string             `json:"format,omitempty"`
+	Minimum              string             `json:"minimum,omitempty"`
+	Items                *Schema            `json:"items,omitempty"`
+	Ref                  string             `json:"$ref,omitempty"`
+	Properties           map[string]*Schema `json:"properties,omitempty"`
+	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
+	Required             []string           `json:"required"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.
@@ -217,28 +235,63 @@ func GenerateOpenAPIUI(document, title, docsURL string) string {
 	return fmt.Sprintf(openAPIHTML, title, docsURL)
 }
 
-func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths *Paths) {
-	tag := router.Tag
+func parameterToRequestBodyOrReference(p Parameter) RequestBodyOrReference {
+	m := make(map[string]MediaType)
+	// FIXME: support examples
+	s := p.Schema
+	if p.Schema.Ref != "" {
+		s = Schema{Ref: p.Schema.Ref}
+	}
+	m["application/json"] = MediaType{
+		Schema: s,
+	}
+	requestBody := RequestBodyOrReference{
+		Reference:   "",
+		Description: p.Description,
+		Content:     m,
+		Required:    p.Required,
+	}
+	return requestBody
+}
 
+func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths *Paths) {
+	tag := router.Tag //FIXME: tag on route should not just be tag on router
 	if tag == "" {
 		tag = router.Name
 	}
 	if !slices.Contains(*tagNames, tag) {
-
 		*tagNames = append(*tagNames, tag)
 		*tags = append(*tags, Tag{Name: tag, Description: ""})
 	}
 
-	description := "This route does"
+	description := route.Description
 	summary := description
 	if len(summary) > 100 {
-		summary = summary[:100] + " ..."
+		summary = summary[:97] + " ..."
+	}
+	parameters := []Parameter{}
+	requestBody := RequestBodyOrReference{}
+	for _, p := range route.params {
+		if p.In == "body" {
+			requestBody = parameterToRequestBodyOrReference(p)
+			continue
+		}
+		np := Parameter{
+			Name:        p.Name,
+			Description: p.Description,
+			Required:    p.Required,
+			In:          p.In,
+			Deprecated:  p.Deprecated,
+		}
+		np.Schema = p.Schema
+		parameters = append(parameters, np)
 	}
 	pathMethod := &Operation{
 		Summary:     summary,
-		OperationID: "",
+		OperationID: "", //FIXME: needs operation id
 		Tags:        []string{tag},
-		Parameters:  []ParameterOrReference{},
+		Parameters:  parameters, //NOTE: check json struct tag on ParameterOrReference
+		RequestBody: requestBody,
 		Responses:   map[string]Response{},
 		Description: description, // TODO: needs to be dynamic on route
 	}
@@ -247,17 +300,16 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 	// TODO: handle other protocols
 	case http.MethodGet:
 		pathItem.Get = pathMethod
+	case http.MethodPost:
+		pathItem.Post = pathMethod
 	case http.MethodPut:
 		pathItem.Put = pathMethod
 	case http.MethodPatch:
 		pathItem.Patch = pathMethod
-	case http.MethodPost:
-		pathItem.Post = pathMethod
 	case http.MethodDelete:
 		pathItem.Delete = pathMethod
 	}
 	(*paths)[route.fullPath] = pathItem
-
 }
 
 func GenerateOpenAPISpec(
@@ -276,23 +328,27 @@ func GenerateOpenAPISpec(
 			addRoute(*router, *route, &tags, &tagNames, &paths)
 		}
 	}
-
 	info := Info{
 		Version: appVersion,
 		Title:   appName,
 	}
-	openapi := OpenAPI{
-		SpecVersion: "3.1.0",
-		Info:        info,
-		Servers:     []Server{},
-		Tags:        tags,
-		// FIX ME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
-		// FIX ME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
-		Paths: paths,
-	}
+	openapi.SpecVersion = "3.1.0"
+	openapi.Info = info
+	openapi.Servers = []Server{}
+	openapi.Tags = tags
+	openapi.Paths = paths
+	// FIXME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
+	// FIXME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
 	openapiJSON, err := json.Marshal(openapi)
 	if err != nil {
 		return "", err
 	}
 	return string(openapiJSON), nil
+}
+
+func AddDefinition(name string, s Schema) {
+	if openapi.Definitions == nil {
+		openapi.Definitions = make(map[string]*Schema)
+	}
+	openapi.Definitions[name] = &s
 }
