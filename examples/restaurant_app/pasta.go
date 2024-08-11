@@ -25,15 +25,20 @@ var cheeses = map[int]string{
 	1: "Swiss",
 }
 
+type FooResponse struct {
+	error   string
+	message string
+}
+
 type PastaCheeseInput struct {
-	ID int `kind:"path" description:"id of cheese"`
+	Id int `kind:"path" description:"id of cheese"`
 }
 
 func PastaRouter() *puff.Router {
-	pasta_router := puff.NewRouter("Pasta", "/pasta")
+	pastaRouter := puff.NewRouter("Pasta", "/pasta")
 
 	pasta_home_input := new(PastaHomeInput)
-	pasta_router.Get("/home", "", pasta_home_input, func(c *puff.Context) {
+	pastaRouter.Get("/home", "", pasta_home_input, func(c *puff.Context) {
 		if pasta_home_input.Name == pasta_home_input.LastDishOrdered {
 			c.SendResponse(puff.GenericResponse{
 				Content: fmt.Sprintf(
@@ -58,10 +63,10 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_cheese_input := new(PastaCheeseInput)
-	pasta_router.Get("/cheese/{id}", "", pasta_cheese_input, func(c *puff.Context) {
-		cheese, ok := cheeses[pasta_cheese_input.ID]
+	pastaRouter.Get("/cheese/{Id}", "", pasta_cheese_input, func(c *puff.Context) {
+		cheese, ok := cheeses[pasta_cheese_input.Id]
 		if !ok {
-			c.NotFound("Cheese with id %d not found.", pasta_cheese_input.ID)
+			c.NotFound("Cheese with id %d not found.", pasta_cheese_input.Id)
 			return
 		}
 		c.SendResponse(puff.GenericResponse{
@@ -70,8 +75,8 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_newcheese_input := new(PastaNewCheeseInput)
-	pasta_router.Post("/cheese/{id}", "", pasta_newcheese_input, func(c *puff.Context) {
+	pastaRouter.Post("/cheese/{id}", "", pasta_newcheese_input, func(c *puff.Context) {
 	})
 
-	return pasta_router
+	return pastaRouter
 }

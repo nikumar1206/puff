@@ -197,7 +197,7 @@ func (r RedirectResponse) GetContentType() string {
 
 // WriteContent writes the header Location to redirect the client to.
 func (r RedirectResponse) WriteContent(c *Context) error {
-	c.ResponseWriter.Header().Set("Location", r.To)
+	c.SetResponseHeader("Location", r.To)
 	fmt.Fprintf(c.ResponseWriter, `<!DOCTYPE HTML>
     <html lang='en-US'>
     <head>

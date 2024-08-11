@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"regexp"
 	"strings"
 )
 
@@ -18,6 +17,11 @@ type Router struct {
 	parent      *Router
 	Tag         string
 	Description string
+	// Responses is a map of status code to puff.Response. Possible Responses for routes can be set at the Router (root as well),
+	// and Route level, however responses directly set on the route will have the highest specificity.
+	Responses map[int]Response
+	// puff maps to the original PuffApp
+	puff *PuffApp
 }
 
 // NewRouter creates a new router provided router name and path prefix.
@@ -41,6 +45,7 @@ func (r *Router) registerRoute(
 		Handler:     handleFunc,
 		Protocol:    method,
 		Fields:      fields,
+		Router:      r,
 	}
 
 	r.Routes = append(r.Routes, &newRoute)
@@ -111,33 +116,22 @@ func (r *Router) IncludeRouter(rt *Router) {
 	}
 
 	rt.parent = r
+	if rt.parent != nil {
+		rt.puff = rt.parent.puff
+	}
 	r.Routers = append(r.Routers, rt)
 }
 
+// A
+// Root Router -> parent nil, puff a
+//
+//	PizzaRouter ->  parent RootRouter, puff a
 func (r *Router) Use(m Middleware) {
 	r.Middlewares = append(r.Middlewares, &m)
 }
 
 func (r *Router) String() string {
 	return fmt.Sprintf("Name: %s Prefix: %s", r.Name, r.Prefix)
-}
-
-func (r *Router) getCompletePath(route *Route) {
-	var parts []string
-	currentRouter := r
-	for currentRouter != nil {
-		parts = append([]string{currentRouter.Prefix}, parts...)
-		currentRouter = currentRouter.parent
-	}
-
-	parts = append(parts, route.Path)
-	route.fullPath = strings.Join(parts, "")
-}
-
-func (r *Router) createRegexMatch(route *Route) {
-	escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
-	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "([^/]+)")
-	route.regexp = regexp.MustCompile("^" + regexPattern + "$")
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -151,8 +145,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for _, route := range r.Routes {
 		if route.regexp == nil {
 			// TODO: need to fix this. this will be nil for the doc routes.
-			r.getCompletePath(route)
-			r.createRegexMatch(route)
+			route.getCompletePath()
+			route.createRegexMatch()
 		}
 		isMatch := route.regexp.MatchString(req.URL.Path)
 		if isMatch && req.Method == route.Protocol {
@@ -202,11 +196,11 @@ func (r *Router) AllRoutes() []*Route {
 
 func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
-		r.getCompletePath(route)
-		r.createRegexMatch(route)
-		err := handleInputSchema(&route.params, route.Fields)
+		route.getCompletePath()
+		route.createRegexMatch()
+		err := route.handleInputSchema()
 		if err != nil {
-			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
+			panic("esrror with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
 		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
 	}

@@ -1,10 +1,12 @@
 package puff
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"reflect"
 )
 
 type PuffApp struct {
@@ -24,11 +26,14 @@ type PuffApp struct {
 	RootRouter *Router
 	// Logger is the reference to the application's logger. Equivalent to slog.Default()
 	Logger *slog.Logger
+	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
+	OpenAPI OpenAPI
 }
 
 // Add a Router to the main app.
 // Under the hood attaches the router to the App's RootRouter
 func (a *PuffApp) IncludeRouter(r *Router) {
+	r.puff = a
 	a.RootRouter.IncludeRouter(r)
 }
 
@@ -40,11 +45,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	if a.DocsURL == "" {
 		return
 	}
-	spec, err := GenerateOpenAPISpec(a.Name, a.Version, *a.RootRouter)
-	if err != nil {
-		slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
-		return
-	}
+	a.GenerateOpenAPISpec()
 	docsRouter := Router{
 		Prefix: a.DocsURL,
 		Name:   "OpenAPI Documentation Router",
@@ -52,7 +53,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 
 	docsRouter.Get(".json", "Provides JSON OpenAPI Schema.", nil, func(c *Context) {
 		res := GenericResponse{
-			Content:     spec,
+			Content:     string(*a.OpenAPI.spec),
 			ContentType: "application/json",
 		}
 		c.SendResponse(res)
@@ -60,7 +61,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 
 	docsRouter.Get("", "Render OpenAPI schema.", nil, func(c *Context) {
 		res := HTMLResponse{
-			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
+			Content: GenerateOpenAPIUI("OpenAPI Spec", a.DocsURL+".json"),
 		}
 		c.SendResponse(res)
 	})
@@ -87,7 +88,6 @@ func (a *PuffApp) addOpenAPIRoutes() {
 			}
 		})
 	}
-
 	a.IncludeRouter(&docsRouter)
 }
 
@@ -156,4 +156,65 @@ func (a *PuffApp) WebSocket(path string, description string, fields any, handleF
 
 func (a *PuffApp) AllRoutes() []*Route {
 	return a.RootRouter.AllRoutes()
+}
+
+func (a *PuffApp) SetResponses(r map[int]Response) {
+	a.RootRouter.Responses = r
+}
+
+func (a *PuffApp) GenerateOpenAPISpec() {
+	if reflect.ValueOf(a.OpenAPI).IsZero() {
+		paths, tags := a.GeneratePathsTags()
+		a.OpenAPI = OpenAPI{
+			SpecVersion: "3.1.0",
+			Info: Info{
+				Version:     a.Version,
+				Title:       a.Name,
+				Description: "<h4>Application built via Puff Framework</h4>",
+			},
+			Servers:     []Server{},
+			Tags:        tags,
+			Paths:       paths,
+			Definitions: Definitions,
+		}
+	}
+	// this value is hardcoded. it cannot be changed
+	a.OpenAPI.SpecVersion = "3.1.0"
+	openAPISpec, err := json.Marshal(a.OpenAPI)
+	if err != nil {
+		panic(err)
+	}
+	a.OpenAPI.spec = &openAPISpec
+}
+
+// GeneratePathsTags is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.
+// Returns (paths, tagss) to populate the 'Paths' and 'Tags' attribute of OpenAPI
+func (a *PuffApp) GeneratePathsTags() (Paths, []Tag) {
+	var tags []Tag
+	var tagNames []string
+	var paths = make(Paths)
+	for _, route := range a.RootRouter.Routes {
+		addRoute(route, &tags, &tagNames, &paths)
+	}
+	for _, router := range a.RootRouter.Routers {
+		for _, route := range router.Routes {
+			addRoute(route, &tags, &tagNames, &paths)
+		}
+	}
+	return paths, tags
+}
+
+// GenerateDefinitions is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.
+// Returns (paths, tagss) to populate the 'Paths' and 'Tags' attribute of OpenAPI
+func (a *PuffApp) GenerateDefinitions(paths Paths) map[string]*Schema {
+
+	definitions := map[string]*Schema{}
+	for _, p := range paths {
+		for _, routeParams := range p.Parameters {
+			definitions[routeParams.Name] = &routeParams.Schema
+		}
+
+	}
+
+	return definitions
 }

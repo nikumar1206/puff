@@ -37,6 +37,7 @@ func resolveBool(spec string, def bool) (bool, error) {
 		return false, fmt.Errorf("specified boolean on field must be either true or false")
 	}
 	return b, nil
+
 }
 
 // handleParam takes the value as recieved, returns an error if the value
@@ -49,10 +50,10 @@ func handleParam(value string, param Parameter) (string, error) {
 	return value, nil
 }
 
-// getHeaderParam gets the value of the param from the header. It may return error
+// GetRequestHeaderParam gets the value of the param from the header. It may return error
 // if it not found AND required.
-func getHeaderParam(c *Context, param Parameter) (string, error) {
-	value := c.GetHeader(param.Name)
+func GetRequestHeaderParam(c *Context, param Parameter) (string, error) {
+	value := c.GetRequestHeader(param.Name)
 	return handleParam(value, param)
 }
 
@@ -64,7 +65,7 @@ func getQueryParam(c *Context, param Parameter) (string, error) {
 	return handleParam(value, param)
 }
 
-// getHeaderParam gets the value of the param from the cookie header.
+// GetRequestHeaderParam gets the value of the param from the cookie header.
 // It may return an error if it not found AND required.
 func getCookieParam(c *Context, param Parameter) (string, error) {
 	value := c.GetCookie(param.Name)
@@ -147,7 +148,7 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 
 		switch pa.In {
 		case "header":
-			value, err = getHeaderParam(c, pa)
+			value, err = GetRequestHeaderParam(c, pa)
 		case "path":
 			value, err = getPathParam(pathparamsindex, pa, matches)
 		case "query":
@@ -229,7 +230,7 @@ var supportedTypes = map[string]typeInfo{
 	"bool": newTypeInfo("boolean", map[string]string{}),
 }
 
-func newDefinition(schema any) Schema {
+func newDefinition(route *Route, schema any) Schema {
 	newSchema := new(Schema)
 	st := reflect.TypeOf(schema)
 	sv := reflect.ValueOf(schema)
@@ -254,13 +255,13 @@ func newDefinition(schema any) Schema {
 		if st.Key().Kind() != reflect.String {
 			panic("map key type must always be string.")
 		}
-		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
+		nd := newDefinition(route, reflect.Zero(st.Elem()).Interface())
 		newSchema.AdditionalProperties = &nd
 		return *newSchema
 	}
 	if st.Kind() == reflect.Array || st.Kind() == reflect.Slice {
 		newSchema.Type = "array"
-		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
+		nd := newDefinition(route, reflect.Zero(st.Elem()).Interface())
 		newSchema.Items = &nd
 		return *newSchema
 	}
@@ -273,7 +274,7 @@ func newDefinition(schema any) Schema {
 	for i := range st.NumField() {
 		newDef.Type = "object"
 		field := st.Field(i)
-		nd := newDefinition(sv.Field(i).Interface())
+		nd := newDefinition(route, sv.Field(i).Interface())
 
 		fieldName := field.Name
 		fieldNameSplit := strings.Split(field.Tag.Get("json"), ",")
@@ -282,84 +283,7 @@ func newDefinition(schema any) Schema {
 		}
 		newDef.Properties[fieldName] = &nd
 	}
-	AddDefinition(st.Name(), newDef)
+	Definitions[st.Name()] = &newDef
 	newSchema.Ref = "#/definitions/" + st.Name()
 	return *newSchema
-}
-
-func handleInputSchema(pa *[]Parameter, s any) error { // should this return an error or should it panic?
-	if s == nil {
-		*pa = []Parameter{}
-		return nil
-	}
-	sv := reflect.ValueOf(s) //
-	svk := sv.Kind()
-	if svk != reflect.Ptr {
-		return fmt.Errorf("fields must be POINTER to struct")
-	}
-	sve := sv.Elem()
-	svet := sve.Type()
-	if sve.Kind() != reflect.Struct {
-		return fmt.Errorf("fields must be pointer to STRUCT")
-	}
-
-	newParams := []Parameter{}
-	for i := range svet.NumField() {
-		newParam := Parameter{}
-		svetf := svet.Field(i)
-
-		name := svetf.Tag.Get("name")
-		if name == "" {
-			name = svetf.Name
-		}
-
-		// param.Schema
-		newParam.Schema = newDefinition(sve.Field(i).Interface())
-
-		//param.In
-		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
-		if name == "Body" && specified_kind == "" {
-			specified_kind = "body"
-		}
-		if !isValidKind(specified_kind) {
-			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, or formdata", svetf.Name)
-		}
-
-		//param.Description
-		description := svetf.Tag.Get("description")
-
-		//param.Required
-		specified_required := svetf.Tag.Get("required")
-		specified_deprecated := svetf.Tag.Get("deprecated")
-
-		required_def := true
-		if specified_kind == "cookie" { // cookies by default should never be required
-			required_def = false
-		}
-
-		required, err := resolveBool(specified_required, required_def)
-		if err != nil {
-			return err
-		}
-		deprecated, err := resolveBool(specified_deprecated, false)
-		if err != nil {
-			return err
-		}
-
-		//param.Schema.format
-		format := svetf.Tag.Get("format")
-		if format != "" {
-			newParam.Schema.Format = format
-		}
-
-		newParam.Name = name
-		newParam.In = specified_kind
-		newParam.Description = description
-		newParam.Required = required
-		newParam.Deprecated = deprecated
-
-		newParams = append(newParams, newParam)
-	}
-	*pa = newParams
-	return nil
 }

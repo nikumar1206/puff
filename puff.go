@@ -18,15 +18,17 @@ type AppConfig struct {
 	TLSPublicCertFile string
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
 	TLSPrivateKeyFile string
+	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
+	OpenAPI OpenAPI
 }
 
 func App(c *AppConfig) *PuffApp {
-	r := &Router{Name: "Puff Default", Tag: "Default", Description: "Puff Default Router"}
+	r := &Router{Name: "Default", Tag: "Default", Description: "Default Router"}
 	if c.Version == "" {
 		c.Version = "0.0.0"
 	}
 
-	return &PuffApp{
+	a := &PuffApp{
 		Name:              c.Name,
 		Version:           c.Version,
 		DocsURL:           c.DocsURL,
@@ -34,7 +36,10 @@ func App(c *AppConfig) *PuffApp {
 		TLSPublicCertFile: c.TLSPublicCertFile,
 		TLSPrivateKeyFile: c.TLSPrivateKeyFile,
 		RootRouter:        r,
+		OpenAPI:           c.OpenAPI,
 	}
+	a.RootRouter.puff = a
+	return a
 }
 
 func DefaultApp(name string) *PuffApp {

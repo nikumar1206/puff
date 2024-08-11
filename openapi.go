@@ -1,13 +1,15 @@
 package puff
 
 import (
-	"encoding/json"
+	_ "embed"
 	"fmt"
 	"net/http"
 	"slices"
 )
 
-var openapi OpenAPI
+//go:embed static/openAPI.html
+var openAPIHTML string
+var Definitions = map[string]*Schema{}
 
 type Reference struct {
 	Ref         string `json:"$ref"`
@@ -28,6 +30,8 @@ type OpenAPI struct {
 	Security          []SecurityRequirement `json:"security"`
 	Tags              []Tag                 `json:"tags"`
 	ExternalDocs      ExternalDocumentation `json:"externalDocs"`
+	// spec holds the OpenAPI json as bytes
+	spec *[]byte
 }
 
 // // Definitions contains schemas that can be referenced throughout
@@ -235,14 +239,14 @@ type ServerVariable struct {
 	Description string   `json:"description,omitempty"`
 }
 
-func GenerateOpenAPIUI(document, title, docsURL string) string {
+func GenerateOpenAPIUI(title, docsURL string) string {
 	return fmt.Sprintf(openAPIHTML, title, docsURL)
 }
 
-func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths *Paths) {
-	tag := router.Tag //FIXME: tag on route should not just be tag on router
+func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Paths {
+	tag := route.Router.Tag //FIXME: tag on route should not just be tag on router
 	if tag == "" {
-		tag = router.Name
+		tag = route.Router.Name
 	}
 	if !slices.Contains(*tagNames, tag) {
 		*tagNames = append(*tagNames, tag)
@@ -254,26 +258,16 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 	if len(summary) > 100 {
 		summary = summary[:97] + " ..."
 	}
-	parameters := []Parameter{}
-	for _, p := range route.params {
-		np := Parameter{
-			Name:        p.Name,
-			Description: p.Description,
-			Required:    p.Required,
-			In:          p.In,
-			Deprecated:  p.Deprecated,
-		}
-		np.Schema = p.Schema
-		parameters = append(parameters, np)
-	}
+
 	pathMethod := &Operation{
 		Summary:     summary,
 		OperationID: "", //FIXME: needs operation id
 		Tags:        []string{tag},
-		Parameters:  parameters, //NOTE: check json struct tag on ParameterOrReference
+		Parameters:  route.params, //NOTE: check json struct tag on ParameterOrReference
 		Responses:   map[string]Response{},
 		Description: description, // TODO: needs to be dynamic on route
 	}
+
 	pathItem := (*paths)[route.fullPath]
 	switch route.Protocol {
 	// TODO: handle other protocols
@@ -289,45 +283,6 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 		pathItem.Delete = pathMethod
 	}
 	(*paths)[route.fullPath] = pathItem
-}
 
-func GenerateOpenAPISpec(
-	appName string,
-	appVersion string,
-	rootRouter Router,
-) (string, error) {
-	var tags []Tag
-	var tagNames []string
-	var paths = make(Paths)
-	for _, route := range rootRouter.Routes {
-		addRoute(rootRouter, *route, &tags, &tagNames, &paths)
-	}
-	for _, router := range rootRouter.Routers {
-		for _, route := range router.Routes {
-			addRoute(*router, *route, &tags, &tagNames, &paths)
-		}
-	}
-	info := Info{
-		Version: appVersion,
-		Title:   appName,
-	}
-	openapi.SpecVersion = "3.1.0"
-	openapi.Info = info
-	openapi.Servers = []Server{}
-	openapi.Tags = tags
-	openapi.Paths = paths
-	// FIXME: SERVERS SHOULD BE SPECIFIED IN THE APP CONFIGURATION
-	// FIXME: THE DEFAULT SERVER SHOULD BE THE NETWORK IP: PORT
-	openapiJSON, err := json.Marshal(openapi)
-	if err != nil {
-		return "", err
-	}
-	return string(openapiJSON), nil
-}
-
-func AddDefinition(name string, s Schema) {
-	if openapi.Definitions == nil {
-		openapi.Definitions = make(map[string]*Schema)
-	}
-	openapi.Definitions[name] = &s
+	return paths
 }

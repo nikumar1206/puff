@@ -51,3 +51,5 @@ app := App.New(h)
   - Logger config needs to be placed in the context.
 - improve route matching system.
 - implement pulling and placing context in the pool. rather than creating new objects and forcing GC.
+
+- If user's dont want a swagger page, we shouldn't do any of the computation required to generate one.
