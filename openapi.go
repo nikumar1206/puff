@@ -138,7 +138,7 @@ type Operation struct {
 	ExternalDocs ExternalDocumentation  `json:"externalDocs"`
 	OperationID  string                 `json:"operationId"`
 	Parameters   []Parameter            `json:"parameters"`
-	RequestBody  RequestBodyOrReference `json:"requestBody"`
+	RequestBody  RequestBodyOrReference `json:"requestBody,omitempty"`
 	Responses    map[string]Response    `json:"responses"`
 	Callbacks    map[string]Callback    `json:"callbacks"`
 	Deprecated   bool                   `json:"deprecated"`
@@ -163,15 +163,10 @@ type Parameter struct {
 
 // RequestBodyOrReference is a union type representing either a Request Body Object or a Reference Object.
 type RequestBodyOrReference struct {
-	Reference   string      `json:"$ref,omitempty"`
-	RequestBody RequestBody `json:"-"`
-}
-
-// RequestBody struct describes a request body in OpenAPI.
-type RequestBody struct {
-	Description string               `json:"description"`
-	Content     map[string]MediaType `json:"content"`
-	Required    bool                 `json:"required"`
+	Reference   string               `json:"$ref,omitempty"`
+	Description string               `json:"description,omitempty"`
+	Content     map[string]MediaType `json:"content,omitempty"`
+	Required    bool                 `json:"required,omitempty"`
 }
 
 // MediaType struct describes a media type object in OpenAPI.
@@ -193,6 +188,7 @@ type Schema struct {
 	Ref                  string             `json:"$ref,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
 	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
+	Required             []string           `json:"required"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.
@@ -243,6 +239,25 @@ func GenerateOpenAPIUI(title, docsURL string) string {
 	return fmt.Sprintf(openAPIHTML, title, docsURL)
 }
 
+func parameterToRequestBodyOrReference(p Parameter) RequestBodyOrReference {
+	m := make(map[string]MediaType)
+	// FIXME: support examples
+	s := p.Schema
+	if p.Schema.Ref != "" {
+		s = Schema{Ref: p.Schema.Ref}
+	}
+	m["application/json"] = MediaType{
+		Schema: s,
+	}
+	requestBody := RequestBodyOrReference{
+		Reference:   "",
+		Description: p.Description,
+		Content:     m,
+		Required:    p.Required,
+	}
+	return requestBody
+}
+
 func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Paths {
 	tag := route.Router.Tag //FIXME: tag on route should not just be tag on router
 	if tag == "" {
@@ -258,12 +273,29 @@ func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Path
 	if len(summary) > 100 {
 		summary = summary[:97] + " ..."
 	}
-
+	parameters := []Parameter{}
+	requestBody := RequestBodyOrReference{}
+	for _, p := range route.params {
+		if p.In == "body" {
+			requestBody = parameterToRequestBodyOrReference(p)
+			continue
+		}
+		np := Parameter{
+			Name:        p.Name,
+			Description: p.Description,
+			Required:    p.Required,
+			In:          p.In,
+			Deprecated:  p.Deprecated,
+		}
+		np.Schema = p.Schema
+		parameters = append(parameters, np)
+	}
 	pathMethod := &Operation{
 		Summary:     summary,
 		OperationID: "", //FIXME: needs operation id
 		Tags:        []string{tag},
-		Parameters:  route.params, //NOTE: check json struct tag on ParameterOrReference
+		Parameters:  parameters, //NOTE: check json struct tag on ParameterOrReference
+		RequestBody: requestBody,
 		Responses:   map[string]Response{},
 		Description: description, // TODO: needs to be dynamic on route
 	}

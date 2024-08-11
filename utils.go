@@ -69,3 +69,27 @@ func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
 	json.NewEncoder(w).Encode(map[string]string{"error": message})
 	w.WriteHeader(statusCode)
 }
+
+func isAnyOfThese[T comparable](value T, these ...T) bool {
+	for _, t := range these {
+		if t == value {
+			return true
+		}
+	}
+	return false
+}
+func resolveBool(spec string, def bool) (b bool, err error) {
+	switch spec {
+	case "":
+		b = def
+	case "true":
+		b = true
+	case "false":
+		b = false
+	default:
+		b = def
+		err = fmt.Errorf("specified boolean on field must be either true or false")
+		return
+	}
+	return
+}
