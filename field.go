@@ -39,13 +39,21 @@ func handleParam(value string, param Parameter) (string, error) {
 // from Parameter.
 func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 	expectedNotFoundKeys := map[string]bool{}
+	fields := map[string]reflect.StructField{}
 	for i := range schemaType.NumField() {
 		field := schemaType.Field(i)
 		name := field.Name
 		nameTag := field.Tag.Get("name")
-		if nameTag != "" {
+		jsonTag := field.Tag.Get("json")
+		s := strings.Split(jsonTag, ",")
+		jsonTagName := s[0]
+		if jsonTagName != "" {
+			name = jsonTag
+		}
+		if nameTag != "" { // name takes priority over json
 			name = nameTag
 		}
+		fields[name] = field
 		b, _ := resolveBool(field.Tag.Get("required"), true)
 		expectedNotFoundKeys[name] = b
 	}
@@ -56,7 +64,7 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		} else {
 			delete(expectedNotFoundKeys, k)
 		}
-		f, _ := schemaType.FieldByName(k) //cannot error
+		f, _ := fields[k] //cannot error
 		ft := f.Type
 		p := ft.Kind() == reflect.Pointer
 		tr := reflect.TypeOf(v)
