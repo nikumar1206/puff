@@ -189,6 +189,7 @@ type Schema struct {
 	Ref                  string             `json:"$ref,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
 	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
+	Required             []string           `json:"required"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.

@@ -33,6 +33,7 @@ type Pizza struct {
 	Name        string   `json:"name"`
 	Ingredients []string `json:"ingredients"`
 }
+
 type NewPizzaInput struct {
 	Body Pizza
 	// CrazyPizza map[string]map[string]Pizza `name:"candy" kind:"body"`

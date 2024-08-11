@@ -24,20 +24,6 @@ func isValidKind(specified_kind string) bool {
 
 // resolveBool resolves the specified bool (as a string type)
 // and the default bool. It gives priority to the specified.
-func resolveBool(spec string, def bool) (bool, error) {
-	var b bool
-	switch spec {
-	case "":
-		b = def
-	case "true":
-		b = true
-	case "false":
-		b = false
-	default:
-		return false, fmt.Errorf("specified boolean on field must be either true or false")
-	}
-	return b, nil
-}
 
 // handleParam takes the value as recieved, returns an error if the value
 // is empty AND required.
@@ -47,6 +33,81 @@ func handleParam(value string, param Parameter) (string, error) {
 		return "", fmt.Errorf("required %s param %s not provided.", param.In, param.Name)
 	}
 	return value, nil
+}
+
+// validate validates the input string against the type to ensure with options
+// from Parameter.
+func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
+	expectedNotFoundKeys := map[string]bool{}
+	for i := range schemaType.NumField() {
+		field := schemaType.Field(i)
+		name := field.Name
+		nameTag := field.Tag.Get("name")
+		if nameTag != "" {
+			name = nameTag
+		}
+		b, _ := resolveBool(field.Tag.Get("required"), true)
+		expectedNotFoundKeys[name] = b
+	}
+	for k, v := range input {
+		required, ok := expectedNotFoundKeys[k]
+		if !ok {
+			return false, UnexpectedJSONKey(k)
+		} else {
+			delete(expectedNotFoundKeys, k)
+		}
+		f, _ := schemaType.FieldByName(k) //cannot error
+		ft := f.Type
+		p := ft.Kind() == reflect.Pointer
+		tr := reflect.TypeOf(v)
+		if tr == nil {
+			if required && !p {
+				return false, BadFieldType(k, "nil", ft.Kind().String())
+			} else {
+				continue
+			}
+		}
+		t := tr.Kind()
+		if ft.Kind() == reflect.Pointer {
+			ft = ft.Elem()
+			// p = true
+		}
+		switch t {
+		case reflect.String, reflect.Bool:
+			if ft.Kind() != t {
+				return false, BadFieldType(k, t.String(), ft.Kind().String())
+			}
+		case reflect.Int:
+			if isAnyOfThese(ft.Kind(), reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64) {
+				if !(v.(int) >= 0) {
+					return false, BadFieldType(k, t.String(), ft.Kind().String())
+				}
+			} else if !isAnyOfThese(ft.Kind(), reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64) {
+				return false, BadFieldType(k, t.String(), ft.Kind().String())
+			}
+		case reflect.Float32, reflect.Float64:
+			if !isAnyOfThese(ft.Kind(), reflect.Float32, reflect.Float64) {
+				return false, BadFieldType(k, t.String(), ft.Kind().String())
+			}
+		case reflect.Array, reflect.Slice:
+			if reflect.TypeOf(v).AssignableTo(f.Type) {
+				return false, BadFieldType(k, ft.String(), reflect.TypeOf(v).String())
+			}
+		case reflect.Map:
+			if ft.Kind() != reflect.Struct {
+				return false, BadFieldType(k, t.String(), ft.Kind().String())
+			}
+			return validate(v.(map[string]any), ft)
+		default:
+			return false, BadFieldType(k, "unsupported type: "+t.String(), ft.Kind().String())
+		}
+	}
+	for k, required := range expectedNotFoundKeys {
+		if required == true {
+			return false, ExpectedButNotFound(k)
+		}
+	}
+	return true, nil
 }
 
 // getHeaderParam gets the value of the param from the header. It may return error
@@ -124,8 +185,20 @@ func populateField(value string, field reflect.Value) error {
 		}
 		field.SetBool(valueb)
 	case reflect.Struct:
+		var m map[string]any
+
+		err := json.Unmarshal([]byte(value), &m)
+		if err != nil {
+			return InvalidJSON(value)
+		}
+
+		ok, err := validate(m, fieldType)
+		if !ok {
+			return err
+		}
+
 		newField := reflect.New(fieldType)
-		err := json.Unmarshal([]byte(value), newField.Interface())
+		err = json.Unmarshal([]byte(value), newField.Interface())
 		if err != nil {
 			return FieldTypeError(value, fieldType.Name())
 		}
@@ -233,6 +306,12 @@ func newDefinition(schema any) Schema {
 	newSchema := new(Schema)
 	st := reflect.TypeOf(schema)
 	sv := reflect.ValueOf(schema)
+
+	if st.Kind() == reflect.Pointer {
+		st = st.Elem()
+		sv = sv.Elem()
+	}
+
 	// FIXME: refactor this it could look better
 	if st.Kind() != reflect.Struct && st.Kind() != reflect.Slice && st.Kind() != reflect.Map && st.Kind() != reflect.Array && st.Kind() != reflect.Pointer {
 		ts, ok := supportedTypes[st.String()]
@@ -243,11 +322,6 @@ func newDefinition(schema any) Schema {
 		newSchema.Format = ts.info["format"]
 		newSchema.Minimum = ts.info["minimum"]
 		return *newSchema
-	}
-
-	// FIXME: allow pointers
-	if st.Kind() == reflect.Pointer {
-		panic("pointers are not supported.")
 	}
 
 	if st.Kind() == reflect.Map {
@@ -279,6 +353,15 @@ func newDefinition(schema any) Schema {
 		fieldNameSplit := strings.Split(field.Tag.Get("json"), ",")
 		if len(fieldName) > 0 {
 			fieldName = fieldNameSplit[0]
+		}
+
+		fieldRequired := field.Tag.Get("required")
+		b, err := resolveBool(fieldRequired, true)
+		if err != nil {
+			panic(err)
+		}
+		if b == true {
+			newDef.Required = append(newDef.Required, fieldName)
 		}
 		newDef.Properties[fieldName] = &nd
 	}
