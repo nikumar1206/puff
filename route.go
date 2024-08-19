@@ -2,6 +2,7 @@ package puff
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 	"strings"
@@ -21,7 +22,7 @@ type Route struct {
 	// Router points to the router the route belongs to. Will always be the closest router in the tree.
 	Router *Router
 	// should probably have responses (200 OK followed by json, 400 Invalid Paramaters, etc...)
-	Responses []map[int]Response
+	Responses map[int]Response
 }
 
 func (r *Route) String() string {
@@ -125,4 +126,30 @@ func (route *Route) handleInputSchema() error { // should this return an error o
 	}
 	route.params = newParams
 	return nil
+}
+
+// GenerateResponses is responsible for generating the 'responses' attribute in the OpenAPI schema.
+// Since responses can be specified at multiple levels, responses at the route level will be given the most specificity.
+func (r *Route) GenerateResponses() {
+
+	if r.Router.puff.DocsURL == "" {
+		// if swagger documentation is off, we will not set responses
+		return
+	}
+	responses := r.Responses
+	if responses == nil {
+		responses = make(map[int]Response)
+	}
+	currentRouter := r.Router
+
+	for currentRouter != nil {
+		// avoid over-writing the original responses for the routers
+		clonedResponses := maps.Clone(currentRouter.Responses)
+		fmt.Println("preclone", clonedResponses)
+		fmt.Println("what is cloned", clonedResponses, responses)
+		maps.Copy(clonedResponses, responses)
+		currentRouter = currentRouter.parent
+	}
+
+	r.Responses = responses
 }

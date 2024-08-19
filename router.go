@@ -14,12 +14,14 @@ type Router struct {
 	Routers     []*Router
 	Routes      []*Route
 	Middlewares []*Middleware
-	parent      *Router
 	Tag         string
 	Description string
 	// Responses is a map of status code to puff.Response. Possible Responses for routes can be set at the Router (root as well),
 	// and Route level, however responses directly set on the route will have the highest specificity.
 	Responses map[int]Response
+
+	// parent maps to the router's immediate parent. Will be nil for RootRouter
+	parent *Router
 	// puff maps to the original PuffApp
 	puff *PuffApp
 }
@@ -27,8 +29,9 @@ type Router struct {
 // NewRouter creates a new router provided router name and path prefix.
 func NewRouter(name string, prefix string) *Router {
 	return &Router{
-		Name:   name,
-		Prefix: prefix,
+		Name:      name,
+		Prefix:    prefix,
+		Responses: map[int]Response{},
 	}
 }
 
@@ -38,7 +41,7 @@ func (r *Router) registerRoute(
 	path string,
 	handleFunc func(*Context),
 	fields any,
-) {
+) *Route {
 	newRoute := Route{
 		Description: description,
 		Path:        path,
@@ -46,56 +49,58 @@ func (r *Router) registerRoute(
 		Protocol:    method,
 		Fields:      fields,
 		Router:      r,
+		Responses:   map[int]Response{},
 	}
 
 	r.Routes = append(r.Routes, &newRoute)
+	return &newRoute
 }
 
 func (r *Router) Get(
 	path string, description string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(description, http.MethodGet, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(description, http.MethodGet, path, handleFunc, fields)
 }
 
 func (r *Router) Post(
 	path string, description string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(description, http.MethodPost, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(description, http.MethodPost, path, handleFunc, fields)
 }
 
 func (r *Router) Put(
 	path string, description string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(description, http.MethodPut, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(description, http.MethodPut, path, handleFunc, fields)
 }
 
 func (r *Router) Patch(
 	path string, description string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(description, http.MethodPatch, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(description, http.MethodPatch, path, handleFunc, fields)
 }
 
 func (r *Router) Delete(
 	path string, description string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(description, http.MethodDelete, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(description, http.MethodDelete, path, handleFunc, fields)
 }
 
 func (r *Router) WebSocket(
 	path string, description string,
 	fields any,
 	handleFunc func(*Context),
-) {
+) *Route {
 	newRoute := Route{
 		WebSocket: true,
 		Protocol:  "GET",
@@ -104,6 +109,7 @@ func (r *Router) WebSocket(
 		Fields:    fields,
 	}
 	r.Routes = append(r.Routes, &newRoute)
+	return &newRoute
 }
 
 func (r *Router) IncludeRouter(rt *Router) {
@@ -200,9 +206,11 @@ func (r *Router) patchRoutes() {
 		route.createRegexMatch()
 		err := route.handleInputSchema()
 		if err != nil {
-			panic("esrror with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
+			panic("error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
 		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
+		// populate route with their respective responses
+		route.GenerateResponses()
 	}
 	//TODO: ensure no route collision, will be a nice to have
 }

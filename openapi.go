@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
 )
 
 //go:embed static/openAPI.html
@@ -53,8 +54,9 @@ type Property struct {
 
 // Info struct provides metadata about the API.
 type Info struct {
-	Title          string  `json:"title"`
-	Summary        string  `json:"summary"`
+	Title   string `json:"title"`
+	Summary string `json:"summary"`
+	// Description is an html string that describes the API service. Do *NOT* include <Doctype> or <html> tags.
 	Description    string  `json:"description"`
 	TermsOfService string  `json:"termsOfService"`
 	Contact        Contact `json:"contact"`
@@ -132,18 +134,18 @@ type SecurityRequirement map[string][]string
 
 // Operation struct describes an operation in a PathItem.
 type Operation struct {
-	Tags         []string               `json:"tags"`
-	Summary      string                 `json:"summary"`
-	Description  string                 `json:"description"`
-	ExternalDocs ExternalDocumentation  `json:"externalDocs"`
-	OperationID  string                 `json:"operationId"`
-	Parameters   []Parameter            `json:"parameters"`
-	RequestBody  RequestBodyOrReference `json:"requestBody,omitempty"`
-	Responses    map[string]Response    `json:"responses"`
-	Callbacks    map[string]Callback    `json:"callbacks"`
-	Deprecated   bool                   `json:"deprecated"`
-	Security     []SecurityRequirement  `json:"security"`
-	Servers      []Server               `json:"servers"`
+	Tags         []string                   `json:"tags"`
+	Summary      string                     `json:"summary"`
+	Description  string                     `json:"description"`
+	ExternalDocs ExternalDocumentation      `json:"externalDocs"`
+	OperationID  string                     `json:"operationId"`
+	Parameters   []Parameter                `json:"parameters"`
+	RequestBody  RequestBodyOrReference     `json:"requestBody,omitempty"`
+	Responses    map[string]OpenAPIResponse `json:"responses"`
+	Callbacks    map[string]Callback        `json:"callbacks"`
+	Deprecated   bool                       `json:"deprecated"`
+	Security     []SecurityRequirement      `json:"security"`
+	Servers      []Server                   `json:"servers"`
 }
 
 // Parameter struct describes a parameter in OpenAPI.
@@ -189,6 +191,7 @@ type Schema struct {
 	Properties           map[string]*Schema `json:"properties,omitempty"`
 	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
 	Required             []string           `json:"required"`
+	Example              any                `json:"example,omitempty"`
 }
 
 // OpenAPIResponse struct describes possible responses in OpenAPI.
@@ -296,7 +299,7 @@ func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Path
 		Tags:        []string{tag},
 		Parameters:  parameters, //NOTE: check json struct tag on ParameterOrReference
 		RequestBody: requestBody,
-		Responses:   map[string]Response{},
+		Responses:   convertRouteResponsestoOpenAPIResponses(*route),
 		Description: description, // TODO: needs to be dynamic on route
 	}
 
@@ -317,4 +320,20 @@ func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Path
 	(*paths)[route.fullPath] = pathItem
 
 	return paths
+}
+
+func convertRouteResponsestoOpenAPIResponses(route Route) map[string]OpenAPIResponse {
+	// FIXME: allow specifying examples, or potentially self-generate them
+	// FIXME: description can potentially be pulled from a map
+	openAPIResponses := map[string]OpenAPIResponse{}
+	for statusCode, res := range route.Responses {
+		sc := strconv.Itoa(statusCode)
+		openAPIResponses[sc] = OpenAPIResponse{
+			Description: "",
+			Content: map[string]MediaType{
+				res.GetContentType(): {Schema: newDefinition(&route, res.GetContent())},
+			},
+		}
+	}
+	return openAPIResponses
 }

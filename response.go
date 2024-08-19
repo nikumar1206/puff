@@ -12,6 +12,7 @@ type Response interface {
 	GetStatusCode() int
 	GetContentType() string
 	WriteContent(*Context) error
+	GetContent() any
 }
 
 // JSONResponse represents a response with JSON content.
@@ -27,6 +28,10 @@ func (j JSONResponse) GetStatusCode() int {
 
 func (j JSONResponse) GetContentType() string {
 	return "application/json"
+}
+
+func (j JSONResponse) GetContent() any {
+	return j.Content
 }
 
 // GetContent returns the content of the JSON response.
@@ -59,6 +64,10 @@ func (h HTMLResponse) WriteContent(c *Context) error {
 	return nil
 }
 
+func (h HTMLResponse) GetContent() any {
+	return h.Content
+}
+
 // FileResponse represents a response that sends a file.
 type FileResponse struct {
 	StatusCode  int
@@ -74,6 +83,10 @@ func (f FileResponse) GetStatusCode() int {
 
 func (f FileResponse) GetContentType() string {
 	return resolveContentType(f.ContentType, contentTypeFromFileName(f.FilePath))
+}
+
+func (f FileResponse) GetContent() any {
+	return f.FileContent
 }
 
 // GetContent returns the file content.
@@ -126,6 +139,10 @@ func (s StreamingResponse) GetStatusCode() int {
 
 func (s StreamingResponse) GetContentType() string {
 	return "text/event-stream"
+}
+
+func (s StreamingResponse) GetContent() any {
+	return ServerSideEvent{}
 }
 
 // GetContent returns the content of the streaming response.
@@ -195,6 +212,10 @@ func (r RedirectResponse) GetContentType() string {
 	return "text/html; charset=utf-8"
 }
 
+func (r RedirectResponse) GetContent() any {
+	return ""
+}
+
 // WriteContent writes the header Location to redirect the client to.
 func (r RedirectResponse) WriteContent(c *Context) error {
 	c.SetResponseHeader("Location", r.To)
@@ -235,4 +256,8 @@ func (g GenericResponse) GetContentType() string {
 func (g GenericResponse) WriteContent(c *Context) error {
 	fmt.Fprint(c.ResponseWriter, g.Content)
 	return nil
+}
+
+func (g GenericResponse) GetContent() any {
+	return g.Content
 }

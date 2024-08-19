@@ -39,6 +39,7 @@ func App(c *AppConfig) *PuffApp {
 		OpenAPI:           c.OpenAPI,
 	}
 	a.RootRouter.puff = a
+	a.RootRouter.Responses = map[int]Response{}
 	return a
 }
 

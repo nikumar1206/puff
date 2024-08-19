@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/nikumar1206/puff"
@@ -26,13 +27,13 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 		var statusColor = fmt.Sprintf(" %d ", sc)
 		switch {
 		case sc >= 500:
-			statusColor = color.ColorizeBold(string(sc), color.BgBrightRed, color.FgBlack)
+			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightRed, color.FgBlack)
 		case sc >= 400:
-			statusColor = color.ColorizeBold(string(sc), color.BgBrightYellow, color.FgBlack)
+			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightYellow, color.FgBlack)
 		case sc >= 300:
-			statusColor = color.ColorizeBold(string(sc), color.BgBrightCyan, color.FgBlack)
+			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightCyan, color.FgBlack)
 		default:
-			statusColor = color.ColorizeBold(string(sc), color.BgBrightGreen, color.FgBlack)
+			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightGreen, color.FgBlack)
 		}
 		// TODO: make the below configurable
 		// Request ID should only be present if present

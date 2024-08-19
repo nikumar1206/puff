@@ -250,61 +250,83 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 // FIXME: type info lowercase
 type typeInfo struct {
 	_type string
-	info  map[string]string
+	info  Schema
 }
 
-func newTypeInfo(_type string, info map[string]string) typeInfo {
+func newTypeInfo(_type string, s Schema) typeInfo {
 	return typeInfo{
 		_type: _type,
-		info:  info,
+		info:  s,
 	}
 }
 
 var supportedTypes = map[string]typeInfo{
-	"string": newTypeInfo("string", map[string]string{}),
-	"int":    newTypeInfo("integer", map[string]string{}),
-	"int8": newTypeInfo("number", map[string]string{
+	"string": newTypeInfo("string", Schema{
+		Format:  "string",
+		Example: "string",
+	}),
+	"int": newTypeInfo("integer", Schema{
+		Format:  "int",
+		Example: "0",
+	}),
+	"int8": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int8
-		"format": "int8",
+		Format:  "int8",
+		Example: "0",
 	}),
-	"int16": newTypeInfo("number", map[string]string{
+	"int16": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int16
-		"format": "int16",
+		Format:  "int16",
+		Example: "0",
 	}),
-	"int32": newTypeInfo("number", map[string]string{
+	"int32": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int32
-		"format": "int32",
+		Format:  "int32",
+		Example: "0",
 	}),
-	"int64": newTypeInfo("number", map[string]string{
+	"int64": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int64
-		"format": "int64",
+		Format:  "int64",
+		Example: "0",
 	}),
-	"uint": newTypeInfo("integer", map[string]string{
-		"minimum": "0",
+	"uint": newTypeInfo("integer", Schema{
+		Format:  "int",
+		Minimum: "0",
+		Example: "0",
 	}),
-	"uint8": newTypeInfo("integer", map[string]string{
-		"format":  "int8",
-		"minimum": "0",
+	"uint8": newTypeInfo("integer", Schema{
+		Format:  "int8",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"uint16": newTypeInfo("integer", map[string]string{
-		"format":  "int16",
-		"minimum": "0",
+	"uint16": newTypeInfo("integer", Schema{
+		Format:  "int16",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"uint32": newTypeInfo("integer", map[string]string{
-		"format":  "int32",
-		"minimum": "0",
+	"uint32": newTypeInfo("integer", Schema{
+		Format:  "int32",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"uint64": newTypeInfo("integer", map[string]string{
-		"format":  "int64",
-		"minimum": "0",
+	"uint64": newTypeInfo("integer", Schema{
+		Format:  "int64",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"float32": newTypeInfo("number", map[string]string{
-		"format": "float",
+	"float32": newTypeInfo("number", Schema{
+		Format:  "float",
+		Example: "0.0",
 	}),
-	"float64": newTypeInfo("number", map[string]string{
-		"format": "double",
+	"float64": newTypeInfo("number", Schema{
+		Format:  "double",
+		Example: "0.0",
+		Minimum: "0",
 	}),
-	"bool": newTypeInfo("boolean", map[string]string{}),
+	"bool": newTypeInfo("boolean", Schema{
+		Format:  "bool",
+		Example: false,
+	}),
 }
 
 func newDefinition(route *Route, schema any) Schema {
@@ -323,9 +345,10 @@ func newDefinition(route *Route, schema any) Schema {
 		if !ok {
 			panic("Unsupported type " + st.String() + ".")
 		}
-		newSchema.Type = ts._type
-		newSchema.Format = ts.info["format"]
-		newSchema.Minimum = ts.info["minimum"]
+		newSchema.Type = ts.info.Type
+		newSchema.Format = ts.info.Format
+		newSchema.Minimum = ts.info.Minimum
+		newSchema.Example = ts.info.Example
 		return *newSchema
 	}
 

@@ -131,27 +131,27 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	}
 }
 
-func (a *PuffApp) Get(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Get(path, description, fields, handleFunc)
+func (a *PuffApp) Get(path string, description string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Get(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Post(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Post(path, description, fields, handleFunc)
+func (a *PuffApp) Post(path string, description string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Post(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Patch(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Patch(path, description, fields, handleFunc)
+func (a *PuffApp) Patch(path string, description string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Patch(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Put(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Put(path, description, fields, handleFunc)
+func (a *PuffApp) Put(path string, description string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Put(path, description, fields, handleFunc)
 }
 
-func (a *PuffApp) Delete(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Delete(path, description, fields, handleFunc)
+func (a *PuffApp) Delete(path string, description string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Delete(path, description, fields, handleFunc)
 }
-func (a *PuffApp) WebSocket(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.WebSocket(path, description, fields, handleFunc)
+func (a *PuffApp) WebSocket(path string, description string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.WebSocket(path, description, fields, handleFunc)
 }
 
 func (a *PuffApp) AllRoutes() []*Route {

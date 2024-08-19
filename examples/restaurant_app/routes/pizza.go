@@ -30,8 +30,8 @@ func getPizza(c *puff.Context) {
 }
 
 type Pizza struct {
-	Name        string   `json:"name,omitempty"`
-	Ingredients []string `json:"ingredients,omitempty"`
+	Name        string   `json:"name"`
+	Ingredients []string `json:"ingredients"`
 }
 
 type NewPizzaInput struct {
@@ -77,7 +77,7 @@ func PizzaRouter() *puff.Router {
 		// 	Content: "creating " + newPizzaInput.Pizza.Name + " with ingredients " + strings.Join(newPizzaInput.Pizza.Ingredients, ","),
 		// })
 		c.SendResponse(puff.JSONResponse{
-			Content: newPizzaInput.Body.Name,
+			Content: newPizzaInput.Body,
 		})
 	})
 	return r
