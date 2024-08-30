@@ -41,8 +41,8 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 				statusColor,
 				fmt.Sprintf("%s %s\t", ctx.Request.Method, ctx.Request.URL.String()),
 				processingTime,
-				fmt.Sprintf(ctx.GetRequestID()),
-				fmt.Sprintf(ctx.ClientIP()),
+				ctx.GetRequestID(),
+				ctx.ClientIP(),
 			),
 		)
 	},
@@ -64,6 +64,7 @@ func createLoggingMiddleware(lc LoggingConfig) puff.Middleware {
 }
 
 // Logging returns a Logging middleware with the default configuration.
+// BUG(Puff): Default Logging Middleware is not context aware and therefore cannot format logs based on the defined logger config.
 func Logging() puff.Middleware {
 	return createLoggingMiddleware(DefaultLoggingConfig)
 }
