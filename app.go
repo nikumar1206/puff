@@ -136,26 +136,33 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 }
 
 func (a *PuffApp) Get(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Get(path, description, fields, handleFunc)
+	a.RootRouter.registerRoute(description, http.MethodGet, path, handleFunc, fields)
 }
 
 func (a *PuffApp) Post(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Post(path, description, fields, handleFunc)
+	a.RootRouter.registerRoute(description, http.MethodPost, path, handleFunc, fields)
 }
 
 func (a *PuffApp) Patch(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Patch(path, description, fields, handleFunc)
+	a.RootRouter.registerRoute(description, http.MethodPatch, path, handleFunc, fields)
 }
 
 func (a *PuffApp) Put(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Put(path, description, fields, handleFunc)
+	a.RootRouter.registerRoute(description, http.MethodPut, path, handleFunc, fields)
 }
 
 func (a *PuffApp) Delete(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.Delete(path, description, fields, handleFunc)
+	a.RootRouter.registerRoute(description, http.MethodDelete, path, handleFunc, fields)
 }
 func (a *PuffApp) WebSocket(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.WebSocket(path, description, fields, handleFunc)
+	newRoute := Route{
+		WebSocket: true,
+		Protocol:  "GET",
+		Path:      path,
+		Handler:   handleFunc,
+		Fields:    fields,
+	}
+	a.RootRouter.Routes = append(a.RootRouter.Routes, &newRoute)
 }
 
 func (a *PuffApp) AllRoutes() []*Route {

@@ -33,6 +33,7 @@ func PastaRouter() *puff.Router {
 	pasta_router := puff.NewRouter("Pasta", "/pasta")
 
 	pasta_home_input := new(PastaHomeInput)
+
 	pasta_router.Get("/home", "", pasta_home_input, func(c *puff.Context) {
 		if pasta_home_input.Name == pasta_home_input.LastDishOrdered {
 			c.SendResponse(puff.GenericResponse{
@@ -58,6 +59,7 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_cheese_input := new(PastaCheeseInput)
+	// Retrieve a cheese by it's ID.
 	pasta_router.Get("/cheese/{id}", "", pasta_cheese_input, func(c *puff.Context) {
 		cheese, ok := cheeses[pasta_cheese_input.ID]
 		if !ok {

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -29,14 +30,15 @@ func NewRouter(name string, prefix string) *Router {
 }
 
 func (r *Router) registerRoute(
-	description string,
+	_ string,
 	method string,
 	path string,
 	handleFunc func(*Context),
 	fields any,
 ) {
+	_, file, line, ok := runtime.Caller(2)
 	newRoute := Route{
-		Description: description,
+		Description: readDescription(file, line, ok),
 		Path:        path,
 		Handler:     handleFunc,
 		Protocol:    method,
