@@ -30,7 +30,6 @@ func NewRouter(name string, prefix string) *Router {
 }
 
 func (r *Router) registerRoute(
-	_ string,
 	method string,
 	path string,
 	handleFunc func(*Context),
@@ -49,47 +48,47 @@ func (r *Router) registerRoute(
 }
 
 func (r *Router) Get(
-	path string, description string,
+	path string,
 	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(description, http.MethodGet, path, handleFunc, fields)
+	r.registerRoute(http.MethodGet, path, handleFunc, fields)
 }
 
 func (r *Router) Post(
-	path string, description string,
+	path string,
 	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(description, http.MethodPost, path, handleFunc, fields)
+	r.registerRoute(http.MethodPost, path, handleFunc, fields)
 }
 
 func (r *Router) Put(
-	path string, description string,
+	path string,
 	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(description, http.MethodPut, path, handleFunc, fields)
+	r.registerRoute(http.MethodPut, path, handleFunc, fields)
 }
 
 func (r *Router) Patch(
-	path string, description string,
+	path string,
 	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(description, http.MethodPatch, path, handleFunc, fields)
+	r.registerRoute(http.MethodPatch, path, handleFunc, fields)
 }
 
 func (r *Router) Delete(
-	path string, description string,
+	path string,
 	fields any,
 	handleFunc func(*Context),
 ) {
-	r.registerRoute(description, http.MethodDelete, path, handleFunc, fields)
+	r.registerRoute(http.MethodDelete, path, handleFunc, fields)
 }
 
 func (r *Router) WebSocket(
-	path string, description string,
+	path string,
 	fields any,
 	handleFunc func(*Context),
 ) {

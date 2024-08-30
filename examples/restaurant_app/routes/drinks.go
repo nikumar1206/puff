@@ -15,7 +15,8 @@ func DrinksRouter() *puff.Router {
 	)
 	echoInput := new(EchoInput)
 
-	r.Get("/echo", "echos the body", echoInput, func(c *puff.Context) {
+	// echos the request body.
+	r.Get("/echo", echoInput, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{
 			Content: echoInput.Body,
 		})

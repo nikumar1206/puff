@@ -34,7 +34,7 @@ func PastaRouter() *puff.Router {
 
 	pasta_home_input := new(PastaHomeInput)
 
-	pasta_router.Get("/home", "", pasta_home_input, func(c *puff.Context) {
+	pasta_router.Get("/home", pasta_home_input, func(c *puff.Context) {
 		if pasta_home_input.Name == pasta_home_input.LastDishOrdered {
 			c.SendResponse(puff.GenericResponse{
 				Content: fmt.Sprintf(
@@ -60,7 +60,7 @@ func PastaRouter() *puff.Router {
 
 	pasta_cheese_input := new(PastaCheeseInput)
 	// Retrieve a cheese by it's ID.
-	pasta_router.Get("/cheese/{id}", "", pasta_cheese_input, func(c *puff.Context) {
+	pasta_router.Get("/cheese/{id}", pasta_cheese_input, func(c *puff.Context) {
 		cheese, ok := cheeses[pasta_cheese_input.ID]
 		if !ok {
 			c.NotFound("Cheese with id %d not found.", pasta_cheese_input.ID)
@@ -72,7 +72,7 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_newcheese_input := new(PastaNewCheeseInput)
-	pasta_router.Post("/cheese/{id}", "", pasta_newcheese_input, func(c *puff.Context) {
+	pasta_router.Post("/cheese/{id}", pasta_newcheese_input, func(c *puff.Context) {
 	})
 
 	return pasta_router

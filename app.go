@@ -50,7 +50,8 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		Name:   "OpenAPI Documentation Router",
 	}
 
-	docsRouter.Get(".json", "Provides JSON OpenAPI Schema.", nil, func(c *Context) {
+	// Provides JSON OpenAPI Schema.
+	docsRouter.Get(".json", nil, func(c *Context) {
 		res := GenericResponse{
 			Content:     spec,
 			ContentType: "application/json",
@@ -58,7 +59,8 @@ func (a *PuffApp) addOpenAPIRoutes() {
 		c.SendResponse(res)
 	})
 
-	docsRouter.Get("", "Render OpenAPI schema.", nil, func(c *Context) {
+	// Renders OpenAPI schema.
+	docsRouter.Get("", nil, func(c *Context) {
 		res := HTMLResponse{
 			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
 		}
@@ -108,26 +110,26 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	}
 }
 
-func (a *PuffApp) Get(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(description, http.MethodGet, path, handleFunc, fields)
+func (a *PuffApp) Get(path string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.registerRoute(http.MethodGet, path, handleFunc, fields)
 }
 
-func (a *PuffApp) Post(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(description, http.MethodPost, path, handleFunc, fields)
+func (a *PuffApp) Post(path string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.registerRoute(http.MethodPost, path, handleFunc, fields)
 }
 
-func (a *PuffApp) Patch(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(description, http.MethodPatch, path, handleFunc, fields)
+func (a *PuffApp) Patch(path string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.registerRoute(http.MethodPatch, path, handleFunc, fields)
 }
 
-func (a *PuffApp) Put(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(description, http.MethodPut, path, handleFunc, fields)
+func (a *PuffApp) Put(path string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.registerRoute(http.MethodPut, path, handleFunc, fields)
 }
 
-func (a *PuffApp) Delete(path string, description string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(description, http.MethodDelete, path, handleFunc, fields)
+func (a *PuffApp) Delete(path string, fields any, handleFunc func(*Context)) {
+	a.RootRouter.registerRoute(http.MethodDelete, path, handleFunc, fields)
 }
-func (a *PuffApp) WebSocket(path string, description string, fields any, handleFunc func(*Context)) {
+func (a *PuffApp) WebSocket(path string, fields any, handleFunc func(*Context)) {
 	newRoute := Route{
 		WebSocket: true,
 		Protocol:  "GET",
