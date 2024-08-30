@@ -339,9 +339,9 @@ Assuming this directory structure:
 │   public.crt
 ```
 
-`TLSPublicKeyFile` in `puff.Config` should be `"public.crt"`.
+`TLSPublicKeyFile` in `puff` should be `"public.crt"`.
 
-`TLSPrivateKeyFile` in `puff.Config` should be `"private.key"`.
+`TLSPrivateKeyFile` in `puff` should be `"private.key"`.
 
 #### Usage in Default App
 
@@ -351,7 +351,7 @@ import "puff"
 
 func main(){
     app *puff.PuffApp := puff.DefaultApp()
-    app.Config.TLSPublicKeyFile = "public.crt"
-    app.Config.TLSPrivateKeyFile = "private.key"
+    app.TLSPublicKeyFile = "public.crt"
+    app.TLSPrivateKeyFile = "private.key"
 }
 ```

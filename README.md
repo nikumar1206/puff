@@ -46,9 +46,8 @@ app := App.New(h)
   - should we even do this? or is this for the user to avoid?
   - Leaving this for the user to decide.
 - Routes should be a map
-- Add a Middleware skipper function that depends on context.
-- Remove color package dependency.
 - Allow configuring the logger and making it more generic
   - Allow indenting/non-indenting in JSON logger.
+  - Logger config needs to be placed in the context.
 - improve route matching system.
 - implement pulling and placing context in the pool. rather than creating new objects and forcing GC.

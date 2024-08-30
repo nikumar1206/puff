@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type Config struct {
+type PuffApp struct {
 	// Name is the application name
 	Name string
 	// Version is the application version.
@@ -20,37 +20,10 @@ type Config struct {
 	TLSPublicCertFile string
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
 	TLSPrivateKeyFile string
-}
-
-type PuffApp struct {
-	// Config is the Puff App Config.
-	*Config
 	// RootRouter is the application's default router. All routers extend from one.
 	RootRouter *Router
-	Logger     *slog.Logger
-}
-
-// SetDebug sets the application mode to 'DEBUG'.
-//
-// In this mode, the application will use 'pretty' logging.
-func (a *PuffApp) SetDev() {
-	logger := a.Logger.Handler().(*SlogHandler)
-	logger.SetLevel(slog.LevelDebug)
-}
-
-// SetProd sets the application mode to 'PROD'.
-//
-// In this mode, the application will use structured logging.
-func (a *PuffApp) SetProd() {
-	handler := a.Logger.Handler().(*SlogHandler)
-	handler.SetLevel(slog.LevelInfo)
-}
-
-// SetVersion sets the version of the application.
-//
-// This can be useful for tracking and managing application versions.
-func (a *PuffApp) SetVersion(v string) {
-	a.Config.Version = v
+	// Logger is the reference to the application's logger. Equivalent to slog.Default()
+	Logger *slog.Logger
 }
 
 // Add a Router to the main app.
