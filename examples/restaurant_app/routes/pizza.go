@@ -30,7 +30,7 @@ func getPizza(c *puff.Context) {
 }
 
 type Pizza struct {
-	Name        string   `json:"name"`
+	Name        string   `json:"name,omitempty"`
 	Ingredients []string `json:"ingredients"`
 }
 
