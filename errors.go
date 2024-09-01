@@ -16,6 +16,6 @@ func UnexpectedJSONKey(k string) error {
 	return fmt.Errorf("unexpected json key: %s", k)
 }
 
-func InvalidJSON(v string) error {
-	return fmt.Errorf("expected json, but got invalid json: %s", v)
+func InvalidJSONError(v string) error {
+	return fmt.Errorf("expected json, but got invalid json")
 }

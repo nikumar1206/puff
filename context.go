@@ -106,8 +106,12 @@ func (ctx *Context) GetRequestID() string {
 }
 
 // SendResponse sends res back to the client.
-// Any errors at this point will be logged and the request will fail.
+// Any errors at this point will be logged and sending a response will fail.
 func (c *Context) SendResponse(res Response) {
+	if c.WebSocket != nil {
+		slog.Error("calls to SendResponse on routes using websockets is not permitted.")
+		return
+	}
 	c.SetContentType(res.GetContentType())
 	c.SetStatusCode(res.GetStatusCode())
 	err := res.WriteContent(c)
@@ -122,15 +126,8 @@ func (c *Context) SendResponse(res Response) {
 	}
 }
 
-func (ctx *Context) ClientIP() string {
-	IPAddress := ctx.GetHeader("X-Real-Ip")
-	if IPAddress == "" {
-		IPAddress = ctx.GetHeader("X-Forwarded-For")
-	}
-	if IPAddress == "" {
-		IPAddress = ctx.Request.RemoteAddr
-	}
-	return IPAddress
+func (ctx *Context) ClientIP() (IPAddress string) {
+	return ctx.Request.RemoteAddr
 }
 
 // GetBearerToken gets the Bearer token if it exists.

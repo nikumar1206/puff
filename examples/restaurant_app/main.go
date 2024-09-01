@@ -13,11 +13,12 @@ import (
 func main() {
 	app := puff.DefaultApp("Restaurant Microservice")
 	app.DocsReload = true
-
 	app.Use(middleware.Tracing())
 	app.Use(middleware.CORS())
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
+	app.Use(middleware.Panic())
+	app.Use(middleware.RateLimiter())
 
 	// Returns the home page.
 	app.Get("/", nil, func(c *puff.Context) {

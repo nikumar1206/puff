@@ -197,7 +197,7 @@ func populateField(value string, field reflect.Value) error {
 
 		err := json.Unmarshal([]byte(value), &m)
 		if err != nil {
-			return InvalidJSON(value)
+			return InvalidJSONError(value)
 		}
 
 		ok, err := validate(m, fieldType)
