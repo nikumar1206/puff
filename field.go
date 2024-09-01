@@ -48,7 +48,7 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		s := strings.Split(jsonTag, ",")
 		jsonTagName := s[0]
 		if jsonTagName != "" {
-			name = jsonTag
+			name = jsonTagName
 		}
 		if nameTag != "" { // name takes priority over json
 			name = nameTag
