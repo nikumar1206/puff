@@ -6,9 +6,10 @@ import (
 )
 
 type Route struct {
-	fullPath string
-	regexp   *regexp.Regexp
-	params   []Parameter
+	fullPath    string
+	regexp      *regexp.Regexp
+	params      []Parameter
+	requestBody *RequestBodyOrReference
 
 	Description string
 	WebSocket   bool

@@ -35,8 +35,7 @@ type Pizza struct {
 }
 
 type NewPizzaInput struct {
-	Body Pizza
-	// CrazyPizza map[string]map[string]Pizza `name:"candy" kind:"body"`
+	PizzaImage *puff.File `kind:"file"`
 }
 
 func PizzaRouter() *puff.Router {
@@ -73,11 +72,16 @@ func PizzaRouter() *puff.Router {
 
 	newPizzaInput := new(NewPizzaInput)
 	r.Post("/new", newPizzaInput, func(c *puff.Context) {
-		// c.SendResponse(puff.GenericResponse{
-		// 	Content: "creating " + newPizzaInput.Pizza.Name + " with ingredients " + strings.Join(newPizzaInput.Pizza.Ingredients, ","),
-		// })
+		_, err := newPizzaInput.PizzaImage.SaveTo()
+		if err != nil {
+			c.BadRequest(err.Error())
+			return
+		}
 		c.SendResponse(puff.JSONResponse{
-			Content: newPizzaInput,
+			Content: map[string]any{
+				"error": nil,
+				"input": newPizzaInput,
+			},
 		})
 	})
 	return r

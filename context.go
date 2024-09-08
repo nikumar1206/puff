@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"strings"
 )
@@ -14,6 +15,9 @@ type Context struct {
 	Request *http.Request
 	// ResponseWriter is the underlying http.ResponseWriter object.
 	ResponseWriter http.ResponseWriter
+	// Registry is a map allowing for communication between anything that
+	// can access context (including middlewares and the route handler function).
+	registry map[string]any
 	// WebSocket represents WebSocket connection and its related context, connection, and events.
 	// WebSocket will be nil if the route does not use websockets.
 	WebSocket  *WebSocket
@@ -24,6 +28,7 @@ func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 	return &Context{
 		Request:        r,
 		ResponseWriter: w,
+		registry:       make(map[string]any), // prevents assignment to nil map
 	}
 }
 
@@ -31,6 +36,17 @@ func (ctx *Context) isWebSocket() bool {
 	return ctx.GetHeader("Upgrade") == "websocket" &&
 		ctx.GetHeader("Connection") == "Upgrade" &&
 		ctx.GetHeader("Sec-WebSocket-Version") == "13"
+}
+
+// Get gets a value from Context with the key passed in.
+// It returns nil if the value is not found.
+func (ctx *Context) Get(key string) any {
+	return ctx.registry[key]
+}
+
+// Set sets a value to Context with a key.
+func (ctx *Context) Set(key string, value any) {
+	ctx.registry[key] = value
 }
 
 // GetHeader gets the value of a request header with key k.
@@ -60,6 +76,12 @@ func (ctx *Context) GetBody() ([]byte, error) {
 // If not found, it will return an empty string.
 func (ctx *Context) GetQueryParam(k string) string {
 	return ctx.Request.URL.Query().Get(k)
+}
+
+// GetFormValue retrives the value of a form key named k.
+// If not found, it will return an empty string.
+func (ctx *Context) GetFormValue(k string) string {
+	return ctx.Request.FormValue(k)
 }
 
 // GetCookie retrives a cookie from the context with key "k".
@@ -95,6 +117,13 @@ func (ctx *Context) SetStatusCode(sc int) {
 // GetStatusCode returns the status code. If response not written, returns default 0.
 func (ctx *Context) GetStatusCode() int {
 	return ctx.statusCode
+}
+
+// GetFormFile returns the multipart file and the multipart file header associated with the key.
+// It will only provide the first file associated with that form key. It may return an error that
+// is not nil.
+func (ctx *Context) GetFormFile(key string) (multipart.File, *multipart.FileHeader, error) {
+	return ctx.Request.FormFile(key)
 }
 
 // below are methods that are more utility focused.

@@ -168,8 +168,8 @@ type RequestBodyOrReference struct {
 // MediaType struct describes a media type object in OpenAPI.
 type MediaType struct {
 	Schema   Schema         `json:"schema"`
-	Example  any            `json:"example"`
-	Examples map[string]any `json:"examples"`
+	Example  any            `json:"example,omitempty"`
+	Examples map[string]any `json:"examples,omitempty"`
 }
 
 // Schema struct represents a schema object in OpenAPI.
@@ -274,6 +274,25 @@ func addRoute(router Router, route Route, tags *[]Tag, tagNames *[]string, paths
 	for _, p := range route.params {
 		if p.In == "body" {
 			requestBody = parameterToRequestBodyOrReference(p)
+			continue
+		}
+		if p.In == "file" {
+			requestBody = RequestBodyOrReference{
+				Content: map[string]MediaType{
+					"multipart/form-data": {
+						Schema: Schema{
+							Type:     "object",
+							Required: []string{p.Name},
+							Properties: map[string]*Schema{
+								p.Name: {
+									Type:   "string",
+									Format: "binary",
+								},
+							},
+						},
+					},
+				},
+			}
 			continue
 		}
 		np := Parameter{

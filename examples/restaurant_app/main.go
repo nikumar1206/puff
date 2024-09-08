@@ -17,7 +17,6 @@ func main() {
 	app.Use(middleware.CORS())
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
-	app.Use(middleware.Panic())
 	app.Use(middleware.RateLimiter())
 
 	// Returns the home page.
@@ -28,7 +27,7 @@ func main() {
 	})
 
 	app.Get("/foos/{name}", nil, func(c *puff.Context) {
-		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
+		c.SendResponse(puff.GenericResponse{Content: "foo-bar " + c.Get("X-Request-ID").(string)})
 	})
 	app.Get("/rawr", nil, func(c *puff.Context) {
 		c.SendResponse(puff.StreamingResponse{
