@@ -44,7 +44,7 @@ func enforceKindTypes(specifiedKind string, t reflect.Type) error {
 			reflect.Bool:
 			return nil
 		default:
-			slog.Info("type %s for %s param is not reccomended", "type", t.Kind().String(), "param_kind", specifiedKind)
+			slog.Warn(fmt.Sprintf("type %s for %s param is not reccomended", t.Kind().String(), specifiedKind))
 			return nil
 		}
 	case "file":

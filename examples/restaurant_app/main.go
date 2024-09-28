@@ -17,7 +17,6 @@ func main() {
 	app.Use(middleware.CORS())
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
-	app.Use(middleware.RateLimiter())
 
 	// Returns the home page.
 	app.Get("/", nil, func(c *puff.Context) {
