@@ -299,7 +299,6 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 			newFile.Size = fileHeader.Size
 			newFile.MultipartFile = file
 			f := sve.Field(i)
-			fmt.Println("set file!")
 			f.Set(reflect.ValueOf(newFile))
 			continue
 		}
