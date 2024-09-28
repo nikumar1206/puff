@@ -4,13 +4,16 @@ import "github.com/nikumar1206/puff"
 
 func WaterRouter() *puff.Router {
 	r := puff.NewRouter("Water", "/water")
-	r.Get("", "get water at no charge", nil, func(c *puff.Context) {
+
+	// Retrieves water at no charge.
+	r.Get("", nil, func(c *puff.Context) {
 		res := puff.GenericResponse{
-			Content: "dropping a bucket of water on you within 45 seconds",
+			Content: "dropping the bucket of water on you within 45 seconds",
 		}
 		c.SendResponse(res)
 	})
-	r.Post("", "add water to bucket", nil, func(c *puff.Context) {
+	// Adds a water to the bucket.
+	r.Post("", nil, func(c *puff.Context) {
 		res := puff.GenericResponse{
 			Content: "added water to bucket",
 		}

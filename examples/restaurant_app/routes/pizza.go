@@ -45,9 +45,9 @@ func PizzaRouter() *puff.Router {
 		Prefix: "/pizza",
 	}
 
-	r.Get("/", "", nil, getPizza)
+	r.Get("/", nil, getPizza)
 
-	r.Post("/", "", nil, func(c *puff.Context) {
+	r.Post("/", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
@@ -57,7 +57,7 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Patch("/", "", nil, func(c *puff.Context) {
+	r.Patch("/", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]any{"message": "Unburning a pizza is impossible."},
@@ -65,14 +65,14 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Get("/thumbnail", "", nil, func(c *puff.Context) {
+	r.Get("/thumbnail", nil, func(c *puff.Context) {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/chezpiza.jpg",
 		})
 	})
 
 	newPizzaInput := new(NewPizzaInput)
-	r.Post("/new", "", newPizzaInput, func(c *puff.Context) {
+	r.Post("/new", newPizzaInput, func(c *puff.Context) {
 		// c.SendResponse(puff.GenericResponse{
 		// 	Content: "creating " + newPizzaInput.Pizza.Name + " with ingredients " + strings.Join(newPizzaInput.Pizza.Ingredients, ","),
 		// })

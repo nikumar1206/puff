@@ -19,16 +19,17 @@ func main() {
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
 
-	app.Get("/", "", nil, func(c *puff.Context) {
+	// Returns the home page.
+	app.Get("/", nil, func(c *puff.Context) {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/hello_world.html",
 		})
 	})
 
-	app.Get("/foos/{name}", "", nil, func(c *puff.Context) {
+	app.Get("/foos/{name}", nil, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
 	})
-	app.Get("/rawr", "", nil, func(c *puff.Context) {
+	app.Get("/rawr", nil, func(c *puff.Context) {
 		c.SendResponse(puff.StreamingResponse{
 			StreamHandler: func(coca_cola *chan puff.ServerSideEvent) {
 				for i := range 3 {
