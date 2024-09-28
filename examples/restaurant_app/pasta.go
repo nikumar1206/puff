@@ -13,11 +13,8 @@ type PastaHomeInput struct {
 	LastDishOrdered string `description:"last dish ordered" kind:"cookie"`
 }
 
-type Pizza struct {
-	Name string `json:"name"`
-}
 type PastaNewCheeseInput struct {
-	HelloWorld Pizza `kind:"header"`
+	Image *puff.File `kind:"file"`
 }
 
 var cheeses = map[int]string{
@@ -72,7 +69,11 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_newcheese_input := new(PastaNewCheeseInput)
-	pasta_router.Post("/cheese/{id}", pasta_newcheese_input, func(c *puff.Context) {
+	pasta_router.Post("/cheese", pasta_newcheese_input, func(c *puff.Context) {
+		data := make([]byte, pasta_newcheese_input.Image.Size)
+		pasta_newcheese_input.Image.MultipartFile.Read(data)
+		c.SetContentType("image/png")
+		c.ResponseWriter.Write(data)
 	})
 
 	return pasta_router

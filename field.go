@@ -264,7 +264,6 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	if len(p) == 0 { //no input schema
 		return nil
 	}
-	c.Request.ParseForm()
 	// FIXME: allow user to specify memory
 	c.Request.ParseMultipartForm(10 << 20) // leftshift to represent 10 mb
 	sve := reflect.ValueOf(s).Elem()       //will not panic because we can confirm
