@@ -13,7 +13,6 @@ import (
 func main() {
 	app := puff.DefaultApp("Restaurant Microservice")
 	app.DocsReload = true
-
 	app.Use(middleware.Tracing())
 	app.Use(middleware.CORS())
 	app.Use(middleware.Logging())
@@ -27,7 +26,7 @@ func main() {
 	})
 
 	app.Get("/foos/{name}", nil, func(c *puff.Context) {
-		c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
+		c.SendResponse(puff.GenericResponse{Content: "foo-bar " + c.Get("X-Request-ID").(string)})
 	})
 	app.Get("/rawr", nil, func(c *puff.Context) {
 		c.SendResponse(puff.StreamingResponse{

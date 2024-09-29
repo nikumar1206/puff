@@ -205,7 +205,7 @@ func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
 		r.getCompletePath(route)
 		r.createRegexMatch(route)
-		err := handleInputSchema(&route.params, route.Fields)
+		err := handleInputSchema(&route.params, route.requestBody, route.Fields)
 		if err != nil {
 			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
 		}
