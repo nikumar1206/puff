@@ -12,7 +12,7 @@ type Route struct {
 	fullPath    string
 	regexp      *regexp.Regexp
 	params      []Parameter
-	requestBody *RequestBodyOrReference
+	requestBody *RequestBodyOrReference // TODO: i don't see this used anywhere
 
 	Description string
 	WebSocket   bool
@@ -22,7 +22,8 @@ type Route struct {
 	Fields      any
 	// Router points to the router the route belongs to. Will always be the closest router in the tree.
 	Router *Router
-	// should probably have responses (200 OK followed by json, 400 Invalid Paramaters, etc...)
+	// Responses are the schemas associated with a specific route. Have preference over parent router defined routes.
+	// Preferably set Responses using the WithResponse/WithResponses method on Route.
 	Responses Responses
 }
 
