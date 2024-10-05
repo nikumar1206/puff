@@ -247,7 +247,6 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	return nil
 }
 
-// FIXME: type info lowercase
 type typeInfo struct {
 	_type string
 	info  Schema
@@ -267,7 +266,7 @@ var supportedTypes = map[string]typeInfo{
 	}),
 	"int": newTypeInfo("integer", Schema{
 		Format:  "int",
-		Example: "0",
+		Example: "255",
 	}),
 	"int8": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int8
@@ -312,16 +311,16 @@ var supportedTypes = map[string]typeInfo{
 	"uint64": newTypeInfo("integer", Schema{
 		Format:  "int64",
 		Example: "0",
-		Minimum: "0",
+		Minimum: strconv.Itoa(2 ^ 64 - 1),
 	}),
 	"float32": newTypeInfo("number", Schema{
 		Format:  "float",
-		Example: "0.0",
+		Example: "0.01",
 	}),
 	"float64": newTypeInfo("number", Schema{
 		Format:  "double",
 		Example: "0.0",
-		Minimum: "0",
+		Minimum: "0.01",
 	}),
 	"bool": newTypeInfo("boolean", Schema{
 		Format:  "bool",

@@ -158,7 +158,7 @@ func (a *PuffApp) AllRoutes() []*Route {
 	return a.RootRouter.AllRoutes()
 }
 
-func (a *PuffApp) SetResponses(r map[int]Response) {
+func (a *PuffApp) SetResponses(r Responses) {
 	a.RootRouter.Responses = r
 }
 

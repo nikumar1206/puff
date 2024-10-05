@@ -1,6 +1,8 @@
 // Package puff provides primitives for implementing a Puff Server
 package puff
 
+import "log/slog"
+
 type HandlerFunc func(*Context)
 type Middleware func(next HandlerFunc) HandlerFunc
 
@@ -39,7 +41,7 @@ func App(c *AppConfig) *PuffApp {
 		OpenAPI:           c.OpenAPI,
 	}
 	a.RootRouter.puff = a
-	a.RootRouter.Responses = map[int]Response{}
+	a.RootRouter.Responses = Responses{}
 	return a
 }
 
@@ -51,5 +53,6 @@ func DefaultApp(name string) *PuffApp {
 	}
 	a := App(&c)
 	a.Logger = DefaultLogger()
+	slog.SetDefault(a.Logger)
 	return a
 }

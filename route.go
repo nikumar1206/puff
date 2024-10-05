@@ -22,7 +22,7 @@ type Route struct {
 	// Router points to the router the route belongs to. Will always be the closest router in the tree.
 	Router *Router
 	// should probably have responses (200 OK followed by json, 400 Invalid Paramaters, etc...)
-	Responses map[int]Response
+	Responses Responses
 }
 
 func (r *Route) String() string {
@@ -53,7 +53,7 @@ func (route *Route) createRegexMatch() {
 
 func (route *Route) handleInputSchema() error { // should this return an error or should it panic?
 	if route.Fields == nil {
-		*&route.params = []Parameter{}
+		route.params = []Parameter{}
 		return nil
 	}
 	sv := reflect.ValueOf(route.Fields) //
@@ -138,18 +138,74 @@ func (r *Route) GenerateResponses() {
 	}
 	responses := r.Responses
 	if responses == nil {
-		responses = make(map[int]Response)
+		responses = Responses{}
 	}
 	currentRouter := r.Router
 
 	for currentRouter != nil {
 		// avoid over-writing the original responses for the routers
 		clonedResponses := maps.Clone(currentRouter.Responses)
-		fmt.Println("preclone", clonedResponses)
-		fmt.Println("what is cloned", clonedResponses, responses)
 		maps.Copy(clonedResponses, responses)
 		currentRouter = currentRouter.parent
 	}
 
 	r.Responses = responses
+}
+
+// WithResponse registers a single response type for a specific HTTP status code
+// for the route. This method is used exclusively for generating Swagger documentation,
+// allowing users to specify the response type that will be represented in the Swagger
+// API documentation when this status code is encountered.
+//
+// Example usage:
+//
+//	app.Get("/pizza", func(c puff.Context) {
+//	    c.SendResponse(puff.JSONResponse{http.StatusOK, PizzaResponse{Name: "Margherita", Price: 10, Size: "Medium"}})
+//	}).WithResponse(http.StatusOK, puff.ResponseT[PizzaResponse])
+//
+// Parameters:
+//   - statusCode: The HTTP status code that this response corresponds to.
+//   - responseType: The Go type that represents the structure of the response body.
+//     This should be the type (not an instance) of the struct that defines the
+//     response schema.
+//
+// Returns:
+// - The updated Route object to allow method chaining.
+func (r *Route) WithResponse(statusCode int, responseTypeFunc func() reflect.Type) *Route {
+	r.Responses[statusCode] = responseTypeFunc
+	return r
+}
+
+// WithResponses registers multiple response types for different HTTP status codes
+// for the route. This method is used exclusively for generating Swagger documentation,
+// allowing users to define various response types based on the possible outcomes
+// of the route's execution, as represented in the Swagger API documentation.
+//
+// Example usage:
+//
+//	app.Get("/pizza", func(c puff.Context) {
+//	    ~ logic here
+//	    if found {
+//	        c.SendResponse(puff.JSONResponse{http.StatusOK, PizzaResponse{Name: "Margherita", Price: 10, Size: "Medium"}})
+//	    } else {
+//	        c.SendResponse(puff.JSONResponse{http.StatusNotFound, ErrorResponse{Message: "Not Found"}})
+//	    }
+//	}).WithResponses(
+//	    puff.DefineResponse(http.StatusOK, puff.ResponseT[PizzaResponse]),
+//	    puff.DefineResponse(http.StatusNotFound, puff.ResponseT[ErrorResponse]),
+//	)
+//
+// Parameters:
+//   - responses: A variadic list of ResponseDefinition objects that define the
+//     mapping between HTTP status codes and their corresponding response types.
+//     Each ResponseDefinition includes a status code and a type representing the
+//     response body structure.
+//
+// Returns:
+// - The updated Route object to allow method chaining.
+func (r *Route) WithResponses(responses ...ResponseDefinition) *Route {
+	for _, response := range responses {
+		r.Responses[response.StatusCode] = response.ResponseType
+	}
+	return r
 }

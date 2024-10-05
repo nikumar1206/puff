@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
+	"reflect"
 	"slices"
 	"strconv"
 )
@@ -174,8 +175,8 @@ type RequestBodyOrReference struct {
 // MediaType struct describes a media type object in OpenAPI.
 type MediaType struct {
 	Schema   Schema         `json:"schema"`
-	Example  any            `json:"example"`
-	Examples map[string]any `json:"examples"`
+	Example  any            `json:"example,omitempty"`
+	Examples map[string]any `json:"examples,omitempty"`
 }
 
 // Schema struct represents a schema object in OpenAPI.
@@ -328,10 +329,11 @@ func convertRouteResponsestoOpenAPIResponses(route Route) map[string]OpenAPIResp
 	openAPIResponses := map[string]OpenAPIResponse{}
 	for statusCode, res := range route.Responses {
 		sc := strconv.Itoa(statusCode)
+		realRes := reflect.New(res()).Interface()
 		openAPIResponses[sc] = OpenAPIResponse{
 			Description: "",
 			Content: map[string]MediaType{
-				res.GetContentType(): {Schema: newDefinition(&route, res.GetContent())},
+				"application/json": {Schema: newDefinition(&route, realRes)},
 			},
 		}
 	}

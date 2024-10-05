@@ -18,7 +18,7 @@ type Router struct {
 	Description string
 	// Responses is a map of status code to puff.Response. Possible Responses for routes can be set at the Router (root as well),
 	// and Route level, however responses directly set on the route will have the highest specificity.
-	Responses map[int]Response
+	Responses Responses
 
 	// parent maps to the router's immediate parent. Will be nil for RootRouter
 	parent *Router
@@ -31,7 +31,7 @@ func NewRouter(name string, prefix string) *Router {
 	return &Router{
 		Name:      name,
 		Prefix:    prefix,
-		Responses: map[int]Response{},
+		Responses: Responses{},
 	}
 }
 
@@ -49,7 +49,7 @@ func (r *Router) registerRoute(
 		Protocol:    method,
 		Fields:      fields,
 		Router:      r,
-		Responses:   map[int]Response{},
+		Responses:   Responses{},
 	}
 
 	r.Routes = append(r.Routes, &newRoute)

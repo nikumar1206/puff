@@ -5,7 +5,52 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 )
+
+func ResponseT[T any]() reflect.Type {
+	return reflect.TypeOf(new(T)).Elem()
+}
+
+// Responses type maps together the HTTPStatusCode with a function returning the reflect.Type
+type Responses = map[int]func() reflect.Type
+
+// ResponseDefinition represents a definition of a response for a specific HTTP status code.
+// It is used to map an HTTP status code to the corresponding response type for a route.
+// Puff uses this to automatically generate Swagger documentation.
+//
+// Fields:
+//   - StatusCode: The HTTP status code associated with this response (e.g., http.StatusOK for success,http.StatusNotFound for not found).
+//   - ResponseType: The Go type that defines the response body (e.g., a struct). This type is used to generate
+//     the corresponding Swagger schema. The type should not be an instance; just the a function returning reflect.Type (e.g., `puff.ResponseT[Pizza]`).
+type ResponseDefinition struct {
+	StatusCode   int
+	ResponseType func() reflect.Type
+}
+
+// DefineResponse creates a ResponseDefinition mapping an HTTP status code
+// to the corresponding response type for a route.
+//
+// Example:
+//
+//	app.Get("/pizza", handler).WithResponses(
+//	    puff.DefineResponse(http.StatusOK, PizzaResponse),
+//	    puff.DefineResponse(http.StatusNotFound, ErrorResponse),
+//	)
+//
+// Parameters:
+//   - statusCode: The HTTP status code that this response corresponds to.
+//   - responseType: The Go type that represents the response body. This should be the type (not an instance)
+//     of the struct that defines the response schema.
+//
+// Returns:
+// - A ResponseDefinition that maps the provided status code to the response type.
+func DefineResponse(statusCode int, responseType func() reflect.Type) ResponseDefinition {
+	return ResponseDefinition{
+		StatusCode:   statusCode,
+		ResponseType: responseType,
+	}
+}
 
 // Response is an interface that all response types should implement.
 type Response interface {
@@ -38,7 +83,7 @@ func (j JSONResponse) GetContent() any {
 func (j JSONResponse) WriteContent(c *Context) error {
 	err := json.NewEncoder(c.ResponseWriter).Encode(j.Content)
 	if err != nil {
-		return fmt.Errorf("Writing JSONResponse Content failed with: %s", err.Error())
+		return fmt.Errorf("writing JSONResponse content failed with: %s", err.Error())
 	}
 	return nil
 }

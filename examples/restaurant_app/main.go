@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/nikumar1206/puff"
@@ -9,7 +10,13 @@ import (
 )
 
 type User struct {
-	Foo string `json:"foo"`
+	Foo       string  `json:"foo"`
+	Coolbeans int     `json:"boo"`
+	Foobar    float32 `json:"troo"`
+}
+
+type ErrorResponse struct {
+	Message string `json:"message"`
 }
 
 func main() {
@@ -21,15 +28,21 @@ func main() {
 	app.Use(middleware.Logging())
 	app.Use(middleware.CSRF())
 
-	getRoute := app.Get("/", "", nil, func(c *puff.Context) {
+	app.Get("/", "", nil, func(c *puff.Context) {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/hello_world.html",
 		})
-	})
-	getRoute.Description = "updating the description to foo"
-	getRoute.Responses = map[int]puff.Response{
-		200: puff.JSONResponse{StatusCode: 200, Content: &User{}},
-	}
+	}).WithResponse(http.StatusOK, puff.ResponseT[User])
+
+	app.Get("/foo", "", nil, func(c *puff.Context) {
+		c.SendResponse(puff.FileResponse{
+			FilePath: "examples/restaurant_app/assets/hello_world.html",
+		})
+	}).WithResponses(
+		puff.DefineResponse(http.StatusOK, puff.ResponseT[User]),
+		puff.DefineResponse(http.StatusBadRequest, puff.ResponseT[ErrorResponse]),
+		puff.DefineResponse(http.StatusInternalServerError, puff.ResponseT[ErrorResponse]),
+	)
 
 	// app.Get("/foos/{name}", "", nil, func(c *puff.Context) {
 	// 	c.SendResponse(puff.GenericResponse{Content: "foo-bar"})
