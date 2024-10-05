@@ -3,6 +3,7 @@ package puff
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,7 +20,46 @@ func isValidKind(specified_kind string) bool {
 		specified_kind == "query" ||
 		specified_kind == "cookie" ||
 		specified_kind == "body" ||
-		specified_kind == "formdata"
+		specified_kind == "form" ||
+		specified_kind == "file"
+}
+
+func enforceKindTypes(specifiedKind string, t reflect.Type) error {
+	switch specifiedKind {
+	case "header", "path", "query", "cookie":
+		switch t.Kind() {
+		case reflect.String,
+			reflect.Int,
+			reflect.Int8,
+			reflect.Int16,
+			reflect.Int32,
+			reflect.Int64,
+			reflect.Uint,
+			reflect.Uint8,
+			reflect.Uint16,
+			reflect.Uint32,
+			reflect.Uint64,
+			reflect.Float32,
+			reflect.Float64,
+			reflect.Bool:
+			return nil
+		default:
+			slog.Warn(fmt.Sprintf("type %s for %s param is not reccomended", t.Kind().String(), specifiedKind))
+			return nil
+		}
+	case "file":
+		if t != reflect.TypeOf(new(File)) {
+			return fmt.Errorf("type for a param of kind file MUST be a pointer to File")
+		}
+	case "form":
+		switch t.Kind() {
+		case reflect.Struct, reflect.Pointer:
+		default:
+			slog.Info("kind for form param is NOT reccomended", "kind", t.Kind().String())
+			return nil
+		}
+	}
+	return nil
 }
 
 // handleParam takes the value as recieved, returns an error if the value
@@ -45,7 +85,7 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		s := strings.Split(jsonTag, ",")
 		jsonTagName := s[0]
 		if jsonTagName != "" {
-			name = jsonTag
+			name = jsonTagName
 		}
 		if nameTag != "" { // name takes priority over json
 			name = nameTag
@@ -157,6 +197,10 @@ func getBodyParam(c *Context, param Parameter) (string, error) {
 	return handleParam(string(body), param)
 }
 
+func getFormParam(c *Context, param Parameter) (string, error) {
+	return handleParam(c.GetFormValue(param.Name), param)
+}
+
 func populateField(value string, field reflect.Value) error {
 	fieldType := field.Type()
 	switch fieldType.Kind() {
@@ -194,7 +238,7 @@ func populateField(value string, field reflect.Value) error {
 
 		err := json.Unmarshal([]byte(value), &m)
 		if err != nil {
-			return InvalidJSON(value)
+			return InvalidJSONError(value)
 		}
 
 		ok, err := validate(m, fieldType)
@@ -217,12 +261,13 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	if len(p) == 0 { //no input schema
 		return nil
 	}
-	sve := reflect.ValueOf(s).Elem() //will not panic because we can confirm
-	pathparamsindex := 0             //pathparamsindex is the amount of path params already reviewed
+	// FIXME: allow user to specify memory
+	c.Request.ParseMultipartForm(10 << 20) // leftshift to represent 10 mb
+	sve := reflect.ValueOf(s).Elem()       //will not panic because we can confirm
+	pathparamsindex := 0                   //pathparamsindex is the amount of path params already reviewed
 	for i, pa := range p {
 		var value string
 		var err error
-
 		switch pa.In {
 		case "header":
 			value, err = GetRequestHeaderParam(c, pa)
@@ -234,6 +279,24 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 			value, err = getCookieParam(c, pa)
 		case "body":
 			value, err = getBodyParam(c, pa)
+		case "form":
+			value, err = getFormParam(c, pa)
+		case "file":
+			// special case since we're populating to *puff.File
+			newFile := new(File)
+			file, fileHeader, err := c.GetFormFile(pa.Name)
+			if err != nil {
+				return err
+			}
+			if fileHeader == nil {
+				return fmt.Errorf("file header is nil")
+			}
+			newFile.Name = fileHeader.Filename
+			newFile.Size = fileHeader.Size
+			newFile.MultipartFile = file
+			f := sve.Field(i)
+			f.Set(reflect.ValueOf(newFile))
+			continue
 		}
 		if err != nil {
 			return err
@@ -369,6 +432,11 @@ func newDefinition(route *Route, schema any) Schema {
 		panic("type on field must either be string, int, bool, struct, slice, map, or array.")
 	}
 	// last remaining kind- reflect.Struct
+	if st == reflect.TypeFor[*File]() || st == reflect.TypeFor[File]() {
+		return Schema{ // this doesn't end up getting used
+			Ref: "$FILE",
+		}
+	}
 	newDef := Schema{}
 	newDef.Properties = make(map[string]*Schema)
 	for i := range st.NumField() {
@@ -395,4 +463,87 @@ func newDefinition(route *Route, schema any) Schema {
 	Definitions[st.Name()] = &newDef
 	newSchema.Ref = "#/definitions/" + st.Name()
 	return *newSchema
+}
+
+func handleInputSchema(pa *[]Parameter, rb *RequestBodyOrReference, s any) error { // should this return an error or should it panic?
+	if s == nil {
+		*pa = []Parameter{}
+		return nil
+	}
+	sv := reflect.ValueOf(s) //
+	svk := sv.Kind()
+	if svk != reflect.Ptr {
+		return fmt.Errorf("fields must be POINTER to struct")
+	}
+	sve := sv.Elem()
+	svet := sve.Type()
+	if sve.Kind() != reflect.Struct {
+		return fmt.Errorf("fields must be pointer to STRUCT")
+	}
+
+	newParams := []Parameter{}
+	requestBody := new(RequestBodyOrReference)
+	for i := range svet.NumField() {
+		newParam := Parameter{}
+		svetf := svet.Field(i)
+
+		name := svetf.Tag.Get("name")
+		if name == "" {
+			name = svetf.Name
+		}
+
+		// param.Schema
+		newParam.Schema = newDefinition(sve.Field(i).Interface())
+
+		//param.In
+		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
+		if name == "Body" && specified_kind == "" {
+			specified_kind = "body"
+		}
+		if !isValidKind(specified_kind) {
+			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, form, or file", svetf.Name)
+		}
+		err := enforceKindTypes(specified_kind, svetf.Type)
+		if err != nil {
+			return err
+		}
+
+		//param.Description
+		description := svetf.Tag.Get("description")
+
+		//param.Required
+		specified_required := svetf.Tag.Get("required")
+		specified_deprecated := svetf.Tag.Get("deprecated")
+
+		required_def := true
+		if specified_kind == "cookie" { // cookies by default should never be required
+			required_def = false
+		}
+
+		required, err := resolveBool(specified_required, required_def)
+		if err != nil {
+			return err
+		}
+		deprecated, err := resolveBool(specified_deprecated, false)
+		if err != nil {
+			return err
+		}
+
+		//param.Schema.format
+		format := svetf.Tag.Get("format")
+		if format != "" {
+			newParam.Schema.Format = format
+		}
+
+		newParam.Name = name
+		newParam.In = specified_kind
+		newParam.Description = description
+		newParam.Required = required
+		newParam.Deprecated = deprecated
+
+		newParams = append(newParams, newParam)
+	}
+	*pa = newParams
+	rb = requestBody
+	return nil
 }

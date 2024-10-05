@@ -30,13 +30,12 @@ func getPizza(c *puff.Context) {
 }
 
 type Pizza struct {
-	Name        string   `json:"name"`
+	Name        string   `json:"name,omitempty"`
 	Ingredients []string `json:"ingredients"`
 }
 
 type NewPizzaInput struct {
-	Body Pizza
-	// CrazyPizza map[string]map[string]Pizza `name:"candy" kind:"body"`
+	PizzaImage *puff.File `kind:"file"`
 }
 
 func PizzaRouter() *puff.Router {
@@ -45,9 +44,9 @@ func PizzaRouter() *puff.Router {
 		Prefix: "/pizza",
 	}
 
-	r.Get("/", "", nil, getPizza)
+	r.Get("/", nil, getPizza)
 
-	r.Post("/", "", nil, func(c *puff.Context) {
+	r.Post("/", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
@@ -57,7 +56,7 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Patch("/", "", nil, func(c *puff.Context) {
+	r.Patch("/", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]any{"message": "Unburning a pizza is impossible."},
@@ -65,19 +64,24 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Get("/thumbnail", "", nil, func(c *puff.Context) {
+	r.Get("/thumbnail", nil, func(c *puff.Context) {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/chezpiza.jpg",
 		})
 	})
 
 	newPizzaInput := new(NewPizzaInput)
-	r.Post("/new", "", newPizzaInput, func(c *puff.Context) {
-		// c.SendResponse(puff.GenericResponse{
-		// 	Content: "creating " + newPizzaInput.Pizza.Name + " with ingredients " + strings.Join(newPizzaInput.Pizza.Ingredients, ","),
-		// })
+	r.Post("/new", newPizzaInput, func(c *puff.Context) {
+		_, err := newPizzaInput.PizzaImage.SaveTo()
+		if err != nil {
+			c.BadRequest(err.Error())
+			return
+		}
 		c.SendResponse(puff.JSONResponse{
-			Content: newPizzaInput.Body,
+			Content: map[string]any{
+				"error": nil,
+				"input": newPizzaInput,
+			},
 		})
 	})
 	return r

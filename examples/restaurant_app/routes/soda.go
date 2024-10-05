@@ -12,13 +12,14 @@ type OrderSodaInput struct {
 func SodaRouter() *puff.Router {
 	r := puff.NewRouter("Soda", "/soda")
 	r.Use(middleware.Panic())
-	r.Get("/", "", nil, func(c *puff.Context) {
+	r.Get("/", nil, func(c *puff.Context) {
 		res := puff.GenericResponse{
 			Content: "dropping a bucket of water on you within 45 seconds",
 		}
 		c.SendResponse(res)
 	})
-	r.Get("/fanta", "get fanta", nil, func(c *puff.Context) {
+	// Retrieves fanta.
+	r.Get("/fanta", nil, func(c *puff.Context) {
 		panic("we no serve fanta.")
 	})
 	return r

@@ -31,7 +31,9 @@ func createTracingMiddleware(tc TracingConfig) puff.Middleware {
 				next(c)
 				return
 			}
-			c.SetResponseHeader(tc.TracerName, tc.IDGenerator())
+			id := tc.IDGenerator()
+			c.SetResponseHeader(tc.TracerName, id)
+			c.Set(tc.TracerName, id)
 			next(c)
 		}
 	}

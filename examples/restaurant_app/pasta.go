@@ -13,11 +13,8 @@ type PastaHomeInput struct {
 	LastDishOrdered string `description:"last dish ordered" kind:"cookie"`
 }
 
-type Pizza struct {
-	Name string `json:"name"`
-}
 type PastaNewCheeseInput struct {
-	HelloWorld Pizza `kind:"header"`
+	Image *puff.File `kind:"file"`
 }
 
 var cheeses = map[int]string{
@@ -38,7 +35,8 @@ func PastaRouter() *puff.Router {
 	pastaRouter := puff.NewRouter("Pasta", "/pasta")
 
 	pasta_home_input := new(PastaHomeInput)
-	pastaRouter.Get("/home", "", pasta_home_input, func(c *puff.Context) {
+
+	pastaRouter.Get("/home", pasta_home_input, func(c *puff.Context) {
 		if pasta_home_input.Name == pasta_home_input.LastDishOrdered {
 			c.SendResponse(puff.GenericResponse{
 				Content: fmt.Sprintf(
@@ -63,8 +61,9 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_cheese_input := new(PastaCheeseInput)
-	pastaRouter.Get("/cheese/{Id}", "", pasta_cheese_input, func(c *puff.Context) {
-		cheese, ok := cheeses[pasta_cheese_input.Id]
+	// Retrieve a cheese by it's ID.
+	pastaRouter.Get("/cheese/{id}", pasta_cheese_input, func(c *puff.Context) {
+		cheese, ok := cheeses[pasta_cheese_input.ID]
 		if !ok {
 			c.NotFound("Cheese with id %d not found.", pasta_cheese_input.Id)
 			return
@@ -75,7 +74,11 @@ func PastaRouter() *puff.Router {
 	})
 
 	pasta_newcheese_input := new(PastaNewCheeseInput)
-	pastaRouter.Post("/cheese/{id}", "", pasta_newcheese_input, func(c *puff.Context) {
+	pastaRouter.Post("/cheese", pasta_newcheese_input, func(c *puff.Context) {
+		data := make([]byte, pasta_newcheese_input.Image.Size)
+		pasta_newcheese_input.Image.MultipartFile.Read(data)
+		c.SetContentType("image/png")
+		c.ResponseWriter.Write(data)
 	})
 
 	return pastaRouter

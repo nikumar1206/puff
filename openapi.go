@@ -284,6 +284,25 @@ func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Path
 			requestBody = parameterToRequestBodyOrReference(p)
 			continue
 		}
+		if p.In == "file" {
+			requestBody = RequestBodyOrReference{
+				Content: map[string]MediaType{
+					"multipart/form-data": {
+						Schema: Schema{
+							Type:     "object",
+							Required: []string{p.Name},
+							Properties: map[string]*Schema{
+								p.Name: {
+									Type:   "string",
+									Format: "binary",
+								},
+							},
+						},
+					},
+				},
+			}
+			continue
+		}
 		np := Parameter{
 			Name:        p.Name,
 			Description: p.Description,
