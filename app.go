@@ -211,10 +211,6 @@ func (a *PuffApp) AllRoutes() []*Route {
 	return a.RootRouter.AllRoutes()
 }
 
-func (a *PuffApp) SetResponses(r Responses) {
-	a.RootRouter.Responses = r
-}
-
 func (a *PuffApp) GenerateOpenAPISpec() {
 	if reflect.ValueOf(a.OpenAPI).IsZero() {
 		paths, tags := a.GeneratePathsTags()

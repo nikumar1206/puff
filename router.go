@@ -129,10 +129,23 @@ func (r *Router) IncludeRouter(rt *Router) {
 	r.Routers = append(r.Routers, rt)
 }
 
-// A
-// Root Router -> parent nil, puff a
+// Use adds a middleware to the router's list of middlewares. Middleware functions
+// can be used to intercept requests and responses, allowing for functionality such
+// as logging, authentication, and error handling to be applied to all routes managed
+// by this router.
 //
-//	PizzaRouter ->  parent RootRouter, puff a
+// Example usage:
+//
+//	router := puff.NewRouter()
+//	router.Use(myMiddleware)
+//	router.Get("/endpoint", myHandler)
+//
+// Parameters:
+// - m: A Middleware function that will be applied to all routes in this router.
+// TODO: dont know if below is actually accurate. cant think
+// Note: Middleware functions are executed in the order they are added. If multiple
+// middlewares are registered, they will be executed sequentially for each request
+// handled by the router.
 func (r *Router) Use(m Middleware) {
 	r.Middlewares = append(r.Middlewares, &m)
 }
