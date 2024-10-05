@@ -67,7 +67,7 @@ func enforceKindTypes(specifiedKind string, t reflect.Type) error {
 func handleParam(value string, param Parameter) (string, error) {
 	ok := !(value == "")
 	if !ok && param.Required {
-		return "", fmt.Errorf("required %s param %s not provided.", param.In, param.Name)
+		return "", fmt.Errorf("required %s param %s not provided", param.In, param.Name)
 	}
 	return value, nil
 }
@@ -101,7 +101,7 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		} else {
 			delete(expectedNotFoundKeys, k)
 		}
-		f, _ := fields[k] //cannot error
+		f := fields[k] //cannot error
 		ft := f.Type
 		p := ft.Kind() == reflect.Pointer
 		tr := reflect.TypeOf(v)
@@ -148,7 +148,7 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		}
 	}
 	for k, required := range expectedNotFoundKeys {
-		if required == true {
+		if required {
 			return false, ExpectedButNotFound(k)
 		}
 	}
@@ -455,7 +455,7 @@ func newDefinition(route *Route, schema any) Schema {
 		if err != nil {
 			panic(err)
 		}
-		if b == true {
+		if b {
 			newDef.Required = append(newDef.Required, fieldName)
 		}
 		newDef.Properties[fieldName] = &nd
@@ -463,87 +463,4 @@ func newDefinition(route *Route, schema any) Schema {
 	Definitions[st.Name()] = &newDef
 	newSchema.Ref = "#/definitions/" + st.Name()
 	return *newSchema
-}
-
-func handleInputSchema(pa *[]Parameter, rb *RequestBodyOrReference, s any) error { // should this return an error or should it panic?
-	if s == nil {
-		*pa = []Parameter{}
-		return nil
-	}
-	sv := reflect.ValueOf(s) //
-	svk := sv.Kind()
-	if svk != reflect.Ptr {
-		return fmt.Errorf("fields must be POINTER to struct")
-	}
-	sve := sv.Elem()
-	svet := sve.Type()
-	if sve.Kind() != reflect.Struct {
-		return fmt.Errorf("fields must be pointer to STRUCT")
-	}
-
-	newParams := []Parameter{}
-	requestBody := new(RequestBodyOrReference)
-	for i := range svet.NumField() {
-		newParam := Parameter{}
-		svetf := svet.Field(i)
-
-		name := svetf.Tag.Get("name")
-		if name == "" {
-			name = svetf.Name
-		}
-
-		// param.Schema
-		newParam.Schema = newDefinition(sve.Field(i).Interface())
-
-		//param.In
-		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
-		if name == "Body" && specified_kind == "" {
-			specified_kind = "body"
-		}
-		if !isValidKind(specified_kind) {
-			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, form, or file", svetf.Name)
-		}
-		err := enforceKindTypes(specified_kind, svetf.Type)
-		if err != nil {
-			return err
-		}
-
-		//param.Description
-		description := svetf.Tag.Get("description")
-
-		//param.Required
-		specified_required := svetf.Tag.Get("required")
-		specified_deprecated := svetf.Tag.Get("deprecated")
-
-		required_def := true
-		if specified_kind == "cookie" { // cookies by default should never be required
-			required_def = false
-		}
-
-		required, err := resolveBool(specified_required, required_def)
-		if err != nil {
-			return err
-		}
-		deprecated, err := resolveBool(specified_deprecated, false)
-		if err != nil {
-			return err
-		}
-
-		//param.Schema.format
-		format := svetf.Tag.Get("format")
-		if format != "" {
-			newParam.Schema.Format = format
-		}
-
-		newParam.Name = name
-		newParam.In = specified_kind
-		newParam.Description = description
-		newParam.Required = required
-		newParam.Deprecated = deprecated
-
-		newParams = append(newParams, newParam)
-	}
-	*pa = newParams
-	rb = requestBody
-	return nil
 }

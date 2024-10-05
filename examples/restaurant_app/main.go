@@ -2,11 +2,11 @@ package main
 
 import (
 	"log/slog"
-	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/nikumar1206/puff"
+	"github.com/nikumar1206/puff/examples/restaurant_app/routes"
 	"github.com/nikumar1206/puff/middleware"
 )
 
@@ -33,8 +33,7 @@ func main() {
 		c.SendResponse(puff.FileResponse{
 			FilePath: "examples/restaurant_app/assets/hello_world.html",
 		})
-	}).WithResponse(http.StatusOK, puff.ResponseT[User])
-
+	})
 	app.Get("/foos/{name}", nil, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar " + c.Get("X-Request-ID").(string)})
 	})

@@ -63,7 +63,7 @@ func PastaRouter() *puff.Router {
 	pasta_cheese_input := new(PastaCheeseInput)
 	// Retrieve a cheese by it's ID.
 	pastaRouter.Get("/cheese/{id}", pasta_cheese_input, func(c *puff.Context) {
-		cheese, ok := cheeses[pasta_cheese_input.ID]
+		cheese, ok := cheeses[pasta_cheese_input.Id]
 		if !ok {
 			c.NotFound("Cheese with id %d not found.", pasta_cheese_input.Id)
 			return

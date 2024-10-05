@@ -170,9 +170,7 @@ func (a *PuffApp) Post(path string, fields any, handleFunc func(*Context)) *Rout
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function that will be executed when the route is accessed.
 func (a *PuffApp) Patch(path string, fields any, handleFunc func(*Context)) *Route {
-	a.RootRouter.registerRoute(http.MethodPatch, path, handleFunc, fields)
 	return a.RootRouter.Patch(path, fields, handleFunc)
-
 }
 
 // Put registers an HTTP PUT route in the PuffApp's root router.

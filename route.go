@@ -137,20 +137,18 @@ func (r *Route) GenerateResponses() {
 		// if swagger documentation is off, we will not set responses
 		return
 	}
-	responses := r.Responses
-	if responses == nil {
-		responses = Responses{}
-	}
+
 	currentRouter := r.Router
 
 	for currentRouter != nil {
 		// avoid over-writing the original responses for the routers
 		clonedResponses := maps.Clone(currentRouter.Responses)
-		maps.Copy(clonedResponses, responses)
+		if clonedResponses == nil {
+			clonedResponses = make(Responses)
+		}
+		maps.Copy(clonedResponses, r.Responses)
 		currentRouter = currentRouter.parent
 	}
-
-	r.Responses = responses
 }
 
 // WithResponse registers a single response type for a specific HTTP status code
