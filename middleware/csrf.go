@@ -43,7 +43,7 @@ func createCSRFMiddleware(config *CSRFMiddlewareConfig) puff.Middleware {
 				if c.Request.Method != m {
 					continue
 				}
-				if c.GetCookie(cookie_name) != c.GetHeader(config.ExpectedHeader) {
+				if c.GetCookie(cookie_name) != c.GetRequestHeader(config.ExpectedHeader) {
 					c.Forbidden("CSRFMiddlewareToken missing or incorrect.")
 					return
 				}

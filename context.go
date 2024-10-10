@@ -33,9 +33,9 @@ func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 }
 
 func (ctx *Context) isWebSocket() bool {
-	return ctx.GetHeader("Upgrade") == "websocket" &&
-		ctx.GetHeader("Connection") == "Upgrade" &&
-		ctx.GetHeader("Sec-WebSocket-Version") == "13"
+	return ctx.GetRequestHeader("Upgrade") == "websocket" &&
+		ctx.GetRequestHeader("Connection") == "Upgrade" &&
+		ctx.GetRequestHeader("Sec-WebSocket-Version") == "13"
 }
 
 // Get gets a value from Context with the key passed in.
@@ -49,20 +49,20 @@ func (ctx *Context) Set(key string, value any) {
 	ctx.registry[key] = value
 }
 
-// GetHeader gets the value of a request header with key k.
+// GetRequestHeader gets the value of a request header with key k.
 // It returns an empty string if not found.
-func (ctx *Context) GetHeader(k string) string {
+func (ctx *Context) GetRequestHeader(k string) string {
 	return ctx.Request.Header.Get(k)
 }
 
-// GetHeader gets the value of a response header with key k.
+// GetRequestHeader gets the value of a response header with key k.
 // It returns an empty string if not found.
 func (ctx *Context) GetResponseHeader(k string) string {
 	return ctx.ResponseWriter.Header().Get(k)
 }
 
-// SetHeader sets the value of the response header k to v.
-func (ctx *Context) SetHeader(k, v string) {
+// SetResponseHeader sets the value of the response header k to v.
+func (ctx *Context) SetResponseHeader(k, v string) {
 	ctx.ResponseWriter.Header().Set(k, v)
 }
 
@@ -105,7 +105,7 @@ func (ctx *Context) SetCookie(cookie *http.Cookie) {
 
 // SetContentType sets the content type of the response.
 func (ctx *Context) SetContentType(v string) {
-	ctx.SetHeader("Content-Type", v)
+	ctx.SetResponseHeader("Content-Type", v)
 }
 
 // SetStatusCode sets the status code of the response.
@@ -163,7 +163,7 @@ func (ctx *Context) ClientIP() (IPAddress string) {
 // This will work if the request contains an Authorization header
 // that has this syntax: Bearer this_token_here.
 func (ctx *Context) GetBearerToken() string {
-	bt := ctx.GetHeader("Authorization")
+	bt := ctx.GetRequestHeader("Authorization")
 
 	token_arr := strings.Split(bt, "Bearer ")
 

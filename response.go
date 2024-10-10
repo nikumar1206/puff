@@ -5,13 +5,59 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 )
+
+func ResponseT[T any]() reflect.Type {
+	return reflect.TypeOf(new(T)).Elem()
+}
+
+// Responses type maps together the HTTPStatusCode with a function returning the reflect.Type
+type Responses = map[int]func() reflect.Type
+
+// ResponseDefinition represents a definition of a response for a specific HTTP status code.
+// It is used to map an HTTP status code to the corresponding response type for a route.
+// Puff uses this to automatically generate Swagger documentation.
+//
+// Fields:
+//   - StatusCode: The HTTP status code associated with this response (e.g., http.StatusOK for success,http.StatusNotFound for not found).
+//   - ResponseType: The Go type that defines the response body (e.g., a struct). This type is used to generate
+//     the corresponding Swagger schema. The type should not be an instance; just the a function returning reflect.Type (e.g., `puff.ResponseT[Pizza]`).
+type ResponseDefinition struct {
+	StatusCode   int
+	ResponseType func() reflect.Type
+}
+
+// DefineResponse creates a ResponseDefinition mapping an HTTP status code
+// to the corresponding response type for a route.
+//
+// Example:
+//
+//	app.Get("/pizza", handler).WithResponses(
+//	    puff.DefineResponse(http.StatusOK, PizzaResponse),
+//	    puff.DefineResponse(http.StatusNotFound, ErrorResponse),
+//	)
+//
+// Parameters:
+//   - statusCode: The HTTP status code that this response corresponds to.
+//   - responseType: The Go type that represents the response body. This should be the type (not an instance)
+//     of the struct that defines the response schema.
+//
+// Returns:
+// - A ResponseDefinition that maps the provided status code to the response type.
+func DefineResponse(statusCode int, responseType func() reflect.Type) ResponseDefinition {
+	return ResponseDefinition{
+		StatusCode:   statusCode,
+		ResponseType: responseType,
+	}
+}
 
 // Response is an interface that all response types should implement.
 type Response interface {
 	GetStatusCode() int
 	GetContentType() string
 	WriteContent(*Context) error
+	GetContent() any
 }
 
 // JSONResponse represents a response with JSON content.
@@ -29,11 +75,15 @@ func (j JSONResponse) GetContentType() string {
 	return "application/json"
 }
 
+func (j JSONResponse) GetContent() any {
+	return j.Content
+}
+
 // GetContent returns the content of the JSON response.
 func (j JSONResponse) WriteContent(c *Context) error {
 	err := json.NewEncoder(c.ResponseWriter).Encode(j.Content)
 	if err != nil {
-		return fmt.Errorf("Writing JSONResponse Content failed with: %s", err.Error())
+		return fmt.Errorf("writing JSONResponse content failed with: %s", err.Error())
 	}
 	return nil
 }
@@ -59,6 +109,10 @@ func (h HTMLResponse) WriteContent(c *Context) error {
 	return nil
 }
 
+func (h HTMLResponse) GetContent() any {
+	return h.Content
+}
+
 // FileResponse represents a response that sends a file.
 type FileResponse struct {
 	StatusCode  int
@@ -74,6 +128,10 @@ func (f FileResponse) GetStatusCode() int {
 
 func (f FileResponse) GetContentType() string {
 	return resolveContentType(f.ContentType, contentTypeFromFileName(f.FilePath))
+}
+
+func (f FileResponse) GetContent() any {
+	return f.FileContent
 }
 
 // GetContent returns the file content.
@@ -126,6 +184,10 @@ func (s StreamingResponse) GetStatusCode() int {
 
 func (s StreamingResponse) GetContentType() string {
 	return "text/event-stream"
+}
+
+func (s StreamingResponse) GetContent() any {
+	return ServerSideEvent{}
 }
 
 // GetContent returns the content of the streaming response.
@@ -195,9 +257,13 @@ func (r RedirectResponse) GetContentType() string {
 	return "text/html; charset=utf-8"
 }
 
+func (r RedirectResponse) GetContent() any {
+	return ""
+}
+
 // WriteContent writes the header Location to redirect the client to.
 func (r RedirectResponse) WriteContent(c *Context) error {
-	c.ResponseWriter.Header().Set("Location", r.To)
+	c.SetResponseHeader("Location", r.To)
 	fmt.Fprintf(c.ResponseWriter, `<!DOCTYPE HTML>
     <html lang='en-US'>
     <head>
@@ -235,4 +301,8 @@ func (g GenericResponse) GetContentType() string {
 func (g GenericResponse) WriteContent(c *Context) error {
 	fmt.Fprint(c.ResponseWriter, g.Content)
 	return nil
+}
+
+func (g GenericResponse) GetContent() any {
+	return g.Content
 }
