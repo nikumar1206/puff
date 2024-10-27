@@ -1,5 +1,7 @@
 # Puff
 
+![Alt](https://repobeats.axiom.co/api/embed/66ccd66540fab2ca27806fc48acba71ab93721d5.svg "Repobeats analytics image")
+
 ## Vision
 
 - Strictly build upon golang's net/http
