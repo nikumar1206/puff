@@ -155,9 +155,9 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 	return true, nil
 }
 
-// GetRequestHeaderParam gets the value of the param from the header. It may return error
+// getRequestHeaderParam gets the value of the param from the header. It may return error
 // if it not found AND required.
-func GetRequestHeaderParam(c *Context, param Parameter) (string, error) {
+func getRequestHeaderParam(c *Context, param Parameter) (string, error) {
 	value := c.GetRequestHeader(param.Name)
 	return handleParam(value, param)
 }
@@ -170,7 +170,7 @@ func getQueryParam(c *Context, param Parameter) (string, error) {
 	return handleParam(value, param)
 }
 
-// GetRequestHeaderParam gets the value of the param from the cookie header.
+// getCookieParam gets the value of the param from the cookie header.
 // It may return an error if it not found AND required.
 func getCookieParam(c *Context, param Parameter) (string, error) {
 	value := c.GetCookie(param.Name)
