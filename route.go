@@ -12,8 +12,6 @@ type Route struct {
 	fullPath    string
 	regexp      *regexp.Regexp
 	params      []Parameter
-	requestBody *RequestBodyOrReference // TODO: i don't see this used anywhere
-
 	Description string
 	WebSocket   bool
 	Protocol    string
