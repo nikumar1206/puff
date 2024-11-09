@@ -55,7 +55,7 @@ func (ctx *Context) GetRequestHeader(k string) string {
 	return ctx.Request.Header.Get(k)
 }
 
-// GetRequestHeader gets the value of a response header with key k.
+// GetResponseHeader gets the value of a response header with key k.
 // It returns an empty string if not found.
 func (ctx *Context) GetResponseHeader(k string) string {
 	return ctx.ResponseWriter.Header().Get(k)
