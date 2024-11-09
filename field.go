@@ -24,6 +24,7 @@ func isValidKind(specified_kind string) bool {
 		specified_kind == "file"
 }
 
+// TODO: i dont see this being used anywhere.
 func enforceKindTypes(specifiedKind string, t reflect.Type) error {
 	switch specifiedKind {
 	case "header", "path", "query", "cookie":
