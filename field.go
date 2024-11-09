@@ -270,7 +270,7 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 		var err error
 		switch pa.In {
 		case "header":
-			value, err = GetRequestHeaderParam(c, pa)
+			value, err = getRequestHeaderParam(c, pa)
 		case "path":
 			value, err = getPathParam(pathparamsindex, pa, matches)
 		case "query":
