@@ -135,7 +135,6 @@ func handleWebSocket(c *Context) error {
 	if err != nil {
 		error_msg := fmt.Sprintf("An error occurred while trying to accept a WebSocket connection: %s.", err.Error())
 		c.BadRequest(error_msg)
-
 		return errors.New(error_msg)
 	}
 
