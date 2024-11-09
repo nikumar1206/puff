@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"reflect"
 )
 
@@ -123,7 +122,7 @@ type FileResponse struct {
 
 // GetStatusCode returns the status code of the file response.
 func (f FileResponse) GetStatusCode() int {
-	return resolveStatusCode(f.StatusCode, 200)
+	return resolveStatusCode(f.StatusCode, 0)
 }
 
 func (f FileResponse) GetContentType() string {
@@ -134,23 +133,9 @@ func (f FileResponse) GetContent() any {
 	return f.FileContent
 }
 
-// GetContent returns the file content.
+// WriteContent serves the file from the provided path.
 func (f FileResponse) WriteContent(c *Context) error {
-	file, err := os.ReadFile(f.FilePath)
-	if err != nil {
-		writeErrorResponse(
-			c.ResponseWriter,
-			http.StatusInternalServerError,
-			"Error retrieving file: "+err.Error(),
-		)
-		return fmt.Errorf(
-			"error retrieving file %s during FileResponse: %s",
-			f.FilePath,
-			err.Error(),
-		)
-	}
-
-	c.ResponseWriter.Write(file)
+	http.ServeFile(c.ResponseWriter, c.Request, f.FilePath)
 	return nil
 }
 

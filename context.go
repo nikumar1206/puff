@@ -141,8 +141,13 @@ func (c *Context) SendResponse(res Response) {
 		slog.Error("calls to SendResponse on routes using websockets is not permitted.")
 		return
 	}
+
 	c.SetContentType(res.GetContentType())
-	c.SetStatusCode(res.GetStatusCode())
+
+	if res.GetStatusCode() != 0 { // don't write statusCode for certain content types
+		c.SetStatusCode(res.GetStatusCode())
+	}
+
 	err := res.WriteContent(c)
 	if err != nil {
 		msg := fmt.Sprintf(
