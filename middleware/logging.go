@@ -24,23 +24,23 @@ var DefaultLoggingConfig LoggingConfig = LoggingConfig{
 	LoggingFunction: func(ctx puff.Context, startTime time.Time) {
 		processingTime := time.Since(startTime).String()
 		sc := ctx.GetStatusCode()
-		var statusColor = fmt.Sprintf(" %d ", sc)
+		var statusColor string
 		switch {
 		case sc >= 500:
-			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightRed, color.FgBlack)
+			statusColor = color.Colorize(strconv.Itoa(sc), color.FgBrightRed)
 		case sc >= 400:
-			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightYellow, color.FgBlack)
+			statusColor = color.Colorize(strconv.Itoa(sc), color.BgBrightYellow)
 		case sc >= 300:
-			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightCyan, color.FgBlack)
+			statusColor = color.Colorize(strconv.Itoa(sc), color.FgBrightCyan)
 		default:
-			statusColor = color.ColorizeBold(strconv.Itoa(sc), color.BgBrightGreen, color.FgBlack)
+			statusColor = color.Colorize(strconv.Itoa(sc), color.FgBrightGreen)
 		}
 		// TODO: make the below configurable
 		// Request ID should only be present if present
 		slog.Info(
 			fmt.Sprintf("%s %s| %s | %s | %s ",
 				statusColor,
-				fmt.Sprintf("%s %s\t", ctx.Request.Method, ctx.Request.URL.String()),
+				fmt.Sprintf("%s %s", ctx.Request.Method, ctx.Request.URL.String()),
 				processingTime,
 				ctx.GetRequestID(),
 				ctx.ClientIP(),
