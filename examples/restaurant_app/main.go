@@ -10,6 +10,16 @@ import (
 	"github.com/nikumar1206/puff/middleware"
 )
 
+type User struct {
+	Foo       string  `json:"foo"`
+	Coolbeans int     `json:"boo"`
+	Foobar    float32 `json:"troo"`
+}
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
 func main() {
 	app := puff.DefaultApp("Restaurant Microservice")
 	app.DocsReload = true
@@ -24,7 +34,6 @@ func main() {
 			FilePath: "examples/restaurant_app/assets/hello_world.html",
 		})
 	})
-
 	app.Get("/foos/{name}", nil, func(c *puff.Context) {
 		c.SendResponse(puff.GenericResponse{Content: "foo-bar " + c.Get("X-Request-ID").(string)})
 	})

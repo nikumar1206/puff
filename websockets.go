@@ -3,6 +3,7 @@ package puff
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -24,13 +25,13 @@ func (wsm *WebSocketMessage) To(i any) error {
 	case *int:
 		intmsg, ok := strconv.Atoi(string(wsm.Message))
 		if ok != nil {
-			return fmt.Errorf("Impossible conversion to int.")
+			return fmt.Errorf("impossible conversion to int")
 		}
 		*it = intmsg
 	case *bool:
 		boolmsg, ok := strconv.ParseBool(string(wsm.Message))
 		if ok != nil {
-			return fmt.Errorf("Impossible conversion to bool.")
+			return fmt.Errorf("impossible conversion to bool")
 		}
 		*it = boolmsg
 	default:
@@ -134,7 +135,7 @@ func handleWebSocket(c *Context) error {
 	if err != nil {
 		error_msg := fmt.Sprintf("An error occurred while trying to accept a WebSocket connection: %s.", err.Error())
 		c.BadRequest(error_msg)
-		return fmt.Errorf(error_msg)
+		return errors.New(error_msg)
 	}
 
 	ctx, cancel := context.WithCancel(c.Request.Context())

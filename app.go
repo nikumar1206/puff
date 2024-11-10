@@ -1,10 +1,12 @@
 package puff
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"reflect"
 )
 
 type PuffApp struct {
@@ -24,11 +26,14 @@ type PuffApp struct {
 	RootRouter *Router
 	// Logger is the reference to the application's logger. Equivalent to slog.Default()
 	Logger *slog.Logger
+	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
+	OpenAPI OpenAPI
 }
 
 // Add a Router to the main app.
 // Under the hood attaches the router to the App's RootRouter
 func (a *PuffApp) IncludeRouter(r *Router) {
+	r.puff = a
 	a.RootRouter.IncludeRouter(r)
 }
 
@@ -53,11 +58,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	if a.DocsURL == "" {
 		return
 	}
-	spec, err := GenerateOpenAPISpec(a.Name, a.Version, *a.RootRouter)
-	if err != nil {
-		slog.Error(fmt.Sprintf("Generating the OpenAPISpec failed. Error: %s", err.Error()))
-		return
-	}
+	a.GenerateOpenAPISpec()
 	docsRouter := Router{
 		Prefix: a.DocsURL,
 		Name:   "OpenAPI Documentation Router",
@@ -66,7 +67,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	// Provides JSON OpenAPI Schema.
 	docsRouter.Get(".json", nil, func(c *Context) {
 		res := GenericResponse{
-			Content:     spec,
+			Content:     string(*a.OpenAPI.spec),
 			ContentType: "application/json",
 		}
 		c.SendResponse(res)
@@ -75,7 +76,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	// Renders OpenAPI schema.
 	docsRouter.Get("", nil, func(c *Context) {
 		res := HTMLResponse{
-			Content: GenerateOpenAPIUI(spec, "OpenAPI Spec", a.DocsURL+".json"),
+			Content: GenerateOpenAPIUI("OpenAPI Spec", a.DocsURL+".json"),
 		}
 		c.SendResponse(res)
 	})
@@ -148,8 +149,8 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 // - path: The URL path of the route.
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function that will be executed when the route is accessed.
-func (a *PuffApp) Get(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(http.MethodGet, path, handleFunc, fields)
+func (a *PuffApp) Get(path string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Get(path, fields, handleFunc)
 }
 
 // Post registers an HTTP POST route in the PuffApp's root router.
@@ -158,8 +159,8 @@ func (a *PuffApp) Get(path string, fields any, handleFunc func(*Context)) {
 // - path: The URL path of the route.
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function that will be executed when the route is accessed.
-func (a *PuffApp) Post(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(http.MethodPost, path, handleFunc, fields)
+func (a *PuffApp) Post(path string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Post(path, fields, handleFunc)
 }
 
 // Patch registers an HTTP PATCH route in the PuffApp's root router.
@@ -168,8 +169,8 @@ func (a *PuffApp) Post(path string, fields any, handleFunc func(*Context)) {
 // - path: The URL path of the route.
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function that will be executed when the route is accessed.
-func (a *PuffApp) Patch(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(http.MethodPatch, path, handleFunc, fields)
+func (a *PuffApp) Patch(path string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Patch(path, fields, handleFunc)
 }
 
 // Put registers an HTTP PUT route in the PuffApp's root router.
@@ -178,8 +179,8 @@ func (a *PuffApp) Patch(path string, fields any, handleFunc func(*Context)) {
 // - path: The URL path of the route.
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function that will be executed when the route is accessed.
-func (a *PuffApp) Put(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(http.MethodPut, path, handleFunc, fields)
+func (a *PuffApp) Put(path string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Put(path, fields, handleFunc)
 }
 
 // Delete registers an HTTP DELETE route in the PuffApp's root router.
@@ -188,8 +189,8 @@ func (a *PuffApp) Put(path string, fields any, handleFunc func(*Context)) {
 // - path: The URL path of the route.
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function that will be executed when the route is accessed.
-func (a *PuffApp) Delete(path string, fields any, handleFunc func(*Context)) {
-	a.RootRouter.registerRoute(http.MethodDelete, path, handleFunc, fields)
+func (a *PuffApp) Delete(path string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.Delete(path, fields, handleFunc)
 }
 
 // WebSocket registers a WebSocket route in the PuffApp's root router.
@@ -199,19 +200,83 @@ func (a *PuffApp) Delete(path string, fields any, handleFunc func(*Context)) {
 // - path: The URL path of the WebSocket route.
 // - fields: Optional fields associated with the route.
 // - handleFunc: The handler function to handle WebSocket connections.
-func (a *PuffApp) WebSocket(path string, fields any, handleFunc func(*Context)) {
-	newRoute := Route{
-		WebSocket: true,
-		Protocol:  "GET",
-		Path:      path,
-		Handler:   handleFunc,
-		Fields:    fields,
-	}
-	a.RootRouter.Routes = append(a.RootRouter.Routes, &newRoute)
+func (a *PuffApp) WebSocket(path string, fields any, handleFunc func(*Context)) *Route {
+	return a.RootRouter.WebSocket(path, fields, handleFunc)
+
 }
 
 // AllRoutes returns all routes registered in the PuffApp, including those in sub-routers.
 // This function provides an aggregated view of all routes in the application.
 func (a *PuffApp) AllRoutes() []*Route {
 	return a.RootRouter.AllRoutes()
+}
+
+func (a *PuffApp) GenerateOpenAPISpec() {
+	if reflect.ValueOf(a.OpenAPI).IsZero() {
+		paths, tags := a.GeneratePathsTags()
+		a.OpenAPI = OpenAPI{
+			SpecVersion: "3.1.0",
+			Info: Info{
+				Version:     a.Version,
+				Title:       a.Name,
+				Description: "<h4>Application built via Puff Framework</h4>",
+			},
+			Servers:  []Server{},
+			Tags:     tags,
+			Paths:    paths,
+			Security: []SecurityRequirement{},
+			Webhooks: map[string]any{},
+			Components: Components{
+				Schemas:         Schemas,
+				Responses:       make(map[string]any),
+				Parameters:      make(map[string]any),
+				Examples:        make(map[string]any),
+				RequestBodies:   make(map[string]any),
+				SecuritySchemes: make(map[string]any),
+				Headers:         make(map[string]any),
+				Callbacks:       make(map[string]any),
+				PathItems:       make(map[string]any),
+				Links:           make(map[string]any),
+			},
+		}
+	}
+	// this value is hardcoded. it cannot be changed
+	a.OpenAPI.SpecVersion = "3.1.0"
+	openAPISpec, err := json.Marshal(a.OpenAPI)
+	if err != nil {
+		panic(err)
+	}
+	a.OpenAPI.spec = &openAPISpec
+}
+
+// GeneratePathsTags is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.
+// Returns (paths, tagss) to populate the 'Paths' and 'Tags' attribute of OpenAPI
+func (a *PuffApp) GeneratePathsTags() (Paths, []Tag) {
+	var tags []Tag
+	var tagNames []string
+	var paths = make(Paths)
+	for _, route := range a.RootRouter.Routes {
+		addRoute(route, &tags, &tagNames, &paths)
+	}
+	for _, router := range a.RootRouter.Routers {
+		for _, route := range router.Routes {
+			addRoute(route, &tags, &tagNames, &paths)
+		}
+	}
+	return paths, tags
+}
+
+// GenerateDefinitions is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.
+// Returns (paths, tagss) to populate the 'Paths' and 'Tags' attribute of OpenAPI
+func (a *PuffApp) GenerateDefinitions(paths Paths) map[string]*Schema {
+
+	definitions := map[string]*Schema{}
+	for _, p := range paths {
+		for _, routeParams := range p.Parameters {
+			definitions[routeParams.Name] = &routeParams.Schema
+		}
+
+	}
+
+	return definitions
 }

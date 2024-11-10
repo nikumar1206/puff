@@ -55,9 +55,9 @@ func createCORSMiddleware(c CORSConfig) puff.Middleware {
 				return
 			}
 
-			ctx.SetHeader("Access-Control-Allow-Origin", c.AllowedOrigin)
-			ctx.SetHeader("Access-Control-Allow-Methods", allowedMethods)
-			ctx.SetHeader("Access-Control-Allow-Headers", allowedHeaders)
+			ctx.SetResponseHeader("Access-Control-Allow-Origin", c.AllowedOrigin)
+			ctx.SetResponseHeader("Access-Control-Allow-Methods", allowedMethods)
+			ctx.SetResponseHeader("Access-Control-Allow-Headers", allowedHeaders)
 			next(ctx)
 		}
 	}

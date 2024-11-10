@@ -1,10 +1,17 @@
 package routes
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/nikumar1206/puff"
 )
+
+type PizzaResponse struct {
+	Name         string            `json:"name"`
+	Ingredients  map[string]string `json:"ingredients"`
+	Instructions []string          `json:"instructions"`
+}
 
 func getPizza(c *puff.Context) {
 	res := puff.JSONResponse{
@@ -43,10 +50,9 @@ func PizzaRouter() *puff.Router {
 		Name:   "Pizza",
 		Prefix: "/pizza",
 	}
+	r.Get("", nil, getPizza).WithResponse(http.StatusOK, puff.ResponseType[PizzaResponse])
 
-	r.Get("/", nil, getPizza)
-
-	r.Post("/", nil, func(c *puff.Context) {
+	r.Post("", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
 		time.Sleep(timeOut)
 		res := puff.JSONResponse{
@@ -56,7 +62,7 @@ func PizzaRouter() *puff.Router {
 		c.SendResponse(res)
 	})
 
-	r.Patch("/", nil, func(c *puff.Context) {
+	r.Patch("", nil, func(c *puff.Context) {
 		res := puff.JSONResponse{
 			StatusCode: 400,
 			Content:    map[string]any{"message": "Unburning a pizza is impossible."},

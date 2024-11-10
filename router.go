@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"regexp"
 	"runtime"
 	"strings"
 )
@@ -16,16 +15,24 @@ type Router struct {
 	Routers     []*Router
 	Routes      []*Route
 	Middlewares []*Middleware
-	parent      *Router
 	Tag         string
 	Description string
+	// Responses is a map of status code to puff.Response. Possible Responses for routes can be set at the Router (root as well),
+	// and Route level, however responses directly set on the route will have the highest specificity.
+	Responses Responses
+
+	// parent maps to the router's immediate parent. Will be nil for RootRouter
+	parent *Router
+	// puff maps to the original PuffApp
+	puff *PuffApp
 }
 
 // NewRouter creates a new router provided router name and path prefix.
 func NewRouter(name string, prefix string) *Router {
 	return &Router{
-		Name:   name,
-		Prefix: prefix,
+		Name:      name,
+		Prefix:    prefix,
+		Responses: Responses{},
 	}
 }
 
@@ -34,7 +41,7 @@ func (r *Router) registerRoute(
 	path string,
 	handleFunc func(*Context),
 	fields any,
-) {
+) *Route {
 	_, file, line, ok := runtime.Caller(2)
 	newRoute := Route{
 		Description: readDescription(file, line, ok),
@@ -42,56 +49,59 @@ func (r *Router) registerRoute(
 		Handler:     handleFunc,
 		Protocol:    method,
 		Fields:      fields,
+		Router:      r,
+		Responses:   Responses{},
 	}
 
 	r.Routes = append(r.Routes, &newRoute)
+	return &newRoute
 }
 
 func (r *Router) Get(
 	path string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(http.MethodGet, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(http.MethodGet, path, handleFunc, fields)
 }
 
 func (r *Router) Post(
 	path string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(http.MethodPost, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(http.MethodPost, path, handleFunc, fields)
 }
 
 func (r *Router) Put(
 	path string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(http.MethodPut, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(http.MethodPut, path, handleFunc, fields)
 }
 
 func (r *Router) Patch(
 	path string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(http.MethodPatch, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(http.MethodPatch, path, handleFunc, fields)
 }
 
 func (r *Router) Delete(
 	path string,
 	fields any,
 	handleFunc func(*Context),
-) {
-	r.registerRoute(http.MethodDelete, path, handleFunc, fields)
+) *Route {
+	return r.registerRoute(http.MethodDelete, path, handleFunc, fields)
 }
 
 func (r *Router) WebSocket(
 	path string,
 	fields any,
 	handleFunc func(*Context),
-) {
+) *Route {
 	newRoute := Route{
 		WebSocket: true,
 		Protocol:  "GET",
@@ -100,6 +110,7 @@ func (r *Router) WebSocket(
 		Fields:    fields,
 	}
 	r.Routes = append(r.Routes, &newRoute)
+	return &newRoute
 }
 
 func (r *Router) IncludeRouter(rt *Router) {
@@ -112,33 +123,35 @@ func (r *Router) IncludeRouter(rt *Router) {
 	}
 
 	rt.parent = r
+	if rt.parent != nil {
+		rt.puff = rt.parent.puff
+	}
 	r.Routers = append(r.Routers, rt)
 }
 
+// Use adds a middleware to the router's list of middlewares. Middleware functions
+// can be used to intercept requests and responses, allowing for functionality such
+// as logging, authentication, and error handling to be applied to all routes managed
+// by this router.
+//
+// Example usage:
+//
+//	router := puff.NewRouter()
+//	router.Use(myMiddleware)
+//	router.Get("/endpoint", myHandler)
+//
+// Parameters:
+// - m: A Middleware function that will be applied to all routes in this router.
+// TODO: dont know if below is actually accurate. cant think
+// Note: Middleware functions are executed in the order they are added. If multiple
+// middlewares are registered, they will be executed sequentially for each request
+// handled by the router.
 func (r *Router) Use(m Middleware) {
 	r.Middlewares = append(r.Middlewares, &m)
 }
 
 func (r *Router) String() string {
 	return fmt.Sprintf("Name: %s Prefix: %s", r.Name, r.Prefix)
-}
-
-func (r *Router) getCompletePath(route *Route) {
-	var parts []string
-	currentRouter := r
-	for currentRouter != nil {
-		parts = append([]string{currentRouter.Prefix}, parts...)
-		currentRouter = currentRouter.parent
-	}
-
-	parts = append(parts, route.Path)
-	route.fullPath = strings.Join(parts, "")
-}
-
-func (r *Router) createRegexMatch(route *Route) {
-	escapedPath := strings.ReplaceAll(route.fullPath, "/", "\\/")
-	regexPattern := regexp.MustCompile(`\{[^}]+\}`).ReplaceAllString(escapedPath, "([^/]+)")
-	route.regexp = regexp.MustCompile("^" + regexPattern + "$")
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -152,8 +165,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for _, route := range r.Routes {
 		if route.regexp == nil {
 			// TODO: need to fix this. this will be nil for the doc routes.
-			r.getCompletePath(route)
-			r.createRegexMatch(route)
+			route.getCompletePath()
+			route.createRegexMatch()
 		}
 		isMatch := route.regexp.MatchString(req.URL.Path)
 		if isMatch && req.Method == route.Protocol {
@@ -203,13 +216,15 @@ func (r *Router) AllRoutes() []*Route {
 
 func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
-		r.getCompletePath(route)
-		r.createRegexMatch(route)
-		err := handleInputSchema(&route.params, route.requestBody, route.Fields)
+		route.getCompletePath()
+		route.createRegexMatch()
+		err := route.handleInputSchema()
 		if err != nil {
-			panic("Error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
+			panic("error with Input Schema for route " + route.Path + " on router " + r.Name + ". Error: " + err.Error())
 		}
 		slog.Debug(fmt.Sprintf("Serving route: %s", route.fullPath))
+		// populate route with their respective responses
+		route.GenerateResponses()
 	}
 	//TODO: ensure no route collision, will be a nice to have
 }

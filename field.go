@@ -24,6 +24,7 @@ func isValidKind(specified_kind string) bool {
 		specified_kind == "file"
 }
 
+// TODO: i dont see this being used anywhere.
 func enforceKindTypes(specifiedKind string, t reflect.Type) error {
 	switch specifiedKind {
 	case "header", "path", "query", "cookie":
@@ -62,15 +63,12 @@ func enforceKindTypes(specifiedKind string, t reflect.Type) error {
 	return nil
 }
 
-// resolveBool resolves the specified bool (as a string type)
-// and the default bool. It gives priority to the specified.
-
 // handleParam takes the value as recieved, returns an error if the value
 // is empty AND required.
 func handleParam(value string, param Parameter) (string, error) {
 	ok := !(value == "")
 	if !ok && param.Required {
-		return "", fmt.Errorf("required %s param %s not provided.", param.In, param.Name)
+		return "", fmt.Errorf("required %s param %s not provided", param.In, param.Name)
 	}
 	return value, nil
 }
@@ -104,7 +102,7 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		} else {
 			delete(expectedNotFoundKeys, k)
 		}
-		f, _ := fields[k] //cannot error
+		f := fields[k] //cannot error
 		ft := f.Type
 		p := ft.Kind() == reflect.Pointer
 		tr := reflect.TypeOf(v)
@@ -151,17 +149,17 @@ func validate(input map[string]any, schemaType reflect.Type) (bool, error) {
 		}
 	}
 	for k, required := range expectedNotFoundKeys {
-		if required == true {
+		if required {
 			return false, ExpectedButNotFound(k)
 		}
 	}
 	return true, nil
 }
 
-// getHeaderParam gets the value of the param from the header. It may return error
+// getRequestHeaderParam gets the value of the param from the header. It may return error
 // if it not found AND required.
-func getHeaderParam(c *Context, param Parameter) (string, error) {
-	value := c.GetHeader(param.Name)
+func getRequestHeaderParam(c *Context, param Parameter) (string, error) {
+	value := c.GetRequestHeader(param.Name)
 	return handleParam(value, param)
 }
 
@@ -173,7 +171,7 @@ func getQueryParam(c *Context, param Parameter) (string, error) {
 	return handleParam(value, param)
 }
 
-// getHeaderParam gets the value of the param from the cookie header.
+// getCookieParam gets the value of the param from the cookie header.
 // It may return an error if it not found AND required.
 func getCookieParam(c *Context, param Parameter) (string, error) {
 	value := c.GetCookie(param.Name)
@@ -273,7 +271,7 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 		var err error
 		switch pa.In {
 		case "header":
-			value, err = getHeaderParam(c, pa)
+			value, err = getRequestHeaderParam(c, pa)
 		case "path":
 			value, err = getPathParam(pathparamsindex, pa, matches)
 		case "query":
@@ -313,67 +311,88 @@ func populateInputSchema(c *Context, s any, p []Parameter, matches []string) err
 	return nil
 }
 
-// FIXME: type info lowercase
 type typeInfo struct {
 	_type string
-	info  map[string]string
+	info  Schema
 }
 
-func newTypeInfo(_type string, info map[string]string) typeInfo {
+func newTypeInfo(_type string, s Schema) typeInfo {
 	return typeInfo{
 		_type: _type,
-		info:  info,
+		info:  s,
 	}
 }
 
 var supportedTypes = map[string]typeInfo{
-	"string": newTypeInfo("string", map[string]string{}),
-	"int":    newTypeInfo("integer", map[string]string{}),
-	"int8": newTypeInfo("number", map[string]string{
+	"string": newTypeInfo("string", Schema{
+		Format:  "string",
+		Example: "string",
+	}),
+	"int": newTypeInfo("integer", Schema{
+		Format:  "int",
+		Example: "255",
+	}),
+	"int8": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int8
-		"format": "int8",
+		Format:  "int8",
+		Example: "0",
 	}),
-	"int16": newTypeInfo("number", map[string]string{
+	"int16": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int16
-		"format": "int16",
+		Format:  "int16",
+		Example: "0",
 	}),
-	"int32": newTypeInfo("number", map[string]string{
+	"int32": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int32
-		"format": "int32",
+		Format:  "int32",
+		Example: "0",
 	}),
-	"int64": newTypeInfo("number", map[string]string{
+	"int64": newTypeInfo("number", Schema{
 		// https://spec.openapis.org/registry/format/int64
-		"format": "int64",
+		Format:  "int64",
+		Example: "0",
 	}),
-	"uint": newTypeInfo("integer", map[string]string{
-		"minimum": "0",
+	"uint": newTypeInfo("integer", Schema{
+		Format:  "int",
+		Minimum: "0",
+		Example: "0",
 	}),
-	"uint8": newTypeInfo("integer", map[string]string{
-		"format":  "int8",
-		"minimum": "0",
+	"uint8": newTypeInfo("integer", Schema{
+		Format:  "int8",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"uint16": newTypeInfo("integer", map[string]string{
-		"format":  "int16",
-		"minimum": "0",
+	"uint16": newTypeInfo("integer", Schema{
+		Format:  "int16",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"uint32": newTypeInfo("integer", map[string]string{
-		"format":  "int32",
-		"minimum": "0",
+	"uint32": newTypeInfo("integer", Schema{
+		Format:  "int32",
+		Example: "0",
+		Minimum: "0",
 	}),
-	"uint64": newTypeInfo("integer", map[string]string{
-		"format":  "int64",
-		"minimum": "0",
+	"uint64": newTypeInfo("integer", Schema{
+		Format:  "int64",
+		Example: "0",
+		Minimum: strconv.Itoa(2 ^ 64 - 1),
 	}),
-	"float32": newTypeInfo("number", map[string]string{
-		"format": "float",
+	"float32": newTypeInfo("number", Schema{
+		Format:  "float",
+		Example: "0.01",
 	}),
-	"float64": newTypeInfo("number", map[string]string{
-		"format": "double",
+	"float64": newTypeInfo("number", Schema{
+		Format:  "double",
+		Example: "0.0",
+		Minimum: "0.01",
 	}),
-	"bool": newTypeInfo("boolean", map[string]string{}),
+	"bool": newTypeInfo("boolean", Schema{
+		Format:  "bool",
+		Example: false,
+	}),
 }
 
-func newDefinition(schema any) Schema {
+func newDefinition(route *Route, schema any) Schema {
 	newSchema := new(Schema)
 	st := reflect.TypeOf(schema)
 	sv := reflect.ValueOf(schema)
@@ -389,23 +408,20 @@ func newDefinition(schema any) Schema {
 		if !ok {
 			panic("Unsupported type " + st.String() + ".")
 		}
-		newSchema.Type = ts._type
-		newSchema.Format = ts.info["format"]
-		newSchema.Minimum = ts.info["minimum"]
-		return *newSchema
+		return ts.info
 	}
 
 	if st.Kind() == reflect.Map {
 		if st.Key().Kind() != reflect.String {
 			panic("map key type must always be string.")
 		}
-		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
+		nd := newDefinition(route, reflect.Zero(st.Elem()).Interface())
 		newSchema.AdditionalProperties = &nd
 		return *newSchema
 	}
 	if st.Kind() == reflect.Array || st.Kind() == reflect.Slice {
 		newSchema.Type = "array"
-		nd := newDefinition(reflect.Zero(st.Elem()).Interface())
+		nd := newDefinition(route, reflect.Zero(st.Elem()).Interface())
 		newSchema.Items = &nd
 		return *newSchema
 	}
@@ -420,10 +436,11 @@ func newDefinition(schema any) Schema {
 	}
 	newDef := Schema{}
 	newDef.Properties = make(map[string]*Schema)
+	newDef.Required = []string{}
 	for i := range st.NumField() {
 		newDef.Type = "object"
 		field := st.Field(i)
-		nd := newDefinition(sv.Field(i).Interface())
+		nd := newDefinition(route, sv.Field(i).Interface())
 
 		fieldName := field.Name
 		fieldNameSplit := strings.Split(field.Tag.Get("json"), ",")
@@ -436,95 +453,12 @@ func newDefinition(schema any) Schema {
 		if err != nil {
 			panic(err)
 		}
-		if b == true {
+		if b {
 			newDef.Required = append(newDef.Required, fieldName)
 		}
 		newDef.Properties[fieldName] = &nd
 	}
-	AddDefinition(st.Name(), newDef)
-	newSchema.Ref = "#/definitions/" + st.Name()
+	Schemas[st.Name()] = &newDef
+	newSchema.Ref = "#/components/schemas/" + st.Name()
 	return *newSchema
-}
-
-func handleInputSchema(pa *[]Parameter, rb *RequestBodyOrReference, s any) error { // should this return an error or should it panic?
-	if s == nil {
-		*pa = []Parameter{}
-		return nil
-	}
-	sv := reflect.ValueOf(s) //
-	svk := sv.Kind()
-	if svk != reflect.Ptr {
-		return fmt.Errorf("fields must be POINTER to struct")
-	}
-	sve := sv.Elem()
-	svet := sve.Type()
-	if sve.Kind() != reflect.Struct {
-		return fmt.Errorf("fields must be pointer to STRUCT")
-	}
-
-	newParams := []Parameter{}
-	requestBody := new(RequestBodyOrReference)
-	for i := range svet.NumField() {
-		newParam := Parameter{}
-		svetf := svet.Field(i)
-
-		name := svetf.Tag.Get("name")
-		if name == "" {
-			name = svetf.Name
-		}
-
-		// param.Schema
-		newParam.Schema = newDefinition(sve.Field(i).Interface())
-
-		//param.In
-		specified_kind := svetf.Tag.Get("kind") //ref: Parameters object/In
-		if name == "Body" && specified_kind == "" {
-			specified_kind = "body"
-		}
-		if !isValidKind(specified_kind) {
-			return fmt.Errorf("specified kind on field %s in struct tag must be header, path, query, cookie, body, form, or file", svetf.Name)
-		}
-		err := enforceKindTypes(specified_kind, svetf.Type)
-		if err != nil {
-			return err
-		}
-
-		//param.Description
-		description := svetf.Tag.Get("description")
-
-		//param.Required
-		specified_required := svetf.Tag.Get("required")
-		specified_deprecated := svetf.Tag.Get("deprecated")
-
-		required_def := true
-		if specified_kind == "cookie" { // cookies by default should never be required
-			required_def = false
-		}
-
-		required, err := resolveBool(specified_required, required_def)
-		if err != nil {
-			return err
-		}
-		deprecated, err := resolveBool(specified_deprecated, false)
-		if err != nil {
-			return err
-		}
-
-		//param.Schema.format
-		format := svetf.Tag.Get("format")
-		if format != "" {
-			newParam.Schema.Format = format
-		}
-
-		newParam.Name = name
-		newParam.In = specified_kind
-		newParam.Description = description
-		newParam.Required = required
-		newParam.Deprecated = deprecated
-
-		newParams = append(newParams, newParam)
-	}
-	*pa = newParams
-	rb = requestBody
-	return nil
 }
