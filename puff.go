@@ -14,8 +14,6 @@ type AppConfig struct {
 	Version string
 	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
 	DocsURL string
-	// DocsReload, if true, enables automatic reload on the Swagger documentation page.
-	DocsReload bool
 	// TLSPublicCertFile specifies the file for the TLS certificate (usually .pem or .crt).
 	TLSPublicCertFile string
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
@@ -34,7 +32,6 @@ func App(c *AppConfig) *PuffApp {
 		Name:              c.Name,
 		Version:           c.Version,
 		DocsURL:           c.DocsURL,
-		DocsReload:        c.DocsReload,
 		TLSPublicCertFile: c.TLSPublicCertFile,
 		TLSPrivateKeyFile: c.TLSPrivateKeyFile,
 		RootRouter:        r,

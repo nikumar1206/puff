@@ -22,7 +22,6 @@ type ErrorResponse struct {
 
 func main() {
 	app := puff.DefaultApp("Restaurant Microservice")
-	app.DocsReload = true
 	app.Use(middleware.Tracing())
 	app.Use(middleware.CORS())
 	app.Use(middleware.Logging())

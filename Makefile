@@ -22,10 +22,6 @@ clean: ## Clean up the project directory and tidy modules
 	rm -rf tmp \
     $(GOCMD) mod tidy
 
-run: ## Run demo app locally
-	$(GOBUILD) -o $(BINARY_NAME) -v examples/restaurant_app/main.go ./$(BINARY_NAME)
-
-
 reload: ## Run the demo restauraunt app locally with reload enabled
 	@(air --build.cmd "lsof -ti:8000 | xargs -r kill -9; $(GOBUILD) -o $(BINARY_NAME) examples/restaurant_app/*.go" --build.bin "./$(BINARY_NAME)")
 

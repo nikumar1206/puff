@@ -16,8 +16,6 @@ type PuffApp struct {
 	Version string
 	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
 	DocsURL string
-	// DocsReload, if true, enables automatic reload on the Swagger documentation page.
-	DocsReload bool
 	// TLSPublicCertFile specifies the file for the TLS certificate (usually .pem or .crt).
 	TLSPublicCertFile string
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
@@ -131,6 +129,7 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
+	slog.Debug(fmt.Sprintf("Visit docs 💨 on %s", fmt.Sprintf("http://localhost%s%s", listenAddr, a.DocsURL)))
 	var err error
 	if a.TLSPublicCertFile != "" && a.TLSPrivateKeyFile != "" {
 		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicCertFile, a.TLSPrivateKeyFile, a.RootRouter)
