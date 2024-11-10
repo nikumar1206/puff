@@ -159,18 +159,18 @@ func (r *Route) GenerateResponses() {
 //
 //	app.Get("/pizza", func(c puff.Context) {
 //	    c.SendResponse(puff.JSONResponse{http.StatusOK, PizzaResponse{Name: "Margherita", Price: 10, Size: "Medium"}})
-//	}).WithResponse(http.StatusOK, puff.ResponseT[PizzaResponse])
+//	}).WithResponse(http.StatusOK, puff.ResponseType[PizzaResponse])
 //
 // Parameters:
 //   - statusCode: The HTTP status code that this response corresponds to.
-//   - responseType: The Go type that represents the structure of the response body.
+//   - ResponseTypeype: The Go type that represents the structure of the response body.
 //     This should be the type (not an instance) of the struct that defines the
 //     response schema.
 //
 // Returns:
 // - The updated Route object to allow method chaining.
-func (r *Route) WithResponse(statusCode int, responseTypeFunc func() reflect.Type) *Route {
-	r.Responses[statusCode] = responseTypeFunc
+func (r *Route) WithResponse(statusCode int, ResponseTypeypeFunc func() reflect.Type) *Route {
+	r.Responses[statusCode] = ResponseTypeypeFunc
 	return r
 }
 
@@ -189,8 +189,8 @@ func (r *Route) WithResponse(statusCode int, responseTypeFunc func() reflect.Typ
 //	        c.SendResponse(puff.JSONResponse{http.StatusNotFound, ErrorResponse{Message: "Not Found"}})
 //	    }
 //	}).WithResponses(
-//	    puff.DefineResponse(http.StatusOK, puff.ResponseT[PizzaResponse]),
-//	    puff.DefineResponse(http.StatusNotFound, puff.ResponseT[ErrorResponse]),
+//	    puff.DefineResponse(http.StatusOK, puff.ResponseType[PizzaResponse]),
+//	    puff.DefineResponse(http.StatusNotFound, puff.ResponseType[ErrorResponse]),
 //	)
 //
 // Parameters:
@@ -203,7 +203,7 @@ func (r *Route) WithResponse(statusCode int, responseTypeFunc func() reflect.Typ
 // - The updated Route object to allow method chaining.
 func (r *Route) WithResponses(responses ...ResponseDefinition) *Route {
 	for _, response := range responses {
-		r.Responses[response.StatusCode] = response.ResponseType
+		r.Responses[response.StatusCode] = response.ResponseTypeype
 	}
 	return r
 }

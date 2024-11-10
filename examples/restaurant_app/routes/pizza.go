@@ -50,7 +50,7 @@ func PizzaRouter() *puff.Router {
 		Name:   "Pizza",
 		Prefix: "/pizza",
 	}
-	r.Get("", nil, getPizza).WithResponse(http.StatusOK, puff.ResponseT[PizzaResponse])
+	r.Get("", nil, getPizza).WithResponse(http.StatusOK, puff.ResponseType[PizzaResponse])
 
 	r.Post("", nil, func(c *puff.Context) {
 		timeOut := 5 * time.Second
