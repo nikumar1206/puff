@@ -12,6 +12,7 @@ An extensible, performant, and reliable framework inspired by FastAPI.
 - Customizable logger with structured and prettier logging.
 - Adhere to standards set by net/http, and RFC-compliant.
 - Simplicity where possible and build upon the goated stdlib when possible.
+  - Only has 2 external dependencies!
 
 ## Quickstart
 
