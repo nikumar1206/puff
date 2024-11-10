@@ -344,7 +344,6 @@ func convertRouteResponsestoOpenAPIResponses(route Route) map[string]OpenAPIResp
 		sc := strconv.Itoa(statusCode)
 		realRes := reflect.New(res()).Interface()
 		schema := newDefinition(&route, realRes)
-		schema.Required = []string{}
 		openAPIResponses[sc] = OpenAPIResponse{
 			Description: "",
 			Content: map[string]MediaType{
