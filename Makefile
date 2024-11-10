@@ -25,17 +25,8 @@ clean: ## Clean up the project directory and tidy modules
 run: ## Run demo app locally
 	$(GOBUILD) -o $(BINARY_NAME) -v examples/restaurant_app/main.go ./$(BINARY_NAME)
 
-kp:
-	@echo "Checking for processes on port 8000..."
-	@PIDS=$$(lsof -t -i:8000); \
-	if [ -n "$$PIDS" ]; then \
-		echo "Killing processes: $$PIDS"; \
-		kill -9 $$PIDS; \
-	else \
-		echo "No processes found on port 8000."; \
-	fi
 
-reload: kp## Run demo app locally with reload
+reload: ## Run the demo restauraunt app locally with reload enabled
 	@(air --build.cmd "lsof -ti:8000 | xargs -r kill -9; $(GOBUILD) -o $(BINARY_NAME) examples/restaurant_app/*.go" --build.bin "./$(BINARY_NAME)")
 
 build-linux: ## Build the application for Linux

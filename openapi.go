@@ -11,8 +11,12 @@ import (
 
 //go:embed static/openAPI.html
 var openAPIHTML string
-var Definitions = map[string]*Schema{}
 
+type SchemaDefinition map[string]*Schema
+
+var Schemas = make(SchemaDefinition)
+
+// TODO: this global should not occur if the user opts out of openAPI schema gen
 type Reference struct {
 	Ref         string `json:"$ref"`
 	Summary     string `json:"$summary"`
@@ -21,8 +25,8 @@ type Reference struct {
 
 // OpenAPI struct represents the root of the OpenAPI document.
 type OpenAPI struct {
-	SpecVersion       string                `json:"openapi"`
-	Definitions       map[string]*Schema    `json:"definitions"`
+	SpecVersion string `json:"openapi"`
+	// Definitions       map[string]*Schema    `json:"definitions"` doesnt exist?
 	Info              Info                  `json:"info"`
 	JSONSchemaDialect string                `json:"jsonSchemaDialect"`
 	Servers           []Server              `json:"servers"`
@@ -35,15 +39,6 @@ type OpenAPI struct {
 	// spec holds the OpenAPI json as bytes
 	spec *[]byte
 }
-
-// // Definitions contains schemas that can be referenced throughout
-// // the rest of the document. Reference:
-// // https://spec.openapis.org/oas/v3.1.0#schema-object
-// type Definition struct {
-// 	Type       string   `json:"type"`
-// 	Required   []string `json:"required"`
-// 	Properties map[string]Property
-// }
 
 // Property defines a property in the OpenAPI spec that defines information
 // about a property (parameters, definitions, etc).
@@ -74,8 +69,8 @@ type Contact struct {
 
 // License struct contains license information for the API.
 type License struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name       string `json:"name"`
+	Identifier string `json:"identifier"`
 }
 
 // Server struct represents a server object in OpenAPI.
@@ -87,16 +82,16 @@ type Server struct {
 
 // Components struct holds reusable objects for different aspects of the OAS.
 type Components struct {
-	Schemas         map[string]any `json:"schemas"`
-	Responses       map[string]any `json:"responses"`
-	Parameters      map[string]any `json:"parameters"`
-	Examples        map[string]any `json:"examples"`
-	RequestBodies   map[string]any `json:"requestBodies"`
-	Headers         map[string]any `json:"headers"`
-	SecuritySchemes map[string]any `json:"securitySchemes"`
-	Links           map[string]any `json:"links"`
-	Callbacks       map[string]any `json:"callbacks"`
-	PathItems       map[string]any `json:"pathItems"`
+	Schemas         SchemaDefinition `json:"schemas"`
+	Responses       map[string]any   `json:"responses"`
+	Parameters      map[string]any   `json:"parameters"`
+	Examples        map[string]any   `json:"examples"`
+	RequestBodies   map[string]any   `json:"requestBodies"`
+	Headers         map[string]any   `json:"headers"`
+	SecuritySchemes map[string]any   `json:"securitySchemes"`
+	Links           map[string]any   `json:"links"`
+	Callbacks       map[string]any   `json:"callbacks"`
+	PathItems       map[string]any   `json:"pathItems"`
 }
 
 // Tag struct represents a tag used by the OpenAPI document.
@@ -191,7 +186,7 @@ type Schema struct {
 	Ref                  string             `json:"$ref,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
 	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
-	Required             []string           `json:"required"`
+	Required             []string           `json:"required,omitempty"`
 	Example              any                `json:"example,omitempty"`
 }
 
@@ -349,10 +344,12 @@ func convertRouteResponsestoOpenAPIResponses(route Route) map[string]OpenAPIResp
 	for statusCode, res := range route.Responses {
 		sc := strconv.Itoa(statusCode)
 		realRes := reflect.New(res()).Interface()
+		schema := newDefinition(&route, realRes)
+		schema.Required = []string{}
 		openAPIResponses[sc] = OpenAPIResponse{
 			Description: "",
 			Content: map[string]MediaType{
-				"application/json": {Schema: newDefinition(&route, realRes)},
+				"application/json": {Schema: schema},
 			},
 		}
 	}

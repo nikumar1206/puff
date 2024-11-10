@@ -408,11 +408,7 @@ func newDefinition(route *Route, schema any) Schema {
 		if !ok {
 			panic("Unsupported type " + st.String() + ".")
 		}
-		newSchema.Type = ts.info.Type
-		newSchema.Format = ts.info.Format
-		newSchema.Minimum = ts.info.Minimum
-		newSchema.Example = ts.info.Example
-		return *newSchema
+		return ts.info
 	}
 
 	if st.Kind() == reflect.Map {
@@ -440,6 +436,7 @@ func newDefinition(route *Route, schema any) Schema {
 	}
 	newDef := Schema{}
 	newDef.Properties = make(map[string]*Schema)
+	newDef.Required = []string{}
 	for i := range st.NumField() {
 		newDef.Type = "object"
 		field := st.Field(i)
@@ -461,7 +458,7 @@ func newDefinition(route *Route, schema any) Schema {
 		}
 		newDef.Properties[fieldName] = &nd
 	}
-	Definitions[st.Name()] = &newDef
-	newSchema.Ref = "#/definitions/" + st.Name()
+	Schemas[st.Name()] = &newDef
+	newSchema.Ref = "#/components/schemas/" + st.Name()
 	return *newSchema
 }

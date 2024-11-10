@@ -221,10 +221,23 @@ func (a *PuffApp) GenerateOpenAPISpec() {
 				Title:       a.Name,
 				Description: "<h4>Application built via Puff Framework</h4>",
 			},
-			Servers:     []Server{},
-			Tags:        tags,
-			Paths:       paths,
-			Definitions: Definitions,
+			Servers:  []Server{},
+			Tags:     tags,
+			Paths:    paths,
+			Security: []SecurityRequirement{},
+			Webhooks: map[string]any{},
+			Components: Components{
+				Schemas:         Schemas,
+				Responses:       make(map[string]any),
+				Parameters:      make(map[string]any),
+				Examples:        make(map[string]any),
+				RequestBodies:   make(map[string]any),
+				SecuritySchemes: make(map[string]any),
+				Headers:         make(map[string]any),
+				Callbacks:       make(map[string]any),
+				PathItems:       make(map[string]any),
+				Links:           make(map[string]any),
+			},
 		}
 	}
 	// this value is hardcoded. it cannot be changed
