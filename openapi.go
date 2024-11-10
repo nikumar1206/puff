@@ -25,8 +25,7 @@ type Reference struct {
 
 // OpenAPI struct represents the root of the OpenAPI document.
 type OpenAPI struct {
-	SpecVersion string `json:"openapi"`
-	// Definitions       map[string]*Schema    `json:"definitions"` doesnt exist?
+	SpecVersion       string                `json:"openapi"`
 	Info              Info                  `json:"info"`
 	JSONSchemaDialect string                `json:"jsonSchemaDialect"`
 	Servers           []Server              `json:"servers"`
