@@ -163,14 +163,14 @@ func (r *Route) GenerateResponses() {
 //
 // Parameters:
 //   - statusCode: The HTTP status code that this response corresponds to.
-//   - ResponseTypeype: The Go type that represents the structure of the response body.
+//   - ResponseType: The Go type that represents the structure of the response body.
 //     This should be the type (not an instance) of the struct that defines the
 //     response schema.
 //
 // Returns:
 // - The updated Route object to allow method chaining.
-func (r *Route) WithResponse(statusCode int, ResponseTypeypeFunc func() reflect.Type) *Route {
-	r.Responses[statusCode] = ResponseTypeypeFunc
+func (r *Route) WithResponse(statusCode int, ResponseTypeFunc func() reflect.Type) *Route {
+	r.Responses[statusCode] = ResponseTypeFunc
 	return r
 }
 
@@ -203,7 +203,7 @@ func (r *Route) WithResponse(statusCode int, ResponseTypeypeFunc func() reflect.
 // - The updated Route object to allow method chaining.
 func (r *Route) WithResponses(responses ...ResponseDefinition) *Route {
 	for _, response := range responses {
-		r.Responses[response.StatusCode] = response.ResponseTypeype
+		r.Responses[response.StatusCode] = response.ResponseType
 	}
 	return r
 }
