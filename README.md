@@ -1,58 +1,52 @@
 # Puff
 
+An extensible, performant, and reliable framework inspired by FastAPI.
 ![Alt](https://repobeats.axiom.co/api/embed/66ccd66540fab2ca27806fc48acba71ab93721d5.svg "Repobeats analytics image")
 
-## Vision
+## Features
+- Automatic OpenAPI documentation generation and hosting.
+- Tree-structure style Routers to group APIs.
+- Extensible middlewares.
+- Customizable logger with structured and prettier logging.
+- Adhere to standards set by net/http, and RFC-compliant.
+- Simplicity where possible and build upon the goated stdlib when possible.
 
-- Strictly build upon golang's net/http
-- Simplicity where possible
+## Quickstart
 
-```golang
-import "puff/App"
 
-type AppArg struct {
-    name string
-}
-h := AppArg{name: "name_here"}
-app := App.New(h)
-
+### Installation
+```bash
+go get -u github.com/nikumar1206/puff
 ```
 
-## Features
+Creating a new server using Puff is simple:
+```golang
+import "puff"
 
-- Structured Logging
-- Routers and nested Routers
-- Middlewares
-- Auto Open API/Swagger spec generation
-- RequestId generation/Tracing Middleware
+app := puff.DefaultApp("Cool Demo App")
+app.Use(middleware.Tracing())
+app.Use(middleware.Logging())
 
-## RoadMap
+app.Get("/health", nil, func(c *puff.Context) {
+		c.SendResponse(puff.GenericResponse{Content: "Server is Healthy!"})
+})
 
-- Logging
-  - Allow users to use their own time format.
-- Middlewares
-  - Some sort of Session Middleware/Authentication Middleware? Potentially both?
-  - Panic Handler? (Wrap panics into 500) ✅
-  - Allow configuration of middleware settings. When adding middlewares, they can pass a config. Current middleware style will be default.
-  - Allow attaching middlewares to routers (far future)
-- Fixes
-  - Remove router name and add "tags" instead
-    - Also believe this is broken.
-    - Router name for Drinks Router doesnt appear.
-  - Fix the way 'description' is set.
+app.ListenAndServe(":8000")
+```
+This will begin the application and serve the docs at `http://localhost:8000/docs`.
 
-## Definitely need to fix/improve
+The DefaultApp sets up some great defaults, but you can specify a custom config with `puff.App()`.
 
-- Separate Makefile build commands. Currently everything running via `make reload`
-- Fix route collision issue
-  - should we even do this? or is this for the user to avoid?
-  - Leaving this for the user to decide.
-- Routes should be a map
-- Allow configuring the logger and making it more generic
-  - Allow indenting/non-indenting in JSON logger.
-  - Logger config needs to be placed in the context.
-- improve route matching system.
-- implement pulling and placing context in the pool. rather than creating new objects and forcing GC.
+We also recommend setting up your own logger.
 
-- If user's dont want a swagger page, we shouldn't do any of the computation required to generate one.
-- We are currently only supporting app/json schemas for the response type. we may need to extend this.
+```golang
+app.Logger = puff.NewLogger(puff.LoggerConfig{
+		Level:      slog.LevelDebug,
+		Colorize:   true,
+		UseJSON:    false,
+		TimeFormat: time.DateTime,
+})
+```
+
+
+##### TODO: improve docs with example on creating a simple router, and contribution docs.
