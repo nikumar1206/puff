@@ -25,7 +25,7 @@ type PuffApp struct {
 	// Logger is the reference to the application's logger. Equivalent to slog.Default()
 	Logger *slog.Logger
 	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
-	OpenAPI OpenAPI
+	OpenAPI *OpenAPI
 }
 
 // Add a Router to the main app.
@@ -213,7 +213,7 @@ func (a *PuffApp) AllRoutes() []*Route {
 func (a *PuffApp) GenerateOpenAPISpec() {
 	if reflect.ValueOf(a.OpenAPI).IsZero() {
 		paths, tags := a.GeneratePathsTags()
-		a.OpenAPI = OpenAPI{
+		a.OpenAPI = &OpenAPI{
 			SpecVersion: "3.1.0",
 			Info: Info{
 				Version:     a.Version,
