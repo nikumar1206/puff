@@ -257,7 +257,7 @@ Middlewares provide many useful tools to enhance your application. Puff comes wi
 
 To install the middleware package:
 
-`go get https://github.com/nikumar1206/puff/middleware`
+`go get https://github.com/ThePuffProject/puff/middleware`
 
 ### Attaching a Middleware
 
@@ -265,8 +265,8 @@ To install the middleware package:
 package main
 
 import (
-	"github.com/nikumar1206/puff"
-	"github.com/nikumar1206/puff/middleware"
+	"github.com/ThePuffProject/puff"
+	"github.com/ThePuffProject/puff/middleware"
 )
 
 func main() {
@@ -275,7 +275,7 @@ func main() {
 }
 ```
 
-The middleware package provides many middlewares. You can view the middleware docs at [the middleware pkg documentation](https://pkg.go.dev/github.com/nikumar1206/puff/middleware#section-documentation).
+The middleware package provides many middlewares. You can view the middleware docs at [the middleware pkg documentation](https://pkg.go.dev/github.com/ThePuffProject/puff/middleware#section-documentation).
 
 ### The Middleware Standard
 

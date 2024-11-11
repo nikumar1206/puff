@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/nikumar1206/puff"
+	"github.com/ThePuffProject/puff"
 )
 
 // PanicConfig provides a struct to configure the Panic middleware.

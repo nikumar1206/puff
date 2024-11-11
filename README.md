@@ -19,7 +19,7 @@ An extensible, performant, and reliable framework inspired by FastAPI.
 ### Installation
 
 ```bash
-go get -u github.com/nikumar1206/puff
+go get -u github.com/ThePuffProject/puff
 ```
 
 Creating a new server using Puff is simple:
@@ -52,8 +52,6 @@ app.Logger = puff.NewLogger(puff.LoggerConfig{
 		TimeFormat: time.DateTime,
 })
 ```
-
-### RoadMap
 
 ##### [View the roadmap](./roadmap.md)
 
