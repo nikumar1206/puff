@@ -19,7 +19,7 @@ type AppConfig struct {
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
 	TLSPrivateKeyFile string
 	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
-	OpenAPI OpenAPI
+	OpenAPI *OpenAPI
 }
 
 func App(c *AppConfig) *PuffApp {
