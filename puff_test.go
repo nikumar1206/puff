@@ -1,7 +1,6 @@
 package puff
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -31,8 +30,8 @@ func TestApp(t *testing.T) {
 	if app.TLSPrivateKeyFile != "key.pem" {
 		t.Errorf("Expected TLSPrivateKeyFile 'key.pem', got '%s'", app.TLSPrivateKeyFile)
 	}
-	if reflect.DeepEqual(app.OpenAPI, config.OpenAPI) {
-		t.Errorf("Expected OpenAPI to be set")
+	if app.OpenAPI != nil {
+		t.Errorf("Expected OpenAPI to not be set.")
 	}
 	if app.RootRouter == nil {
 		t.Fatalf("Expected RootRouter to be initialized")
