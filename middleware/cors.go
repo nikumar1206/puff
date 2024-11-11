@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/nikumar1206/puff"
+	"github.com/ThePuffProject/puff"
 )
 
 // CORSConfig defines the configuration for the CORS middleware.

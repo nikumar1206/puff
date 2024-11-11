@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nikumar1206/puff"
-	color "github.com/nikumar1206/puff/color"
+	"github.com/ThePuffProject/puff"
+	color "github.com/ThePuffProject/puff/color"
 )
 
 // LoggingConfig defines the configuration for the Logging middleware.

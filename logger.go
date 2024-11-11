@@ -9,7 +9,7 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/nikumar1206/puff/color"
+	"github.com/ThePuffProject/puff/color"
 )
 
 // LoggerConfig is used to dictate logger behavior.

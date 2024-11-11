@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/nikumar1206/puff"
+	"github.com/ThePuffProject/puff"
 )
 
 // CSRFMiddlewareConfig is a struct to configure the CSRF middleware.

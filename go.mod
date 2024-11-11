@@ -1,4 +1,4 @@
-module github.com/nikumar1206/puff
+module github.com/ThePuffProject/puff
 
 go 1.22.2
 

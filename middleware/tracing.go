@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"github.com/ThePuffProject/puff"
 	"github.com/google/uuid"
-	"github.com/nikumar1206/puff"
 )
 
 // TracingConfig is a struct to configure the tracing middleware.
