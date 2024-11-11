@@ -5,3 +5,7 @@ puff
 *.key
 *.pem
 *.crt
+
+*.out
+**/coverage/**
+*coverage*
