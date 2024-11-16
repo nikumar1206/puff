@@ -2,9 +2,12 @@ package puff
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"reflect"
+	"text/template"
 )
 
 func ResponseType[T any]() reflect.Type {
@@ -83,9 +86,17 @@ func (j JSONResponse) WriteContent(c *Context) error {
 }
 
 // HTMLResponse represents a response with HTML content.
+// It supports both file-based templates and inline string templates.
 type HTMLResponse struct {
 	StatusCode int
-	Content    string
+	// Content to render if TemplateFile is not used.
+	Content string
+	// TemplateFile is the path to the template file to use.
+	TemplateFile string
+	// Template is the inline template string. (optional)
+	Template string
+	// Data to pass to the template.
+	Data any
 }
 
 // GetStatusCode returns the status code of the HTML response.
@@ -97,9 +108,32 @@ func (h HTMLResponse) GetContentType() string {
 	return "text/html"
 }
 
-// GetContent returns the content of the HTML response.
+// WriteContent writes the HTML content to the response.
+// It checks whether to use an inline template or a template file.
 func (h HTMLResponse) WriteContent(c *Context) error {
-	fmt.Fprint(c.ResponseWriter, h.Content)
+	var tmpl *template.Template
+	var err error
+
+	if h.TemplateFile != "" { // If TemplateFile is provided, use it.
+		tmpl, err = template.ParseFiles(h.TemplateFile)
+		if err != nil {
+			return fmt.Errorf("parsing template file failed: %s", err.Error())
+		}
+	} else if h.Template != "" { // If Template string is provided, use it.
+		tmpl, err = template.New("inlineTemplate").Parse(h.Template)
+		if err != nil {
+			return fmt.Errorf("parsing inline template failed: %s", err.Error())
+		}
+	} else { // If no TemplateFile and Template, render the content as plain HTML.
+		fmt.Fprint(c.ResponseWriter, h.Content)
+		return nil
+	}
+
+	// Execute the template with the provided data.
+	err = tmpl.Execute(c.ResponseWriter, h.Data)
+	if err != nil {
+		return fmt.Errorf("executing template failed: %s", err.Error())
+	}
 	return nil
 }
 
@@ -122,6 +156,16 @@ func (f FileResponse) GetContentType() string {
 
 // WriteContent serves the file from the provided path.
 func (f FileResponse) WriteContent(c *Context) error {
+	if _, err := os.Stat(f.FilePath); errors.Is(err, os.ErrNotExist) {
+		c.InternalServerError("File %s was not found", f.FilePath)
+		return nil
+	}
+
+	if c.GetRequestHeader("Range") != "" {
+		c.statusCode = 206
+	} else {
+		c.statusCode = 200
+	}
 	http.ServeFile(c.ResponseWriter, c.Request, f.FilePath)
 	return nil
 }

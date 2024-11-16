@@ -226,5 +226,4 @@ func (r *Router) patchRoutes() {
 		// populate route with their respective responses
 		route.GenerateResponses()
 	}
-	//TODO: ensure no route collision, will be a nice to have
 }

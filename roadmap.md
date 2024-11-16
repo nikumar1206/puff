@@ -24,13 +24,11 @@ Puff is an evolving framework with plenty of development goals ahead.
 - **Templating**
   No built-in templating support; need to consider whether a custom templating solution is necessary.
 - **Request Validation**
-  Ability to define field-specific validation functions during request validation.
+  Ability to define custom validation functions for requests.
 
 ---
 
 ### Nice-to-Haves
-- **HTTP/2 Support**
-  Support for HTTP/2 protocol, maybe even HTTP/3
 - **Schema Generation Enhancements**
   Schema generation currently does not support enums, and Go’s lack of native enums requires custom enum parsing.
 - **Custom CSS for Swagger**

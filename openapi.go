@@ -2,7 +2,6 @@ package puff
 
 import (
 	_ "embed"
-	"fmt"
 	"net/http"
 	"reflect"
 	"slices"
@@ -37,6 +36,8 @@ type OpenAPI struct {
 	ExternalDocs      ExternalDocumentation `json:"externalDocs"`
 	// spec holds the OpenAPI json as bytes
 	spec *[]byte
+	// SwaggerUIConfig is the UI specific configuration.
+	SwaggerUIConfig *SwaggerUIConfig
 }
 
 // Property defines a property in the OpenAPI spec that defines information
@@ -70,6 +71,7 @@ type Contact struct {
 type License struct {
 	Name       string `json:"name"`
 	Identifier string `json:"identifier"`
+	Url        string `json:"url"`
 }
 
 // Server struct represents a server object in OpenAPI.
@@ -81,23 +83,23 @@ type Server struct {
 
 // Components struct holds reusable objects for different aspects of the OAS.
 type Components struct {
-	Schemas         SchemaDefinition `json:"schemas"`
-	Responses       map[string]any   `json:"responses"`
-	Parameters      map[string]any   `json:"parameters"`
-	Examples        map[string]any   `json:"examples"`
-	RequestBodies   map[string]any   `json:"requestBodies"`
-	Headers         map[string]any   `json:"headers"`
-	SecuritySchemes map[string]any   `json:"securitySchemes"`
-	Links           map[string]any   `json:"links"`
-	Callbacks       map[string]any   `json:"callbacks"`
-	PathItems       map[string]any   `json:"pathItems"`
+	Schemas         SchemaDefinition `json:"schemas,omitempty"`
+	Responses       map[string]any   `json:"responses,omitempty"`
+	Parameters      map[string]any   `json:"parameters,omitempty"`
+	Examples        map[string]any   `json:"examples,omitempty"`
+	RequestBodies   map[string]any   `json:"requestBodies,omitempty"`
+	Headers         map[string]any   `json:"headers,omitempty"`
+	SecuritySchemes map[string]any   `json:"securitySchemes,omitempty"`
+	Links           map[string]any   `json:"links,omitempty"`
+	Callbacks       map[string]any   `json:"callbacks,omitempty"`
+	PathItems       map[string]any   `json:"pathItems,omitempty"`
 }
 
 // Tag struct represents a tag used by the OpenAPI document.
 type Tag struct {
 	Name         string                `json:"name"`
 	Description  string                `json:"description"`
-	ExternalDocs ExternalDocumentation `json:"externalDocs"`
+	ExternalDocs ExternalDocumentation `json:"externalDocs,omitempty"`
 }
 
 // ExternalDocumentation struct provides external documentation for the API.
@@ -233,8 +235,21 @@ type ServerVariable struct {
 	Description string   `json:"description,omitempty"`
 }
 
-func GenerateOpenAPIUI(title, docsURL string) string {
-	return fmt.Sprintf(openAPIHTML, title, docsURL)
+// SwaggerUIConfig is the subset of the SwaggerUI configurables that Puff supports.
+// To learn more, please read [SwaggerDocs](https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/)
+type SwaggerUIConfig struct {
+	// Title of the Swagger Page
+	Title string
+	// URL of OpenAPI JSON
+	URL string
+	// One of the 7 themes supported by Swagger, e.g 'nord'.
+	Theme string
+	// Filter controls whether to display a tag-based filter on the OpenAPI UI
+	Filter bool
+	// RequestDuration controls whether to display the request duration after firing a request.
+	RequestDuration bool
+	// FaviconURL is the location of favicon image to display
+	FaviconURL string
 }
 
 func parameterToRequestBodyOrReference(p Parameter) RequestBodyOrReference {
