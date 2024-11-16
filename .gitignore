@@ -9,3 +9,5 @@ puff
 *.out
 **/coverage/**
 *coverage*
+
+**/testing/**

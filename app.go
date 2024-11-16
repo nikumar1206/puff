@@ -1,6 +1,7 @@
 package puff
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -26,6 +27,10 @@ type PuffApp struct {
 	Logger *slog.Logger
 	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
 	OpenAPI *OpenAPI
+	// TLSConfig to pass into the underlying http.Server
+	TLSConfig *tls.Config
+	// the underlying server that powers Puff.
+	server *http.Server
 }
 
 // Add a Router to the main app.
@@ -73,8 +78,20 @@ func (a *PuffApp) addOpenAPIRoutes() {
 
 	// Renders OpenAPI schema.
 	docsRouter.Get("", nil, func(c *Context) {
+		if a.OpenAPI.SwaggerUIConfig == nil {
+
+			swaggerConfig := SwaggerUIConfig{
+				Title:           a.Name,
+				URL:             a.DocsURL + ".json",
+				Theme:           "obsidian",
+				Filter:          true,
+				RequestDuration: false,
+				FaviconURL:      "https://fav.farm/💨",
+			}
+			a.OpenAPI.SwaggerUIConfig = &swaggerConfig
+		}
 		res := HTMLResponse{
-			Content: GenerateOpenAPIUI("OpenAPI Spec", a.DocsURL+".json"),
+			Template: openAPIHTML, Data: a.OpenAPI.SwaggerUIConfig,
 		}
 		c.SendResponse(res)
 	})
@@ -131,11 +148,20 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
 	slog.Debug(fmt.Sprintf("Visit docs 💨 on %s", fmt.Sprintf("http://localhost%s%s", listenAddr, a.DocsURL)))
 	var err error
+
+	httpServer := &http.Server{
+		Addr:      listenAddr,
+		Handler:   a.RootRouter,
+		TLSConfig: a.TLSConfig,
+	} // TODO: allow setting server level read/write/connect timeouts and middleware/route level.
+	a.server = httpServer
+
 	if a.TLSPublicCertFile != "" && a.TLSPrivateKeyFile != "" {
-		err = http.ListenAndServeTLS(listenAddr, a.TLSPublicCertFile, a.TLSPrivateKeyFile, a.RootRouter)
+		err = a.server.ListenAndServeTLS(a.TLSPublicCertFile, a.TLSPrivateKeyFile)
 	} else {
-		err = http.ListenAndServe(listenAddr, a.RootRouter)
+		err = a.server.ListenAndServe()
 	}
+
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
