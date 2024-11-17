@@ -45,7 +45,7 @@ type PuffApp struct {
 	// TLSConfig to pass into the underlying http.Server
 	TLSConfig *tls.Config
 
-	// the underlying http Server that powers Puff.
+	// server is the http Server that powers Puff.
 	server *http.Server
 }
 
