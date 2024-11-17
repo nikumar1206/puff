@@ -2,7 +2,6 @@ package puff
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -85,11 +84,11 @@ func (a *PuffApp) addOpenAPIRoutes() {
 
 	// Provides JSON OpenAPI Schema.
 	docsRouter.Get(".json", nil, func(c *Context) {
-		res := GenericResponse{
-			Content:     string(*a.OpenAPI.spec),
-			StatusCode:  200,
-			ContentType: "application/json",
+		res := JSONResponse{
+			StatusCode: 200,
+			Content:    a.OpenAPI,
 		}
+
 		c.SendResponse(res)
 	})
 
@@ -261,12 +260,6 @@ func (a *PuffApp) GenerateOpenAPISpec() {
 		a.OpenAPI.Tags = tags
 		a.OpenAPI.Paths = paths
 	}
-
-	openAPISpec, err := json.Marshal(a.OpenAPI)
-	if err != nil {
-		panic(err)
-	}
-	a.OpenAPI.spec = &openAPISpec
 }
 
 // GeneratePathsTags is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.

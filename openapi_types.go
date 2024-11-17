@@ -13,8 +13,6 @@ type OpenAPI struct {
 	Security          *[]SecurityRequirement `json:"security"`
 	Tags              *[]Tag                 `json:"tags"`
 	ExternalDocs      *ExternalDocumentation `json:"externalDocs"`
-	// spec holds the OpenAPI json as bytes
-	spec *[]byte
 	// schemas holds the openAPI schemas generated
 	schemas *SchemaDefinition
 }
@@ -35,7 +33,6 @@ func NewOpenAPI(a *PuffApp) *OpenAPI {
 		Security:     &[]SecurityRequirement{},
 		Tags:         &[]Tag{},
 		ExternalDocs: &ExternalDocumentation{},
-		spec:         &[]byte{},
 		schemas:      &SchemaDefinition{},
 	}
 	return o
