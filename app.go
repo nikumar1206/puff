@@ -1,12 +1,12 @@
 package puff
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"reflect"
 )
 
@@ -141,7 +141,7 @@ func (a *PuffApp) patchAllRoutes() {
 //
 // Parameters:
 // - listenAddr: The address the server will listen on (e.g., ":8080").
-func (a *PuffApp) ListenAndServe(listenAddr string) {
+func (a *PuffApp) ListenAndServe(listenAddr string) error {
 	slog.SetDefault(a.Logger)
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
@@ -162,10 +162,7 @@ func (a *PuffApp) ListenAndServe(listenAddr string) {
 		err = a.server.ListenAndServe()
 	}
 
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
+	return err
 }
 
 // Get registers an HTTP GET route in the PuffApp's root router.
@@ -304,4 +301,14 @@ func (a *PuffApp) GenerateDefinitions(paths Paths) map[string]*Schema {
 	}
 
 	return definitions
+}
+
+// Shutdown calls shutdown on the underlying server with a non-nil empty context.
+func (a *PuffApp) Shutdown() error {
+	return a.server.Shutdown(context.TODO())
+}
+
+// Close calls close on the underlying server.
+func (a *PuffApp) Close() error {
+	return a.server.Close()
 }

@@ -131,7 +131,6 @@ func (route *Route) handleInputSchema() error { // should this return an error o
 // GenerateResponses is responsible for generating the 'responses' attribute in the OpenAPI schema.
 // Since responses can be specified at multiple levels, responses at the route level will be given the most specificity.
 func (r *Route) GenerateResponses() {
-
 	if r.Router.puff.DocsURL == "" {
 		// if swagger documentation is off, we will not set responses
 		return
