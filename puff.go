@@ -20,6 +20,8 @@ type AppConfig struct {
 	TLSPrivateKeyFile string
 	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
 	OpenAPI *OpenAPI
+	// SwaggerUIConfig is the UI specific configuration.
+	SwaggerUIConfig *SwaggerUIConfig
 }
 
 func App(c *AppConfig) *PuffApp {
