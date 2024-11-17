@@ -415,7 +415,7 @@ func newDefinition(route *Route, schema any) *Schema {
 
 }
 
-// handleBasicType will handle generating Schema for
+// handleBasicType will handle generating Schema for types such as int, string, and others
 func handleBasicType(st reflect.Type) *Schema {
 	ts, ok := supportedTypes[st.String()]
 	if !ok {
@@ -483,7 +483,7 @@ func handleStructType(route *Route, st reflect.Type, sv reflect.Value) *Schema {
 	}
 }
 
-// Parse JSON tag for field name
+// parseJSONTag is a helper method to grab the json field
 func parseJSONTag(tag reflect.StructTag) string {
 	jsonTag := tag.Get("json")
 	if jsonTag == "" {
@@ -492,7 +492,7 @@ func parseJSONTag(tag reflect.StructTag) string {
 	return strings.Split(jsonTag, ",")[0]
 }
 
-// Check if field is required based on the "required" tag
+// isFieldRequired is a helpermethod to grab the 'required' value
 func isFieldRequired(tag reflect.StructTag) bool {
 	requiredTag := tag.Get("required")
 	isRequired, err := resolveBool(requiredTag, true)
