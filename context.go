@@ -151,8 +151,7 @@ func (c *Context) SendResponse(res Response) {
 	err := res.WriteContent(c)
 	if err != nil {
 		msg := fmt.Sprintf(
-			"[%s] An unexpected error occured while writing content with context: %s.",
-			c.GetRequestID(),
+			"An unexpected error occured while writing content with context: %s.",
 			err.Error(),
 		)
 		slog.Error(msg)

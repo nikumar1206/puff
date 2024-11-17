@@ -13,23 +13,39 @@ import (
 type PuffApp struct {
 	// Name is the application name
 	Name string
+
 	// Version is the application version.
 	Version string
-	// DocsURL is the Router prefix for Swagger documentation. Can be "" to disable Swagger documentation.
-	DocsURL string
+
 	// TLSPublicCertFile specifies the file for the TLS certificate (usually .pem or .crt).
 	TLSPublicCertFile string
+
 	// TLSPrivateKeyFile specifies the file for the TLS private key (usually .key).
 	TLSPrivateKeyFile string
+
 	// RootRouter is the application's default router. All routers extend from one.
 	RootRouter *Router
+
 	// Logger is the reference to the application's logger. Equivalent to slog.Default()
 	Logger *slog.Logger
+
 	// OpenAPI configuration. Gives users access to the OpenAPI spec generated. Can be manipulated by the user.
 	OpenAPI *OpenAPI
+
+	// SwaggerUIConfig is the UI specific configuration.
+	SwaggerUIConfig *SwaggerUIConfig
+
+	// DisableOpenAPIGeneration controls whether an OpenAPI specification is generated.
+	DisableOpenAPIGeneration bool
+
+	// DocsURL specifies the Puff Router prefix for Swagger documentation.
+	// e.g if set to 'docs'. the OpenAPI UI will be served at '/docs' and the OpenAPI JSON will be served at 'docs.json'
+	DocsURL string
+
 	// TLSConfig to pass into the underlying http.Server
 	TLSConfig *tls.Config
-	// the underlying server that powers Puff.
+
+	// the underlying http Server that powers Puff.
 	server *http.Server
 }
 
@@ -71,6 +87,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 	docsRouter.Get(".json", nil, func(c *Context) {
 		res := GenericResponse{
 			Content:     string(*a.OpenAPI.spec),
+			StatusCode:  200,
 			ContentType: "application/json",
 		}
 		c.SendResponse(res)
@@ -78,7 +95,7 @@ func (a *PuffApp) addOpenAPIRoutes() {
 
 	// Renders OpenAPI schema.
 	docsRouter.Get("", nil, func(c *Context) {
-		if a.OpenAPI.SwaggerUIConfig == nil {
+		if a.SwaggerUIConfig == nil {
 
 			swaggerConfig := SwaggerUIConfig{
 				Title:           a.Name,
@@ -88,10 +105,10 @@ func (a *PuffApp) addOpenAPIRoutes() {
 				RequestDuration: false,
 				FaviconURL:      "https://fav.farm/💨",
 			}
-			a.OpenAPI.SwaggerUIConfig = &swaggerConfig
+			a.SwaggerUIConfig = &swaggerConfig
 		}
 		res := HTMLResponse{
-			Template: openAPIHTML, Data: a.OpenAPI.SwaggerUIConfig,
+			Template: openAPIHTML, Data: a.SwaggerUIConfig,
 		}
 		c.SendResponse(res)
 	})
@@ -236,37 +253,15 @@ func (a *PuffApp) AllRoutes() []*Route {
 	return a.RootRouter.AllRoutes()
 }
 
+// GenerateOpenAPISpec is responsible for taking the PuffApp configuration and turning it into an OpenAPI json.
 func (a *PuffApp) GenerateOpenAPISpec() {
 	if reflect.ValueOf(a.OpenAPI).IsZero() {
+		a.OpenAPI = NewOpenAPI(a)
 		paths, tags := a.GeneratePathsTags()
-		a.OpenAPI = &OpenAPI{
-			SpecVersion: "3.1.0",
-			Info: Info{
-				Version:     a.Version,
-				Title:       a.Name,
-				Description: "<h4>Application built via Puff Framework</h4>",
-			},
-			Servers:  []Server{},
-			Tags:     tags,
-			Paths:    paths,
-			Security: []SecurityRequirement{},
-			Webhooks: map[string]any{},
-			Components: Components{
-				Schemas:         Schemas,
-				Responses:       make(map[string]any),
-				Parameters:      make(map[string]any),
-				Examples:        make(map[string]any),
-				RequestBodies:   make(map[string]any),
-				SecuritySchemes: make(map[string]any),
-				Headers:         make(map[string]any),
-				Callbacks:       make(map[string]any),
-				PathItems:       make(map[string]any),
-				Links:           make(map[string]any),
-			},
-		}
+		a.OpenAPI.Tags = tags
+		a.OpenAPI.Paths = paths
 	}
-	// this value is hardcoded. it cannot be changed
-	a.OpenAPI.SpecVersion = "3.1.0"
+
 	openAPISpec, err := json.Marshal(a.OpenAPI)
 	if err != nil {
 		panic(err)
@@ -275,10 +270,10 @@ func (a *PuffApp) GenerateOpenAPISpec() {
 }
 
 // GeneratePathsTags is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.
-// Returns (paths, tagss) to populate the 'Paths' and 'Tags' attribute of OpenAPI
-func (a *PuffApp) GeneratePathsTags() (Paths, []Tag) {
-	var tags []Tag
-	var tagNames []string
+// Returns (paths, tags) to populate the 'Paths' and 'Tags' attribute of OpenAPI
+func (a *PuffApp) GeneratePathsTags() (*Paths, *[]Tag) {
+	tags := []Tag{}
+	tagNames := []string{}
 	var paths = make(Paths)
 	for _, route := range a.RootRouter.Routes {
 		addRoute(route, &tags, &tagNames, &paths)
@@ -288,17 +283,16 @@ func (a *PuffApp) GeneratePathsTags() (Paths, []Tag) {
 			addRoute(route, &tags, &tagNames, &paths)
 		}
 	}
-	return paths, tags
+	return &paths, &tags
 }
 
-// GenerateDefinitions is a helper function to auto-define OpenAPI tags and paths if you would like to customize OpenAPI schema.
-// Returns (paths, tagss) to populate the 'Paths' and 'Tags' attribute of OpenAPI
+// GenerateDefinitions is a helper function that takes a list of Paths and generates the OpenAPI schema for each path.
 func (a *PuffApp) GenerateDefinitions(paths Paths) map[string]*Schema {
 
 	definitions := map[string]*Schema{}
 	for _, p := range paths {
-		for _, routeParams := range p.Parameters {
-			definitions[routeParams.Name] = &routeParams.Schema
+		for _, routeParams := range *p.Parameters {
+			definitions[routeParams.Name] = routeParams.Schema
 		}
 
 	}
