@@ -1,7 +1,6 @@
 package puff
 
 import (
-	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -41,11 +40,8 @@ type PuffApp struct {
 	// e.g if set to 'docs'. the OpenAPI UI will be served at '/docs' and the OpenAPI JSON will be served at 'docs.json'
 	DocsURL string
 
-	// TLSConfig to pass into the underlying http.Server
-	TLSConfig *tls.Config
-
-	// server is the http Server that powers Puff.
-	server *http.Server
+	// Server is the http.Server that will be used to serve requests.
+	Server *http.Server
 }
 
 // Add a Router to the main app.
@@ -73,7 +69,7 @@ func (a *PuffApp) Use(m Middleware) {
 //
 // Errors during spec generation are logged, and the method will exit early if any occur.
 func (a *PuffApp) addOpenAPIRoutes() {
-	if a.DocsURL == "" {
+	if a.DisableOpenAPIGeneration {
 		return
 	}
 	a.GenerateOpenAPISpec()
@@ -158,30 +154,34 @@ func (a *PuffApp) patchAllRoutes() {
 // Parameters:
 // - listenAddr: The address the server will listen on (e.g., ":8080").
 func (a *PuffApp) ListenAndServe(listenAddr string) {
+	// TODO: should we remove this and allow users to set custom loggers?
 	slog.SetDefault(a.Logger)
+
 	a.patchAllRoutes()
 	a.addOpenAPIRoutes()
+
 	slog.Debug(fmt.Sprintf("Running Puff 💨 on %s", listenAddr))
 	slog.Debug(fmt.Sprintf("Visit docs 💨 on %s", fmt.Sprintf("http://localhost%s%s", listenAddr, a.DocsURL)))
+
+	if a.Server == nil {
+		a.Server = &http.Server{
+			Addr:    listenAddr,
+			Handler: a.RootRouter,
+		}
+	}
+
 	var err error
-
-	httpServer := &http.Server{
-		Addr:      listenAddr,
-		Handler:   a.RootRouter,
-		TLSConfig: a.TLSConfig,
-	} // TODO: allow setting server level read/write/connect timeouts and middleware/route level.
-	a.server = httpServer
-
 	if a.TLSPublicCertFile != "" && a.TLSPrivateKeyFile != "" {
-		err = a.server.ListenAndServeTLS(a.TLSPublicCertFile, a.TLSPrivateKeyFile)
+		err = a.Server.ListenAndServeTLS(a.TLSPublicCertFile, a.TLSPrivateKeyFile)
 	} else {
-		err = a.server.ListenAndServe()
+		err = a.Server.ListenAndServe()
 	}
 
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
+
 }
 
 // Get registers an HTTP GET route in the PuffApp's root router.
@@ -243,7 +243,6 @@ func (a *PuffApp) Delete(path string, fields any, handleFunc func(*Context)) *Ro
 // - handleFunc: The handler function to handle WebSocket connections.
 func (a *PuffApp) WebSocket(path string, fields any, handleFunc func(*Context)) *Route {
 	return a.RootRouter.WebSocket(path, fields, handleFunc)
-
 }
 
 // AllRoutes returns all routes registered in the PuffApp, including those in sub-routers.

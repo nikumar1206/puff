@@ -1,4 +1,3 @@
-// openapi_types declares openAPI types and their 'constructors'
 package puff
 
 // OpenAPI struct represents the root of the OpenAPI document.

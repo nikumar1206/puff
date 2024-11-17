@@ -216,6 +216,7 @@ func (r *Router) AllRoutes() []*Route {
 
 func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
+		route.Router = r
 		route.getCompletePath()
 		route.createRegexMatch()
 		err := route.handleInputSchema()
