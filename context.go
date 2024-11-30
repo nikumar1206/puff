@@ -1,10 +1,12 @@
 package puff
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log/slog"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"strings"
 
@@ -32,12 +34,6 @@ func NewContext(w http.ResponseWriter, r *http.Request) *Context {
 		ResponseWriter: w,
 		registry:       make(map[string]any), // prevents assignment to nil map
 	}
-}
-
-func (ctx *Context) isWebSocket() bool {
-	return ctx.GetRequestHeader("Upgrade") == "websocket" &&
-		ctx.GetRequestHeader("Connection") == "Upgrade" &&
-		ctx.GetRequestHeader("Sec-WebSocket-Version") == "13"
 }
 
 // Get gets a value from Context with the key passed in.
@@ -96,11 +92,8 @@ func (ctx *Context) GetCookie(k string) string {
 	return cookie.Value
 }
 
-// SetCookie writes a new cookie to the request with key "k" and
-// value "v". Invalid cookies will be silently dropped. Invalid
-// characters will also be silently dropped. Ex. SetCookie with value
-// ""HELLO WORLD"". The quotation marks are invalid characters,
-// therefore the final cookie will be "HELLO WORLD" instead.
+// SetCookie writes a new cookie to the request.
+// Invalid cookies will be silently dropped.
 func (ctx *Context) SetCookie(cookie *http.Cookie) {
 	http.SetCookie(ctx.ResponseWriter, cookie)
 }
@@ -119,6 +112,16 @@ func (ctx *Context) SetStatusCode(sc int) {
 // GetStatusCode returns the status code. If response not written, returns default 0.
 func (ctx *Context) GetStatusCode() int {
 	return ctx.statusCode
+}
+
+// Hijack makes an attempt to get the underlying connection (net.Conn) object. It
+// may fail an return an error.
+func (ctx *Context) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := ctx.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("responsewriter does not implement hijacker")
+	}
+	return hijacker.Hijack()
 }
 
 // GetFormFile returns the multipart file and the multipart file header associated with the key.
