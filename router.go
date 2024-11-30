@@ -177,17 +177,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 			if route.WebSocket {
-				if !c.isWebSocket() {
-					c.BadRequest("This route uses the WebSocket protocol.")
+				err := c.handleWebSocket()
+				if err != nil { // the message has already been passed on by the function; we may just return at this point
 					return
 				}
-				handleWebSocket(c)
-				go c.WebSocket.read()
-				handler := route.Handler
-				handler(c)
-				for c.WebSocket.IsOpen() {
-				}
-				return
 			}
 			handler := route.Handler
 			handler(c)
@@ -216,6 +209,7 @@ func (r *Router) AllRoutes() []*Route {
 
 func (r *Router) patchRoutes() {
 	for _, route := range r.Routes {
+		route.Router = r
 		route.getCompletePath()
 		route.createRegexMatch()
 		err := route.handleInputSchema()
