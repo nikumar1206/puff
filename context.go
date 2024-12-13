@@ -20,15 +20,19 @@ type Context struct {
 	registry map[string]any
 	// WebSocket represents WebSocket connection and its related context, connection, and events.
 	// WebSocket will be nil if the route does not use websockets.
-	WebSocket  *WebSocket
-	statusCode int
+	WebSocket *WebSocket
+
+	// LoggerConfig
+	LoggerConfig LoggerConfig
+	statusCode   int
 }
 
-func NewContext(w http.ResponseWriter, r *http.Request) *Context {
+func NewContext(w http.ResponseWriter, r *http.Request, a *PuffApp) *Context {
 	return &Context{
 		Request:        r,
 		ResponseWriter: w,
 		registry:       make(map[string]any), // prevents assignment to nil map
+		LoggerConfig:   *a.Config.LoggerConfig,
 	}
 }
 

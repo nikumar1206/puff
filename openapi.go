@@ -79,6 +79,7 @@ func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Path
 		np.Schema = p.Schema
 		parameters = append(parameters, np)
 	}
+
 	pathMethod := &Operation{
 		Summary:     generateSummary(*route),
 		OperationID: generateOperationId(*route),
@@ -95,7 +96,7 @@ func addRoute(route *Route, tags *[]Tag, tagNames *[]string, paths *Paths) *Path
 	// TODO: handle other protocols
 	case http.MethodGet:
 		pathItem.Get = pathMethod
-		// explicity remove request body for get requests
+		// explicity remove request body for GET requests
 		pathItem.Get.RequestBody = nil
 	case http.MethodPost:
 		pathItem.Post = pathMethod

@@ -20,8 +20,8 @@ func NewOpenAPI(a *PuffApp) *OpenAPI {
 	o := &OpenAPI{
 		SpecVersion: "3.1.0",
 		Info: &Info{
-			Title:   a.Name,
-			Version: a.Version,
+			Title:   a.Config.Name,
+			Version: a.Config.Version,
 			Contact: &Contact{},
 			License: &License{},
 		},
