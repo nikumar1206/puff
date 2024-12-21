@@ -35,7 +35,9 @@ func App(c *AppConfig) *PuffApp {
 		Config:     c,
 		RootRouter: r,
 	}
-
+	if a.Config.LoggerConfig == nil {
+		a.Config.LoggerConfig = &LoggerConfig{}
+	}
 	l := NewLogger(a.Config.LoggerConfig)
 	slog.SetDefault(l)
 

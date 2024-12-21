@@ -19,8 +19,6 @@ Puff is an evolving framework with plenty of development goals ahead.
 
 ### Missing Features
 
-- **Templating**
-  No built-in templating support; need to consider whether a custom templating solution is necessary.
 - **Request Validation**
   Ability to define custom validation functions for requests.
 
